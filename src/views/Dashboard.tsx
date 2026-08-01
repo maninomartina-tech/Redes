@@ -1,16 +1,25 @@
-import { CalendarClock, MessageSquareWarning, Send, Sparkles } from 'lucide-react';
+import {
+  ArrowRight,
+  CalendarClock,
+  MessageSquareWarning,
+  Send,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import { fmtDateTime, isSameMonth } from '@/lib/date';
 import { statusChip, statusLabel, statusOrder, typeEmoji } from '@/lib/format';
+import { nfmt } from '@/lib/format';
+import { computeGrowth, computeLeads } from '@/lib/growth';
 import { Avatar, MediaThumb, SectionTitle, Stat } from '@/components/ui';
 import AddContentButton from '@/components/AddContentButton';
 import PostDetail from '@/components/PostDetail';
 import { useState } from 'react';
 
 export default function Dashboard() {
-  const { posts } = useStore();
+  const { posts, monthlyStats, leads } = useStore();
   const client = useCurrentClient();
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
@@ -27,6 +36,12 @@ export default function Dashboard() {
     p.comments.filter((c) => !c.resolved && c.author === 'cliente').map((c) => ({ post: p, comment: c }))
   );
   const needsReview = clientPosts.filter((p) => p.status === 'revision');
+
+  const growth = useMemo(
+    () => computeGrowth(client, monthlyStats, posts),
+    [client, monthlyStats, posts]
+  );
+  const leadsSummary = useMemo(() => computeLeads(leads, client.id), [leads, client.id]);
 
   const countByStatus = useMemo(() => {
     const m: Record<string, number> = {};
@@ -63,6 +78,41 @@ export default function Dashboard() {
         />
         <Stat label="Correcciones abiertas" value={pendingComments.length} />
       </div>
+
+      {/* crecimiento de la cuenta */}
+      {growth.hasBaseline && (
+        <button
+          onClick={() => navigate('/crecimiento')}
+          className="card mb-4 flex w-full flex-wrap items-center gap-x-6 gap-y-3 p-4 text-left transition hover:shadow-lift"
+        >
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-100 text-brand-800">
+            <TrendingUp size={18} />
+          </span>
+          <div>
+            <p className="label">Seguidores</p>
+            <p className="font-bold text-ink-900">
+              {nfmt(growth.currentFollowers)}{' '}
+              <span className="text-sm font-semibold text-mint-600">
+                +{nfmt(growth.gained)} desde el inicio
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="label">Promedio por mes</p>
+            <p className="font-bold text-ink-900">+{Math.round(growth.avgPerMonth)}</p>
+          </div>
+          {client.tracksLeads && leadsSummary.total > 0 && (
+            <div>
+              <p className="label">Consultas concretadas</p>
+              <p className="font-bold text-ink-900">
+                {leadsSummary.ganados}
+                <span className="text-sm font-medium text-ink-500"> de {leadsSummary.total}</span>
+              </p>
+            </div>
+          )}
+          <ArrowRight size={18} className="ml-auto shrink-0 text-ink-400" />
+        </button>
+      )}
 
       {/* distribución por estado */}
       <div className="card mb-4 p-4">

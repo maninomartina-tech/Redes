@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import {
@@ -11,7 +11,7 @@ import {
   weekdayNames,
 } from '@/lib/date';
 import { statusDot, typeEmoji } from '@/lib/format';
-import AddContentButton from '@/components/AddContentButton';
+import AddContentButton, { NewContentModal } from '@/components/AddContentButton';
 import PostDetail from '@/components/PostDetail';
 import { SectionTitle } from '@/components/ui';
 
@@ -21,6 +21,7 @@ export default function CalendarView() {
   const [anchor, setAnchor] = useState(startOfMonth(new Date()));
   const [selected, setSelected] = useState<string | null>(null);
   const [newDate, setNewDate] = useState<string | undefined>();
+  const [creating, setCreating] = useState(false);
 
   const days = useMemo(() => monthGrid(anchor), [anchor]);
   const clientPosts = posts.filter((p) => p.clientId === currentClientId);
@@ -36,11 +37,7 @@ export default function CalendarView() {
         title="Calendario de publicaciones"
         subtitle="Todo el contenido del mes, por día. Hacé clic en una pieza para editarla."
         action={
-          <AddContentButton
-            onCreated={setSelected}
-            defaultDate={newDate}
-            label="Nuevo contenido"
-          />
+          <AddContentButton onCreated={setSelected} label="Nuevo contenido" />
         }
       />
 
@@ -90,7 +87,7 @@ export default function CalendarView() {
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[104px] border-b border-r border-ink-200/70 p-1.5 ${
+                className={`group min-h-[104px] border-b border-r border-ink-200/70 p-1.5 ${
                   inMonth ? 'bg-surface' : 'bg-canvas'
                 }`}
               >
@@ -107,11 +104,19 @@ export default function CalendarView() {
                     {fmt(day.toISOString(), 'd')}
                   </span>
                   <button
-                    className="text-ink-300 opacity-0 transition hover:text-brand-600 group-hover:opacity-100"
+                    title="Agregar contenido este día"
+                    aria-label={`Agregar contenido el ${fmt(day.toISOString(), "d 'de' MMMM")}`}
+                    className="grid h-6 w-6 place-items-center rounded-lg text-ink-300 opacity-0 transition hover:bg-brand-100 hover:text-brand-800 focus-visible:opacity-100 group-hover:opacity-100"
                     onClick={() => {
-                      setNewDate(day.toISOString());
+                      // La hora por defecto de una publicación nueva: 12:00
+                      const d = new Date(day);
+                      d.setHours(12, 0, 0, 0);
+                      setNewDate(d.toISOString());
+                      setCreating(true);
                     }}
-                  />
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
                 <div className="space-y-1">
                   {dayPosts.slice(0, 3).map((p) => (
@@ -137,6 +142,12 @@ export default function CalendarView() {
         </div>
       </div>
 
+      <NewContentModal
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreated={setSelected}
+        defaultDate={newDate}
+      />
       <PostDetail postId={selected} onClose={() => setSelected(null)} />
     </div>
   );
