@@ -98,7 +98,7 @@ export default function CalendarView() {
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
                       today
-                        ? 'bg-brand-500 text-white'
+                        ? 'bg-brand-800 text-canvas'
                         : inMonth
                         ? 'text-ink-600'
                         : 'text-ink-300'

@@ -44,7 +44,7 @@ export default function MobileNav() {
           to={to}
           className={({ isActive }) =>
             `flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1 text-[10px] font-medium ${
-              isActive ? 'text-brand-700' : 'text-ink-500'
+              isActive ? 'text-brand-800' : 'text-ink-500'
             }`
           }
         >

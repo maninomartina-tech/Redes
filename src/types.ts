@@ -111,6 +111,12 @@ export interface Post {
   date: string; // ISO (fecha y hora de publicación planificada)
   status: PostStatus;
 
+  // --- De dónde nace la publicación ---
+  /** Tendencia, referencia o disparador que originó el contenido */
+  inspiracion?: string;
+  /** Link a la referencia (reel de la tendencia, pin, etc.) */
+  inspiracionUrl?: string;
+
   // --- Estructura en 3 partes que pidió la creadora ---
   ideaGeneral: string; // 1) la idea general
   contenido: string; // 2) el diálogo / guion / contenido (depende del tipo)

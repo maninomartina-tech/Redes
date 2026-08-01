@@ -46,7 +46,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
           <div className="flex items-center gap-4">
             <div
               className="grid h-16 w-16 place-items-center rounded-full p-[3px]"
-              style={{ background: `conic-gradient(from 180deg, ${client.color}, #F2C2A5, #C8B9EA, ${client.color})` }}
+              style={{ background: `conic-gradient(from 180deg, ${client.color}, #DBBF9A, #DFB0A1, ${client.color})` }}
             >
               <div className="grid h-full w-full place-items-center rounded-full bg-surface">
                 <Avatar name={client.name} color={client.color} size={54} />

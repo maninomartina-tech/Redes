@@ -24,7 +24,7 @@ export function Avatar({
         width: size,
         height: size,
         fontSize: size * 0.38,
-        background: color ?? '#8069BC',
+        background: color ?? '#7A4A3F',
       }}
     >
       {initials}
@@ -182,7 +182,7 @@ export function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative h-6 w-11 rounded-full transition-colors ${
-        checked ? 'bg-brand-500' : 'bg-ink-200'
+        checked ? 'bg-brand-800' : 'bg-ink-200'
       }`}
     >
       <span

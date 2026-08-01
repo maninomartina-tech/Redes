@@ -4,54 +4,61 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Fondo blanco cálido, nunca brillante
-        canvas: '#FAF9F7',
-        surface: '#FFFFFF',
+        // Fondo crema de marca y superficie apenas más clara para las tarjetas
+        canvas: '#FCF5E8',
+        surface: '#FFFCF5',
 
-        // Grises cálidos para texto y bordes
+        /**
+         * Escala neutra cálida.
+         * ink-500 es el tono suave de marca (#8A6865)
+         * ink-800 es el tono fuerte de marca (#4A1E1A)
+         */
         ink: {
-          50: '#F7F6F4',
-          100: '#EFEDE9',
-          200: '#E2DFD9',
-          300: '#CBC6BE',
-          400: '#A9A39A',
-          500: '#867F77',
-          600: '#68625B',
-          700: '#4F4A45',
-          800: '#3A3630',
-          900: '#2B2823',
-          950: '#1C1A17',
+          50: '#FAF3E6',
+          100: '#F3E9D9',
+          200: '#E7D8C4',
+          300: '#D2BCAB',
+          400: '#B29B93',
+          500: '#8A6865',
+          600: '#734F4B',
+          700: '#5D3B36',
+          800: '#4A1E1A',
+          900: '#3B1613',
+          950: '#2A0F0D',
         },
 
-        // Lavanda pastel · color principal de Demm
+        /**
+         * Color principal.
+         * brand-500 = suave (#8A6865) · brand-800 = fuerte (#4A1E1A)
+         */
         brand: {
-          50: '#F7F4FC',
-          100: '#EDE7F9',
-          200: '#DED4F3',
-          300: '#C8B9EA',
-          400: '#AE9BDE',
-          500: '#9781D0',
-          600: '#8069BC',
-          700: '#6A559D',
-          800: '#57477F',
-          900: '#493C68',
+          50: '#FBF1EC',
+          100: '#F6E3DB',
+          200: '#EDCDC1',
+          300: '#DFB0A1',
+          400: '#C58E7E',
+          500: '#8A6865',
+          600: '#6E4B46',
+          700: '#5A322C',
+          800: '#4A1E1A',
+          900: '#3A1512',
         },
 
-        // Pasteles de apoyo (estados, categorías, gráficos)
-        mint: { 50: '#F1F9F4', 100: '#E3F2E9', 200: '#CDE8D8', 300: '#B0DCC3', 600: '#2F6B4F' },
-        peach: { 50: '#FEF5EF', 100: '#FCE9DD', 200: '#F8D8C4', 300: '#F2C2A5', 600: '#9A5B33' },
-        sky: { 50: '#F0F6FC', 100: '#E2EDF8', 200: '#CCDFF2', 300: '#B0CDE9', 600: '#3D6B94' },
-        rose: { 50: '#FDF3F5', 100: '#FAE3E8', 200: '#F4CDD6', 300: '#EDB4C1', 600: '#9E4A60' },
-        butter: { 50: '#FDF9EE', 100: '#FBF1DA', 200: '#F6E5BC', 300: '#EFD79B', 600: '#8A6B22' },
+        // Acentos terrosos, armónicos con el crema.
+        // Se mantienen los nombres para no tocar los componentes.
+        mint: { 50: '#F1F5EC', 100: '#E3EBDB', 200: '#CDDCC0', 300: '#B4C9A4', 600: '#4C6B41' },
+        butter: { 50: '#FBF5E4', 100: '#F6EACB', 200: '#EEDAA6', 300: '#E2C87F', 600: '#7A5C18' },
+        sky: { 50: '#EEF2F5', 100: '#DEE7ED', 200: '#C4D3DE', 300: '#A6BDCD', 600: '#425F72' },
+        rose: { 50: '#FBEEE8', 100: '#F6DDD1', 200: '#EDC2AE', 300: '#E0A188', 600: '#9C4A2C' },
+        peach: { 50: '#FAF3E9', 100: '#F3E7D5', 200: '#E8D5BA', 300: '#DBBF9A', 600: '#8A6A3E' },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
       },
       boxShadow: {
-        // Sombras muy suaves: la jerarquía la dan los bordes y el espacio
-        soft: '0 1px 2px rgba(43,40,35,0.04)',
-        card: '0 1px 3px rgba(43,40,35,0.05)',
-        lift: '0 4px 16px rgba(43,40,35,0.07)',
+        soft: '0 1px 2px rgba(74,30,26,0.05)',
+        card: '0 1px 3px rgba(74,30,26,0.06)',
+        lift: '0 4px 16px rgba(74,30,26,0.09)',
       },
       borderRadius: {
         xl: '0.875rem',

@@ -59,7 +59,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? 'bg-brand-100 text-brand-700'
+                  ? 'bg-brand-100 text-brand-800'
                   : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
               }`
             }

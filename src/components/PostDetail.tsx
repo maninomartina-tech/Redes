@@ -3,7 +3,9 @@ import {
   CheckCircle2,
   Clapperboard,
   Lightbulb,
+  Link as LinkIcon,
   MessageSquare,
+  Sparkle,
   Send,
   Trash2,
   Type,
@@ -68,6 +70,42 @@ export default function PostDetail({
             className="w-full border-0 bg-transparent p-0 text-xl font-bold text-ink-900 outline-none placeholder:text-ink-300 disabled:opacity-100"
             placeholder="Título del contenido"
           />
+
+          {/* de dónde nace */}
+          <div className="rounded-xl border border-peach-200 bg-peach-50 p-3">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-peach-600">
+              <Sparkle size={15} />
+              Inspiración · de dónde nace
+            </div>
+            <textarea
+              disabled={readOnly}
+              value={post.inspiracion ?? ''}
+              onChange={(e) => set({ inspiracion: e.target.value })}
+              rows={2}
+              placeholder="¿Sale de una tendencia, un audio, una referencia, una pregunta que se repite?"
+              className="input resize-y"
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <LinkIcon size={14} className="shrink-0 text-peach-600" />
+              <input
+                disabled={readOnly}
+                value={post.inspiracionUrl ?? ''}
+                onChange={(e) => set({ inspiracionUrl: e.target.value })}
+                placeholder="Link a la referencia (opcional)"
+                className="input !py-1.5 text-xs"
+              />
+              {post.inspiracionUrl && (
+                <a
+                  href={post.inspiracionUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="btn-outline shrink-0 !py-1.5 text-xs"
+                >
+                  Ver
+                </a>
+              )}
+            </div>
+          </div>
 
           {/* 1) idea general */}
           <Part

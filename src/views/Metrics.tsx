@@ -120,13 +120,13 @@ export default function Metrics() {
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEDE9" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D8C4" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-12} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={nfmt} />
                 <Tooltip formatter={(v) => nfmt(Number(v))} />
                 <Bar dataKey="Interacciones" radius={[6, 6, 0, 0]}>
                   {chartData.map((d, i) => (
-                    <Cell key={i} fill={d.best ? '#9781D0' : '#DED4F3'} />
+                    <Cell key={i} fill={d.best ? '#4A1E1A' : '#DFB0A1'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -141,7 +141,7 @@ export default function Metrics() {
         {/* análisis IA */}
         <div className="card flex flex-col p-4">
           <div className="mb-2 flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-500 text-white">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-800 text-canvas">
               <Sparkles size={15} />
             </span>
             <h3 className="font-bold text-ink-800">Análisis con IA</h3>

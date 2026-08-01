@@ -122,6 +122,8 @@ export const useStore = create<State>()(
           title: p.title ?? 'Nuevo contenido',
           date: p.date ?? new Date().toISOString(),
           status: p.status ?? 'idea',
+          inspiracion: p.inspiracion ?? '',
+          inspiracionUrl: p.inspiracionUrl,
           ideaGeneral: p.ideaGeneral ?? '',
           contenido: p.contenido ?? '',
           copy: p.copy ?? '',

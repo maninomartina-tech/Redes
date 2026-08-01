@@ -123,14 +123,14 @@ export default function ClientResults() {
                 >
                   <defs>
                     <linearGradient id="areaSeg" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#9781D0" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#9781D0" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#8A6865" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#8A6865" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEDE9" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#867F77' }} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D8C4" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8A6865' }} tickLine={false} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#867F77' }}
+                    tick={{ fontSize: 11, fill: '#8A6865' }}
                     tickFormatter={nfmt}
                     tickLine={false}
                     axisLine={false}
@@ -139,17 +139,17 @@ export default function ClientResults() {
                     formatter={(v) => [nfmt(Number(v)), 'Seguidores']}
                     contentStyle={{
                       borderRadius: 12,
-                      border: '1px solid #E2DFD9',
+                      border: '1px solid #E7D8C4',
                       fontSize: 12,
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="followers"
-                    stroke="#8069BC"
+                    stroke="#4A1E1A"
                     strokeWidth={2.5}
                     fill="url(#areaSeg)"
-                    dot={{ r: 3, fill: '#8069BC' }}
+                    dot={{ r: 3, fill: '#4A1E1A' }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -197,10 +197,10 @@ export default function ClientResults() {
               </div>
               <ResponsiveContainer width="100%" height={190}>
                 <BarChart data={growth.points} margin={{ left: -12, right: 8 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEDE9" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#867F77' }} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E7D8C4" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8A6865' }} tickLine={false} />
                   <YAxis
-                    tick={{ fontSize: 11, fill: '#867F77' }}
+                    tick={{ fontSize: 11, fill: '#8A6865' }}
                     tickFormatter={nfmt}
                     tickLine={false}
                     axisLine={false}
@@ -209,11 +209,11 @@ export default function ClientResults() {
                     formatter={(v) => [nfmt(Number(v)), 'Interacciones']}
                     contentStyle={{
                       borderRadius: 12,
-                      border: '1px solid #E2DFD9',
+                      border: '1px solid #E7D8C4',
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey="interactions" fill="#C8B9EA" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="interactions" fill="#C58E7E" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
