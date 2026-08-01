@@ -24,7 +24,7 @@ export function Avatar({
         width: size,
         height: size,
         fontSize: size * 0.38,
-        background: color ?? '#7a54f7',
+        background: color ?? '#8069BC',
       }}
     >
       {initials}
@@ -49,13 +49,13 @@ export function MediaThumb({
       style={src ? { background: src } : undefined}
     >
       {label && (
-        <span className="absolute left-2 top-2 rounded-md bg-black/35 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur">
+        <span className="absolute left-2 top-2 rounded-md bg-ink-900/45 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
           {label}
         </span>
       )}
       {kind === 'video' && (
         <span className="absolute inset-0 grid place-items-center text-white/90">
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-black/30 backdrop-blur">
+          <span className="grid h-9 w-9 place-items-center rounded-full bg-ink-900/35 backdrop-blur-sm">
             ▶
           </span>
         </span>
@@ -119,7 +119,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="grid place-items-center rounded-2xl border border-dashed border-ink-200 bg-white/60 py-14 text-center">
+    <div className="grid place-items-center rounded-2xl border border-dashed border-ink-200 bg-surface/60 py-14 text-center">
       {icon && <div className="mb-3 text-ink-300">{icon}</div>}
       <p className="font-semibold text-ink-700">{title}</p>
       {hint && <p className="mt-1 max-w-sm text-sm text-ink-500">{hint}</p>}
@@ -150,13 +150,13 @@ export function Modal({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/40 p-4 backdrop-blur-sm sm:p-8">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/25 p-4 backdrop-blur-sm sm:p-8">
       <div
         className={`card my-4 w-full ${wide ? 'max-w-5xl' : 'max-w-lg'} animate-[fadeIn_.15s_ease]`}
         onClick={(e) => e.stopPropagation()}
       >
         {title !== undefined && (
-          <div className="flex items-center justify-between border-b border-ink-100 px-5 py-3.5">
+          <div className="flex items-center justify-between border-b border-ink-200/70 px-5 py-3.5">
             <h3 className="font-bold text-ink-900">{title}</h3>
             <button className="btn-ghost -mr-2 px-2" onClick={onClose}>
               <X size={18} />
@@ -182,11 +182,11 @@ export function Toggle({
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative h-6 w-11 rounded-full transition-colors ${
-        checked ? 'bg-brand-600' : 'bg-ink-200'
+        checked ? 'bg-brand-500' : 'bg-ink-200'
       }`}
     >
       <span
-        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+        className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all ${
           checked ? 'left-[22px]' : 'left-0.5'
         }`}
       />

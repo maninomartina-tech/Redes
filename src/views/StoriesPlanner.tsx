@@ -49,7 +49,7 @@ export default function StoriesPlanner() {
             <div key={day.toISOString()} className="min-h-[180px]">
               <div
                 className={`mb-2 rounded-lg px-2 py-1 text-center text-xs font-semibold ${
-                  today ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600'
+                  today ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600'
                 }`}
               >
                 <div className="capitalize">{fmt(day.toISOString(), 'EEE')}</div>

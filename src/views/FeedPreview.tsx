@@ -46,9 +46,9 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
           <div className="flex items-center gap-4">
             <div
               className="grid h-16 w-16 place-items-center rounded-full p-[3px]"
-              style={{ background: `conic-gradient(from 180deg, ${client.color}, #f4a261, ${client.color})` }}
+              style={{ background: `conic-gradient(from 180deg, ${client.color}, #F2C2A5, #C8B9EA, ${client.color})` }}
             >
-              <div className="grid h-full w-full place-items-center rounded-full bg-white">
+              <div className="grid h-full w-full place-items-center rounded-full bg-surface">
                 <Avatar name={client.name} color={client.color} size={54} />
               </div>
             </div>
@@ -65,7 +65,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
         </div>
 
         {/* grilla */}
-        <div className="mt-3 grid grid-cols-3 gap-1 overflow-hidden rounded-2xl bg-white p-1 shadow-card">
+        <div className="mt-3 grid grid-cols-3 gap-1 overflow-hidden rounded-2xl bg-surface p-1 shadow-card">
           {feed.map((p) => (
             <button
               key={p.id}
@@ -77,7 +77,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
                 {typeEmoji[p.type]}
               </span>
               {p.status !== 'publicado' && (
-                <span className="absolute inset-x-1 bottom-1 rounded bg-black/45 px-1 py-0.5 text-center text-[9px] font-semibold text-white backdrop-blur">
+                <span className="absolute inset-x-1 bottom-1 rounded bg-ink-900/50 px-1 py-0.5 text-center text-[9px] font-semibold text-white backdrop-blur">
                   {fmt(p.date, 'd MMM')}
                 </span>
               )}

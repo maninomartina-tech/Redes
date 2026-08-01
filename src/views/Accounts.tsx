@@ -39,7 +39,7 @@ export default function Accounts() {
           <div key={acc.id} className="card flex items-center gap-4 p-4">
             <span
               className={`grid h-11 w-11 place-items-center rounded-xl ${
-                acc.connected ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-400'
+                acc.connected ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-400'
               }`}
             >
               {platformIcon[acc.platform]}
@@ -50,7 +50,7 @@ export default function Accounts() {
             </div>
             <span
               className={`chip ${
-                acc.connected ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-500'
+                acc.connected ? 'bg-mint-100 text-mint-600' : 'bg-ink-100 text-ink-500'
               }`}
             >
               {acc.connected ? 'Conectada' : 'Desconectada'}

@@ -46,7 +46,7 @@ export default function CalendarView() {
 
       <div className="card overflow-hidden">
         {/* controles de mes */}
-        <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3">
           <h3 className="text-base font-bold capitalize text-ink-900">
             {fmt(anchor.toISOString(), 'MMMM yyyy')}
           </h3>
@@ -73,7 +73,7 @@ export default function CalendarView() {
         </div>
 
         {/* encabezado días */}
-        <div className="grid grid-cols-7 border-b border-ink-100 bg-ink-50 text-center text-xs font-semibold text-ink-500">
+        <div className="grid grid-cols-7 border-b border-ink-200/70 bg-ink-50 text-center text-xs font-semibold text-ink-500">
           {weekdayNames.map((d) => (
             <div key={d} className="py-2">
               {d}
@@ -90,15 +90,15 @@ export default function CalendarView() {
             return (
               <div
                 key={day.toISOString()}
-                className={`min-h-[104px] border-b border-r border-ink-100 p-1.5 ${
-                  inMonth ? 'bg-white' : 'bg-ink-50/50'
+                className={`min-h-[104px] border-b border-r border-ink-200/70 p-1.5 ${
+                  inMonth ? 'bg-surface' : 'bg-canvas'
                 }`}
               >
                 <div className="mb-1 flex items-center justify-between px-0.5">
                   <span
                     className={`grid h-6 w-6 place-items-center rounded-full text-xs font-semibold ${
                       today
-                        ? 'bg-brand-600 text-white'
+                        ? 'bg-brand-500 text-white'
                         : inMonth
                         ? 'text-ink-600'
                         : 'text-ink-300'

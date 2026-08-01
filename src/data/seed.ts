@@ -20,19 +20,19 @@ const id = (p: string) => `${p}_${(++n).toString(36)}${Date.now().toString(36).s
 export const seedClients: Client[] = [
   {
     id: 'cli_demm',
-    name: 'Demm Estudio',
-    handle: '@demm.estudio',
-    color: '#7a54f7',
+    name: 'Aurora Skin',
+    handle: '@aurora.skin',
+    color: '#8069BC',
     accounts: [
-      { id: 'acc_demm_ig', platform: 'instagram', handle: '@demm.estudio', connected: true },
-      { id: 'acc_demm_tt', platform: 'tiktok', handle: '@demm.estudio', connected: false },
+      { id: 'acc_demm_ig', platform: 'instagram', handle: '@aurora.skin', connected: true },
+      { id: 'acc_demm_tt', platform: 'tiktok', handle: '@aurora.skin', connected: false },
     ],
   },
   {
     id: 'cli_flora',
     name: 'Flora Café',
     handle: '@flora.cafe',
-    color: '#e07a5f',
+    color: '#C08056',
     accounts: [
       { id: 'acc_flora_ig', platform: 'instagram', handle: '@flora.cafe', connected: true },
       { id: 'acc_flora_fb', platform: 'facebook', handle: 'Flora Café', connected: true },
@@ -42,7 +42,7 @@ export const seedClients: Client[] = [
     id: 'cli_nova',
     name: 'Nova Fitness',
     handle: '@nova.fit',
-    color: '#2a9d8f',
+    color: '#4F8F79',
     accounts: [
       { id: 'acc_nova_ig', platform: 'instagram', handle: '@nova.fit', connected: false },
     ],
@@ -53,7 +53,7 @@ const grad = (a: string, b: string) =>
   `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
 
 export const seedPosts: Post[] = [
-  // ---- Demm ----
+  // ---- Aurora Skin ----
   {
     id: id('post'),
     clientId: 'cli_demm',
@@ -70,14 +70,14 @@ export const seedPosts: Post[] = [
     copy:
       'Tu marca no necesita estar en todos lados. Necesita estar bien donde importa. 👀\n\nEscribinos "REDES" por DM y armamos tu estrategia del mes. \n\n#communitymanager #marcapersonal #redessociales',
     mediaKind: 'video',
-    mediaUrl: grad('#7a54f7', '#b9abff'),
+    mediaUrl: grad('#C8B9EA', '#EDE7F9'),
     hashtags: ['communitymanager', 'marcapersonal', 'redessociales'],
     campaignId: 'camp_demm_ago',
     comments: [
       {
         id: id('cm'),
         author: 'cliente',
-        authorName: 'Demm',
+        authorName: 'Aurora',
         text: 'Me encanta el gancho. ¿Podemos hacer el CTA un poco más suave? En vez de "agendá" algo tipo "hablemos".',
         createdAt: d(-1, 10, 30),
         resolved: false,
@@ -100,7 +100,7 @@ export const seedPosts: Post[] = [
     copy:
       '¿Tu feed no crece? Puede que estés cometiendo alguno de estos 5 errores. \n\nGuardalo para tenerlo a mano 📌\n\n#feedinstagram #tipsderedes #diseño',
     mediaKind: 'image',
-    mediaUrl: grad('#977dff', '#e9e5ff'),
+    mediaUrl: grad('#DED4F3', '#FAE3E8'),
     hashtags: ['feedinstagram', 'tipsderedes', 'diseño'],
     campaignId: 'camp_demm_ago',
     comments: [],
@@ -119,7 +119,7 @@ export const seedPosts: Post[] = [
       'Historia 1: pregunta abierta. \nHistoria 2: encuesta A/B (tips vs detrás de escena). \nHistoria 3: agradecimiento + adelanto.',
     copy: 'Decime qué querés ver 👇',
     mediaKind: 'image',
-    mediaUrl: grad('#6a3aeb', '#977dff'),
+    mediaUrl: grad('#AE9BDE', '#DED4F3'),
     hashtags: [],
     comments: [],
   },
@@ -136,7 +136,7 @@ export const seedPosts: Post[] = [
     contenido: 'Placa con la frase del testimonio + logo. Diseño limpio.',
     copy: 'Resultados que hablan. Gracias @clienteX por confiar 💜 #testimonio #resultados',
     mediaKind: 'image',
-    mediaUrl: grad('#5b2bcf', '#b9abff'),
+    mediaUrl: grad('#B0CDE9', '#DED4F3'),
     hashtags: ['testimonio', 'resultados'],
     campaignId: 'camp_demm_jul',
     metrics: { reach: 4820, impressions: 6210, likes: 512, comments: 34, saves: 88, shares: 41 },
@@ -155,7 +155,7 @@ export const seedPosts: Post[] = [
     contenido: 'Clips rápidos de la grabación + música trending.',
     copy: 'Así se hace la magia ✨ #detrasdeescena #bts',
     mediaKind: 'video',
-    mediaUrl: grad('#7a54f7', '#402186'),
+    mediaUrl: grad('#9781D0', '#C8B9EA'),
     hashtags: ['detrasdeescena', 'bts'],
     campaignId: 'camp_demm_jul',
     metrics: { reach: 12300, impressions: 15100, likes: 1340, comments: 96, saves: 210, shares: 180, views: 18400 },
@@ -176,7 +176,7 @@ export const seedPosts: Post[] = [
     contenido: 'Foto flat lay del café + textura. Nota de cata en el diseño.',
     copy: 'Llegó el nuevo lote de temporada ☕️ Notas a chocolate y naranja. Te esperamos.',
     mediaKind: 'image',
-    mediaUrl: grad('#e07a5f', '#f4a261'),
+    mediaUrl: grad('#F2C2A5', '#FBF1DA'),
     hashtags: ['cafedeespecialidad', 'coffeelovers'],
     campaignId: 'camp_flora_ago',
     comments: [],
@@ -194,7 +194,7 @@ export const seedPosts: Post[] = [
     contenido: 'Plano cenital, cámara lenta, música calma. Sin locución.',
     copy: 'Un arte en cada taza 🎨☕️ #latteart #coffee',
     mediaKind: 'video',
-    mediaUrl: grad('#f4a261', '#e9c46a'),
+    mediaUrl: grad('#F8D8C4', '#F6E5BC'),
     hashtags: ['latteart', 'coffee'],
     campaignId: 'camp_flora_ago',
     comments: [
@@ -221,7 +221,7 @@ export const seedPosts: Post[] = [
     contenido: 'Placa con la promo y horario. Colores de marca.',
     copy: '2x1 en desayunos de lunes a jueves 🥐 Traé a quien quieras. #promo #desayuno',
     mediaKind: 'image',
-    mediaUrl: grad('#e07a5f', '#e9c46a'),
+    mediaUrl: grad('#FCE9DD', '#EFD79B'),
     hashtags: ['promo', 'desayuno'],
     campaignId: 'camp_flora_jul',
     metrics: { reach: 7600, impressions: 9200, likes: 430, comments: 58, saves: 120, shares: 64 },
@@ -242,7 +242,7 @@ export const seedPosts: Post[] = [
     contenido: 'Demostración de 4 ejercicios, texto en pantalla con repeticiones.',
     copy: '10 minutos, cero excusas 💪 Guardalo y hacelo hoy. #fitness #rutinaencasa',
     mediaKind: 'video',
-    mediaUrl: grad('#2a9d8f', '#a8dadc'),
+    mediaUrl: grad('#B0DCC3', '#CCDFF2'),
     hashtags: ['fitness', 'rutinaencasa'],
     campaignId: 'camp_nova_ago',
     comments: [],
@@ -255,7 +255,7 @@ export const seedCampaigns: Campaign[] = [
     clientId: 'cli_demm',
     name: 'Autoridad de marca · Agosto',
     month: monthKey(0),
-    goal: 'Posicionar a Demm como referente y generar 10 leads por DM.',
+    goal: 'Posicionar a Aurora Skin como referente y generar 10 leads por DM.',
     budget: 45000,
     postIds: [],
   },

@@ -50,7 +50,7 @@ export default function PostDetail({
               disabled={readOnly}
               value={post.type}
               onChange={(e) => set({ type: e.target.value as PostType })}
-              className="rounded-full border border-ink-200 bg-white px-2.5 py-1 text-xs font-medium disabled:opacity-70"
+              className="rounded-full border border-ink-200 bg-surface px-2.5 py-1 text-xs font-medium disabled:opacity-70"
             >
               {types.map((t) => (
                 <option key={t} value={t}>
@@ -74,7 +74,7 @@ export default function PostDetail({
             icon={<Lightbulb size={15} />}
             n={1}
             label="Idea general"
-            color="text-amber-600 bg-amber-50"
+            color="text-butter-600 bg-butter-50"
           >
             <textarea
               disabled={readOnly}
@@ -131,7 +131,7 @@ export default function PostDetail({
           {/* resultado final */}
           <div>
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-700">
-              <span className="grid h-6 w-6 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+              <span className="grid h-6 w-6 place-items-center rounded-full bg-mint-100 text-mint-600">
                 ✓
               </span>
               Resultado final
@@ -151,9 +151,9 @@ export default function PostDetail({
         </div>
 
         {/* ---- Columna derecha: estado + comentarios ---- */}
-        <div className="flex max-h-[70vh] flex-col border-t border-ink-100 md:border-l md:border-t-0">
+        <div className="flex max-h-[70vh] flex-col border-t border-ink-200/70 md:border-l md:border-t-0">
           {!readOnly && (
-            <div className="border-b border-ink-100 p-4">
+            <div className="border-b border-ink-200/70 p-4">
               <p className="label mb-2">Estado / Flujo</p>
               <div className="flex flex-wrap gap-1.5">
                 {statusOrder.map((st) => (
@@ -163,7 +163,7 @@ export default function PostDetail({
                     className={`chip transition ${
                       post.status === st
                         ? statusChip[st as PostStatus]
-                        : 'bg-white text-ink-500 border border-ink-200 hover:bg-ink-50'
+                        : 'bg-surface text-ink-500 border border-ink-200 hover:bg-ink-50'
                     }`}
                   >
                     {statusLabel[st as PostStatus]}
@@ -174,7 +174,7 @@ export default function PostDetail({
           )}
 
           {readOnly && (
-            <div className="border-b border-ink-100 p-4">
+            <div className="border-b border-ink-200/70 p-4">
               <p className="mb-2 text-sm text-ink-600">
                 ¿Está todo bien con este contenido?
               </p>
@@ -199,7 +199,7 @@ export default function PostDetail({
           <div className="flex items-center gap-2 px-4 pt-4 text-sm font-semibold text-ink-700">
             <MessageSquare size={15} /> Comentarios
             {openComments > 0 && (
-              <span className="chip bg-rose-100 text-rose-700">{openComments} sin resolver</span>
+              <span className="chip bg-rose-100 text-rose-600">{openComments} sin resolver</span>
             )}
           </div>
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
@@ -212,7 +212,7 @@ export default function PostDetail({
               <div
                 key={c.id}
                 className={`rounded-xl border p-3 text-sm ${
-                  c.resolved ? 'border-ink-100 bg-ink-50 opacity-70' : 'border-ink-200 bg-white'
+                  c.resolved ? 'border-ink-200/70 bg-ink-50 opacity-70' : 'border-ink-200 bg-surface'
                 }`}
               >
                 <div className="mb-1 flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function PostDetail({
                   </span>
                   <button
                     onClick={() => toggleComment(post.id, c.id)}
-                    className={`ml-auto ${c.resolved ? 'text-emerald-600' : 'text-ink-300 hover:text-emerald-600'}`}
+                    className={`ml-auto ${c.resolved ? 'text-mint-600' : 'text-ink-300 hover:text-mint-600'}`}
                     title={c.resolved ? 'Marcar como pendiente' : 'Marcar como resuelto'}
                   >
                     <CheckCircle2 size={17} />
@@ -239,7 +239,7 @@ export default function PostDetail({
           </div>
 
           {/* nuevo comentario */}
-          <div className="border-t border-ink-100 p-3">
+          <div className="border-t border-ink-200/70 p-3">
             <div className="flex items-end gap-2">
               <textarea
                 value={draft}
@@ -271,7 +271,7 @@ export default function PostDetail({
                   removePost(post.id);
                   onClose();
                 }}
-                className="mt-2 flex items-center gap-1.5 text-xs text-rose-500 hover:text-rose-600"
+                className="mt-2 flex items-center gap-1.5 text-xs text-rose-600 hover:text-rose-600"
               >
                 <Trash2 size={13} /> Eliminar contenido
               </button>

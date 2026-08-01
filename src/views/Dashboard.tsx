@@ -109,7 +109,7 @@ export default function Dashboard() {
         {/* correcciones del cliente */}
         <div className="card p-4">
           <div className="mb-3 flex items-center gap-2">
-            <MessageSquareWarning size={18} className="text-rose-500" />
+            <MessageSquareWarning size={18} className="text-rose-600" />
             <h3 className="font-bold text-ink-800">Correcciones del cliente</h3>
           </div>
           {pendingComments.length === 0 && (
@@ -120,7 +120,7 @@ export default function Dashboard() {
               <button
                 key={comment.id}
                 onClick={() => setSelected(post.id)}
-                className="block w-full rounded-xl border border-ink-100 p-2.5 text-left hover:bg-ink-50"
+                className="block w-full rounded-xl border border-ink-200/70 p-2.5 text-left hover:bg-ink-50"
               >
                 <p className="text-xs font-semibold text-ink-500">{post.title}</p>
                 <p className="line-clamp-2 text-sm text-ink-700">“{comment.text}”</p>

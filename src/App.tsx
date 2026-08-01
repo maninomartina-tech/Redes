@@ -30,7 +30,7 @@ export default function App() {
   }, [role, location.pathname, navigate]);
 
   return (
-    <div className="flex min-h-screen bg-ink-50">
+    <div className="flex min-h-screen bg-canvas">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />

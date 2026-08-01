@@ -54,7 +54,7 @@ export default function ClientWeek() {
           return (
             <div key={day.toISOString()}>
               <div className="mb-2 flex items-center gap-2">
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-bold text-white">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-500 text-sm font-bold text-white">
                   {fmt(day.toISOString(), 'd')}
                 </span>
                 <span className="text-sm font-semibold capitalize text-ink-700">
@@ -101,7 +101,7 @@ function ClientPostCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
 
         {/* las 3 partes */}
         <div className="grid gap-3 sm:grid-cols-3">
-          <Block icon={<Lightbulb size={13} />} color="text-amber-600" label="Idea general" text={post.ideaGeneral} />
+          <Block icon={<Lightbulb size={13} />} color="text-butter-600" label="Idea general" text={post.ideaGeneral} />
           <Block
             icon={<Clapperboard size={13} />}
             color="text-sky-600"

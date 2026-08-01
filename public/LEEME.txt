@@ -1,0 +1,6 @@
+Poné acá tu logo con el nombre exacto:  logo.svg
+
+- Si tu logo es PNG, guardalo como logo.png y cambiá la constante
+  LOGO_SRC en src/components/Logo.tsx  ->  '/logo.png'
+- Tamaño recomendado: cuadrado (por ejemplo 512x512), fondo transparente.
+- Mientras no exista el archivo, la app muestra el monograma "D" de respaldo.

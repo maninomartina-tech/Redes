@@ -35,7 +35,7 @@ export default function MobileNav() {
   const role = useStore((s) => s.role);
   const nav = role === 'creadora' ? creadora : cliente;
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex justify-around border-t border-ink-100 bg-white/95 px-1 py-1.5 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 flex justify-around border-t border-ink-200/70 bg-surface/95 px-1 py-1.5 backdrop-blur-md md:hidden">
       {nav.map(({ to, label, icon: Icon }) => (
         <NavLink
           key={to}

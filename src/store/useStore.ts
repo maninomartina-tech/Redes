@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   Ad,
   Campaign,
@@ -13,6 +13,31 @@ import { seedAds, seedCampaigns, seedClients, seedPosts } from '@/data/seed';
 
 const uid = (p: string) =>
   `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
+
+/**
+ * localStorage puede no estar disponible (modo incógnito, iframe restringido).
+ * En ese caso guardamos en memoria para que la app siga funcionando.
+ */
+function safeStorage(): Storage {
+  try {
+    const probe = '__demm_probe__';
+    window.localStorage.setItem(probe, '1');
+    window.localStorage.removeItem(probe);
+    return window.localStorage;
+  } catch {
+    const mem = new Map<string, string>();
+    return {
+      get length() {
+        return mem.size;
+      },
+      clear: () => mem.clear(),
+      getItem: (k: string) => mem.get(k) ?? null,
+      key: (i: number) => Array.from(mem.keys())[i] ?? null,
+      removeItem: (k: string) => void mem.delete(k),
+      setItem: (k: string, v: string) => void mem.set(k, v),
+    } as Storage;
+  }
+}
 
 interface State {
   role: Role;
@@ -200,7 +225,7 @@ export const useStore = create<State>()(
           currentClientId: seedClients[0].id,
         }),
     }),
-    { name: 'gestor-redes-v1' }
+    { name: 'demm-redes-v1', storage: createJSONStorage(safeStorage) }
   )
 );
 

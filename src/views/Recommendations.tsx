@@ -131,7 +131,7 @@ export default function Recommendations({ clientMode = false }: { clientMode?: b
           {/* top contenido publicado */}
           <div className="card p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Trophy size={18} className="text-amber-500" />
+              <Trophy size={18} className="text-butter-600" />
               <h3 className="font-bold text-ink-800">Tu mejor contenido</h3>
             </div>
             <div className="space-y-3">

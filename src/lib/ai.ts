@@ -10,6 +10,18 @@ import { nfmt, pct } from './format';
 // endpoint de Claude: solo hay que agregar tu API key en el backend.
 // -------------------------------------------------------------------------
 
+/**
+ * Elige la campaña que conviene mostrar por defecto: la más reciente que ya
+ * tenga contenido publicado. Si ninguna tiene datos todavía, devuelve la más
+ * reciente. Evita abrir la pantalla de métricas en blanco.
+ */
+export function defaultCampaign(campaigns: Campaign[], posts: Post[]): Campaign | undefined {
+  const conDatos = campaigns.find((c) =>
+    posts.some((p) => p.campaignId === c.id && p.status === 'publicado' && p.metrics)
+  );
+  return conDatos ?? campaigns[0];
+}
+
 export interface Insight {
   kind: 'positivo' | 'atencion' | 'sugerencia';
   title: string;

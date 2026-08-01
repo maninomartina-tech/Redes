@@ -27,7 +27,7 @@ export default function PostCard({
         <div className="mb-1.5 flex items-center gap-1.5">
           <span className={`chip ${statusChip[post.status]}`}>{statusLabel[post.status]}</span>
           {open > 0 && (
-            <span className="chip bg-rose-100 text-rose-700">
+            <span className="chip bg-rose-100 text-rose-600">
               <MessageSquare size={11} /> {open}
             </span>
           )}

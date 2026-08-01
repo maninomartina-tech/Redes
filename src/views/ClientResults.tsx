@@ -1,7 +1,7 @@
 import { Heart, Bookmark, Eye, Share2, MessageCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
-import { analyzeCampaign } from '@/lib/ai';
+import { analyzeCampaign, defaultCampaign } from '@/lib/ai';
 import { nfmt, pct } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, SectionTitle, Stat } from '@/components/ui';
@@ -13,7 +13,7 @@ export default function ClientResults() {
   const clientCampaigns = campaigns
     .filter((c) => c.clientId === client.id)
     .sort((a, b) => b.month.localeCompare(a.month));
-  const campaign = clientCampaigns[0];
+  const campaign = defaultCampaign(clientCampaigns, posts);
   const campaignPosts = posts.filter((p) => p.campaignId === campaign?.id);
   const analysis = useMemo(
     () => (campaign ? analyzeCampaign(campaign, campaignPosts) : null),
@@ -56,11 +56,13 @@ export default function ClientResults() {
         subtitle={`Resumen de ${campaign?.name} — ${fmt(campaign!.month + '-01', 'MMMM yyyy')}.`}
       />
 
-      <div className="card mb-4 bg-gradient-to-br from-brand-600 to-brand-800 p-5 text-white">
-        <p className="text-sm text-white/80">Este mes tu contenido llegó a</p>
-        <p className="text-4xl font-extrabold">{nfmt(analysis.totalReach)} personas</p>
-        <p className="mt-1 text-sm text-white/80">
-          con una tasa de interacción del {pct(analysis.engagementRate)} · {' '}
+      <div className="card mb-4 border-brand-200 bg-gradient-to-br from-brand-100 via-brand-50 to-peach-50 p-6">
+        <p className="text-sm font-medium text-brand-700">Este mes tu contenido llegó a</p>
+        <p className="mt-1 text-4xl font-bold tracking-tight text-ink-900">
+          {nfmt(analysis.totalReach)} personas
+        </p>
+        <p className="mt-1.5 text-sm text-ink-600">
+          con una tasa de interacción del {pct(analysis.engagementRate)} ·{' '}
           {campaignPosts.filter((p) => p.status === 'publicado').length} publicaciones
         </p>
       </div>

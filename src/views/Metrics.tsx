@@ -11,7 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import { useStore } from '@/store/useStore';
-import { analyzeCampaign, analyzeWithClaude, type Insight } from '@/lib/ai';
+import { analyzeCampaign, analyzeWithClaude, defaultCampaign, type Insight } from '@/lib/ai';
 import { nfmt, pct } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { SectionTitle, Stat } from '@/components/ui';
@@ -22,10 +22,10 @@ export default function Metrics() {
     .filter((c) => c.clientId === currentClientId)
     .sort((a, b) => b.month.localeCompare(a.month));
 
-  const [campaignId, setCampaignId] = useState(clientCampaigns[0]?.id ?? '');
+  const [campaignId, setCampaignId] = useState('');
   const activeId = clientCampaigns.some((c) => c.id === campaignId)
     ? campaignId
-    : clientCampaigns[0]?.id;
+    : defaultCampaign(clientCampaigns, posts)?.id;
   const campaign = clientCampaigns.find((c) => c.id === activeId);
 
   const campaignPosts = useMemo(
@@ -120,13 +120,13 @@ export default function Metrics() {
           {chartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eeeef2" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#EFEDE9" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-12} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={nfmt} />
                 <Tooltip formatter={(v) => nfmt(Number(v))} />
                 <Bar dataKey="Interacciones" radius={[6, 6, 0, 0]}>
                   {chartData.map((d, i) => (
-                    <Cell key={i} fill={d.best ? '#6a3aeb' : '#b9abff'} />
+                    <Cell key={i} fill={d.best ? '#9781D0' : '#DED4F3'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -141,7 +141,7 @@ export default function Metrics() {
         {/* análisis IA */}
         <div className="card flex flex-col p-4">
           <div className="mb-2 flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-600 text-white">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-brand-500 text-white">
               <Sparkles size={15} />
             </span>
             <h3 className="font-bold text-ink-800">Análisis con IA</h3>
@@ -177,12 +177,12 @@ export default function Metrics() {
 
 function InsightRow({ ins }: { ins: Insight }) {
   const cfg = {
-    positivo: { icon: <CheckCircle2 size={15} />, cls: 'text-emerald-600 bg-emerald-50' },
-    atencion: { icon: <TriangleAlert size={15} />, cls: 'text-amber-600 bg-amber-50' },
+    positivo: { icon: <CheckCircle2 size={15} />, cls: 'text-mint-600 bg-mint-50' },
+    atencion: { icon: <TriangleAlert size={15} />, cls: 'text-butter-600 bg-butter-50' },
     sugerencia: { icon: <Lightbulb size={15} />, cls: 'text-brand-600 bg-brand-50' },
   }[ins.kind];
   return (
-    <div className="flex gap-2.5 rounded-xl border border-ink-100 p-2.5">
+    <div className="flex gap-2.5 rounded-xl border border-ink-200/70 p-2.5">
       <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg ${cfg.cls}`}>
         {cfg.icon}
       </span>

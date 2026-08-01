@@ -12,6 +12,7 @@ import {
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
+import Logo from '@/components/Logo';
 
 interface Item {
   to: string;
@@ -43,15 +44,9 @@ export default function Sidebar() {
   const nav = role === 'creadora' ? creadoraNav : clienteNav;
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-100 bg-white md:flex">
-      <div className="flex h-16 items-center gap-2.5 px-5">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">
-          <Sparkles size={18} />
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-extrabold text-ink-900">Gestor de Redes</div>
-          <div className="text-[11px] font-medium text-ink-400">Planificación & Métricas</div>
-        </div>
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-200/70 bg-surface md:flex">
+      <div className="flex h-16 items-center px-5">
+        <Logo size={34} />
       </div>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
@@ -62,7 +57,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 isActive
-                  ? 'bg-brand-50 text-brand-700'
+                  ? 'bg-brand-100 text-brand-700'
                   : 'text-ink-600 hover:bg-ink-50 hover:text-ink-900'
               }`
             }
@@ -73,11 +68,11 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="m-3 rounded-xl bg-gradient-to-br from-brand-600 to-brand-800 p-4 text-white">
-        <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
+      <div className="m-3 rounded-2xl bg-brand-50 p-4">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">
           {role === 'creadora' ? 'Modo creadora' : 'Modo cliente'}
         </p>
-        <p className="mt-1 text-sm leading-snug text-white/90">
+        <p className="mt-1 text-[13px] leading-snug text-ink-600">
           {role === 'creadora'
             ? 'Planificás, producís y publicás. El cliente ve solo lo aprobado.'
             : 'Mirás tu contenido semana a semana y dejás comentarios.'}
