@@ -5,11 +5,20 @@ import type {
   Campaign,
   Client,
   Comment,
+  Lead,
+  MonthlyStat,
   Post,
   PostStatus,
   Role,
 } from '@/types';
-import { seedAds, seedCampaigns, seedClients, seedPosts } from '@/data/seed';
+import {
+  seedAds,
+  seedCampaigns,
+  seedClients,
+  seedLeads,
+  seedMonthlyStats,
+  seedPosts,
+} from '@/data/seed';
 
 const uid = (p: string) =>
   `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
@@ -46,6 +55,8 @@ interface State {
   posts: Post[];
   campaigns: Campaign[];
   ads: Ad[];
+  monthlyStats: MonthlyStat[];
+  leads: Lead[];
 
   // navegación / rol
   setRole: (r: Role) => void;
@@ -63,6 +74,16 @@ interface State {
 
   // cuentas
   toggleAccount: (clientId: string, accountId: string) => void;
+  updateClient: (clientId: string, patch: Partial<Client>) => void;
+
+  // crecimiento (carga manual)
+  upsertMonthlyStat: (s: Omit<MonthlyStat, 'id'> & { id?: string }) => void;
+  removeMonthlyStat: (id: string) => void;
+
+  // leads / ventas (carga manual)
+  addLead: (l: Omit<Lead, 'id'>) => void;
+  updateLead: (id: string, patch: Partial<Lead>) => void;
+  removeLead: (id: string) => void;
 
   // ads
   addAd: (a: Partial<Ad> & { clientId: string }) => void;
@@ -83,6 +104,8 @@ export const useStore = create<State>()(
       posts: seedPosts,
       campaigns: seedCampaigns,
       ads: seedAds,
+      monthlyStats: seedMonthlyStats,
+      leads: seedLeads,
 
       setRole: (role) => set({ role }),
       setClient: (currentClientId) => set({ currentClientId }),
@@ -174,6 +197,39 @@ export const useStore = create<State>()(
           ),
         })),
 
+      updateClient: (clientId, patch) =>
+        set((s) => ({
+          clients: s.clients.map((c) => (c.id === clientId ? { ...c, ...patch } : c)),
+        })),
+
+      // Una sola carga por cliente y mes: si ya existe ese mes, lo reemplaza.
+      upsertMonthlyStat: (stat) =>
+        set((s) => {
+          const existente = s.monthlyStats.find(
+            (m) => m.clientId === stat.clientId && m.month === stat.month
+          );
+          if (existente) {
+            return {
+              monthlyStats: s.monthlyStats.map((m) =>
+                m.id === existente.id ? { ...m, ...stat, id: existente.id } : m
+              ),
+            };
+          }
+          return {
+            monthlyStats: [...s.monthlyStats, { ...stat, id: stat.id ?? uid('ms') }],
+          };
+        }),
+
+      removeMonthlyStat: (id) =>
+        set((s) => ({ monthlyStats: s.monthlyStats.filter((m) => m.id !== id) })),
+
+      addLead: (l) => set((s) => ({ leads: [{ ...l, id: uid('ld') }, ...s.leads] })),
+
+      updateLead: (id, patch) =>
+        set((s) => ({ leads: s.leads.map((l) => (l.id === id ? { ...l, ...patch } : l)) })),
+
+      removeLead: (id) => set((s) => ({ leads: s.leads.filter((l) => l.id !== id) })),
+
       addAd: (a) =>
         set((s) => ({
           ads: [
@@ -222,10 +278,37 @@ export const useStore = create<State>()(
           posts: seedPosts,
           campaigns: seedCampaigns,
           ads: seedAds,
+          monthlyStats: seedMonthlyStats,
+          leads: seedLeads,
           currentClientId: seedClients[0].id,
         }),
     }),
-    { name: 'demm-redes-v1', storage: createJSONStorage(safeStorage) }
+    {
+      name: 'demm-redes-v1',
+      storage: createJSONStorage(safeStorage),
+      version: 2,
+      /**
+       * Datos guardados antes de que existiera el módulo de crecimiento:
+       * completamos lo que falte para que la app no se rompa.
+       */
+      migrate: (persisted, from) => {
+        const s = persisted as Partial<State>;
+        if (from < 2) {
+          s.monthlyStats ??= seedMonthlyStats;
+          s.leads ??= seedLeads;
+          s.clients = (s.clients ?? seedClients).map((c) => {
+            const base = seedClients.find((x) => x.id === c.id);
+            return {
+              ...c,
+              startDate: c.startDate ?? base?.startDate,
+              startingFollowers: c.startingFollowers ?? base?.startingFollowers,
+              tracksLeads: c.tracksLeads ?? base?.tracksLeads ?? false,
+            };
+          });
+        }
+        return s as State;
+      },
+    }
   )
 );
 

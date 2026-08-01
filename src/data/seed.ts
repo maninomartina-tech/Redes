@@ -1,4 +1,4 @@
-import type { Ad, Campaign, Client, Post } from '@/types';
+import type { Ad, Campaign, Client, Lead, MonthlyStat, Post } from '@/types';
 
 // Genera un ISO relativo al mes actual para que la demo siempre tenga contenido "de este mes".
 function d(offsetDays: number, hour = 12, min = 0): string {
@@ -27,6 +27,9 @@ export const seedClients: Client[] = [
       { id: 'acc_demm_ig', platform: 'instagram', handle: '@aurora.skin', connected: true },
       { id: 'acc_demm_tt', platform: 'tiktok', handle: '@aurora.skin', connected: false },
     ],
+    startDate: d(-210),
+    startingFollowers: 1840,
+    tracksLeads: true,
   },
   {
     id: 'cli_flora',
@@ -37,6 +40,9 @@ export const seedClients: Client[] = [
       { id: 'acc_flora_ig', platform: 'instagram', handle: '@flora.cafe', connected: true },
       { id: 'acc_flora_fb', platform: 'facebook', handle: 'Flora Café', connected: true },
     ],
+    startDate: d(-150),
+    startingFollowers: 3120,
+    tracksLeads: false,
   },
   {
     id: 'cli_nova',
@@ -46,6 +52,9 @@ export const seedClients: Client[] = [
     accounts: [
       { id: 'acc_nova_ig', platform: 'instagram', handle: '@nova.fit', connected: false },
     ],
+    startDate: d(-60),
+    startingFollowers: 420,
+    tracksLeads: true,
   },
 ];
 
@@ -349,3 +358,52 @@ export const seedAds: Ad[] = [
 seedCampaigns.forEach((c) => {
   c.postIds = seedPosts.filter((p) => p.campaignId === c.id).map((p) => p.id);
 });
+
+// ---------------------------------------------------------------------------
+// Crecimiento de la cuenta: se carga a mano mes a mes, así funciona también
+// con cuentas que no están conectadas a Meta.
+// ---------------------------------------------------------------------------
+
+/** Devuelve la clave 'YYYY-MM' de hace `back` meses. */
+function monthBack(back: number): string {
+  const base = new Date();
+  base.setDate(1);
+  base.setMonth(base.getMonth() - back);
+  return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export const seedMonthlyStats: MonthlyStat[] = [
+  // Aurora Skin — arrancó en 1840 seguidores
+  { id: 'ms_a6', clientId: 'cli_demm', month: monthBack(6), followers: 2010, interactions: 890, reach: 9400, profileVisits: 610 },
+  { id: 'ms_a5', clientId: 'cli_demm', month: monthBack(5), followers: 2290, interactions: 1180, reach: 12800, profileVisits: 820 },
+  { id: 'ms_a4', clientId: 'cli_demm', month: monthBack(4), followers: 2680, interactions: 1520, reach: 16100, profileVisits: 1040 },
+  { id: 'ms_a3', clientId: 'cli_demm', month: monthBack(3), followers: 3120, interactions: 1840, reach: 19700, profileVisits: 1290 },
+  { id: 'ms_a2', clientId: 'cli_demm', month: monthBack(2), followers: 3640, interactions: 2210, reach: 24300, profileVisits: 1580 },
+  { id: 'ms_a1', clientId: 'cli_demm', month: monthBack(1), followers: 4180, interactions: 2510, reach: 27600, profileVisits: 1830 },
+
+  // Flora Café — arrancó en 3120
+  { id: 'ms_f4', clientId: 'cli_flora', month: monthBack(4), followers: 3340, interactions: 640, reach: 8200 },
+  { id: 'ms_f3', clientId: 'cli_flora', month: monthBack(3), followers: 3610, interactions: 810, reach: 10400 },
+  { id: 'ms_f2', clientId: 'cli_flora', month: monthBack(2), followers: 3980, interactions: 1020, reach: 13100 },
+  { id: 'ms_f1', clientId: 'cli_flora', month: monthBack(1), followers: 4310, interactions: 1240, reach: 15800 },
+
+  // Nova Fitness — cuenta nueva, arrancó en 420
+  { id: 'ms_n2', clientId: 'cli_nova', month: monthBack(2), followers: 610, interactions: 210, reach: 3100 },
+  { id: 'ms_n1', clientId: 'cli_nova', month: monthBack(1), followers: 890, interactions: 380, reach: 5400 },
+];
+
+export const seedLeads: Lead[] = [
+  // Aurora Skin
+  { id: 'ld_1', clientId: 'cli_demm', date: d(-26), name: 'Carolina M.', source: 'whatsapp', status: 'ganado', amount: 85000, note: 'Vino por el reel de detrás de escena.' },
+  { id: 'ld_2', clientId: 'cli_demm', date: d(-21), name: 'Julieta R.', source: 'dm', status: 'ganado', amount: 62000 },
+  { id: 'ld_3', clientId: 'cli_demm', date: d(-17), name: 'Sofía L.', source: 'whatsapp', status: 'perdido', note: 'Consultó precio, no siguió.' },
+  { id: 'ld_4', clientId: 'cli_demm', date: d(-12), name: 'Martín G.', source: 'whatsapp', status: 'ganado', amount: 120000, note: 'Pack de 3 sesiones.' },
+  { id: 'ld_5', clientId: 'cli_demm', date: d(-6), name: 'Belén T.', source: 'comentario', status: 'contactado' },
+  { id: 'ld_6', clientId: 'cli_demm', date: d(-3), name: 'Rocío P.', source: 'whatsapp', status: 'nuevo' },
+  { id: 'ld_7', clientId: 'cli_demm', date: d(-1), name: 'Agustina F.', source: 'dm', status: 'nuevo' },
+
+  // Nova Fitness
+  { id: 'ld_8', clientId: 'cli_nova', date: d(-14), name: 'Diego S.', source: 'whatsapp', status: 'ganado', amount: 45000, note: 'Plan mensual.' },
+  { id: 'ld_9', clientId: 'cli_nova', date: d(-8), name: 'Lucas A.', source: 'whatsapp', status: 'contactado' },
+  { id: 'ld_10', clientId: 'cli_nova', date: d(-2), name: 'Paula V.', source: 'dm', status: 'nuevo' },
+];

@@ -5,6 +5,7 @@ import {
   Lightbulb,
   Megaphone,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
@@ -21,6 +22,7 @@ const creadora: Item[] = [
   { to: '/planificacion', label: 'Plan', icon: Sparkles },
   { to: '/feed', label: 'Feed', icon: Grid3x3 },
   { to: '/metricas', label: 'Métricas', icon: BarChart3 },
+  { to: '/crecimiento', label: 'Crecim.', icon: TrendingUp },
   { to: '/ads', label: 'ADS', icon: Megaphone },
 ];
 

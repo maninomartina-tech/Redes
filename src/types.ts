@@ -27,6 +27,56 @@ export interface Client {
   handle: string;
   color: string; // color de marca
   accounts: SocialAccount[];
+
+  // --- Punto de partida: sirve para mostrar el crecimiento desde que
+  // la creadora empezó a llevar la cuenta ---
+  /** Fecha en que se empezó a gestionar la cuenta (ISO) */
+  startDate?: string;
+  /** Seguidores que tenía la cuenta ese día */
+  startingFollowers?: number;
+  /** Si con este cliente se miden leads/ventas (no todos lo hacen) */
+  tracksLeads?: boolean;
+}
+
+/**
+ * Foto mensual de la cuenta. Se carga a mano: no depende de Meta, así que
+ * sirve igual para cuentas sin conexión a la API.
+ */
+export interface MonthlyStat {
+  id: string;
+  clientId: string;
+  month: string; // 'YYYY-MM'
+  /** Seguidores al cierre del mes */
+  followers: number;
+  /** Interacciones del mes. Si se deja vacío se calcula con los posts publicados. */
+  interactions?: number;
+  /** Alcance del mes (opcional) */
+  reach?: number;
+  /** Visitas al perfil (opcional) */
+  profileVisits?: number;
+  note?: string;
+}
+
+export type LeadSource = 'whatsapp' | 'dm' | 'comentario' | 'web' | 'presencial' | 'otro';
+
+export type LeadStatus = 'nuevo' | 'contactado' | 'ganado' | 'perdido';
+
+/**
+ * Consulta o venta que llegó por las redes. Se carga a mano porque
+ * normalmente el contacto se concreta por WhatsApp.
+ */
+export interface Lead {
+  id: string;
+  clientId: string;
+  date: string; // ISO
+  name: string;
+  source: LeadSource;
+  status: LeadStatus;
+  /** Monto de la venta, si se concretó */
+  amount?: number;
+  /** Contenido que trajo la consulta, si se sabe */
+  linkedPostId?: string;
+  note?: string;
 }
 
 export interface Comment {

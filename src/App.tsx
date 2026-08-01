@@ -11,6 +11,7 @@ import PlanningBoard from '@/views/PlanningBoard';
 import FeedPreview from '@/views/FeedPreview';
 import StoriesPlanner from '@/views/StoriesPlanner';
 import Metrics from '@/views/Metrics';
+import Growth from '@/views/Growth';
 import Ads from '@/views/Ads';
 import Recommendations from '@/views/Recommendations';
 import Accounts from '@/views/Accounts';
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/feed" element={<FeedPreview />} />
               <Route path="/historias" element={<StoriesPlanner />} />
               <Route path="/metricas" element={<Metrics />} />
+              <Route path="/crecimiento" element={<Growth />} />
               <Route path="/ads" element={<Ads />} />
               <Route path="/recomendaciones" element={<Recommendations />} />
               <Route path="/ajustes" element={<Accounts />} />

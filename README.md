@@ -40,12 +40,29 @@ npm run preview  # sirve la build de producción
 | **Vista del feed** | Mockup de la grilla de Instagram para ver cómo queda el feed del mes. |
 | **Historias** | Planificador semanal de historias, día por día. |
 | **Métricas + IA** | Análisis de cada campaña por mes, con insights automáticos. |
+| **Crecimiento** | Carga manual mes a mes: seguidores, interacción y alcance. Más las consultas por WhatsApp/DM y las ventas que se concretaron. No depende de Meta. |
 | **ADS** | Seguimiento de campañas pagas: gasto, CTR, costo por resultado. |
 | **Recomendaciones** | Qué repetir y qué ajustar, según el contenido ya publicado. |
 | **Cuentas** | Conexión de las cuentas de cada cliente para publicar. |
 
 Se pueden gestionar **varios clientes** (selector arriba a la izquierda). El botón
 de restaurar (↺) vuelve a los datos de ejemplo.
+
+### Crecimiento de la cuenta
+
+Pensado para mostrarle al cliente el valor del trabajo, sin depender de la API
+de Meta:
+
+- **Punto de partida**: seguidores que tenía la cuenta el día que se tomó. Todo
+  el crecimiento se mide contra ese número.
+- **Registro mensual**: seguidores al cierre, interacción y alcance. Si no se
+  carga la interacción de un mes, se calcula sola con los posts publicados de
+  ese mes (aparece marcada como `est.`).
+- **Consultas y ventas**: se cargan a mano porque suelen llegar por WhatsApp.
+  Cada consulta guarda de dónde vino, en qué estado está y el monto si se
+  concretó.
+- El interruptor **"Este cliente mide ventas"** decide si el cliente ve o no ese
+  bloque en sus resultados — algunos clientes no lo miden.
 
 ---
 

@@ -6,6 +6,7 @@ import {
   Lightbulb,
   Megaphone,
   Settings,
+  TrendingUp,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -27,6 +28,7 @@ const creadoraNav: Item[] = [
   { to: '/feed', label: 'Vista del feed', icon: Grid3x3 },
   { to: '/historias', label: 'Historias', icon: Zap },
   { to: '/metricas', label: 'Métricas + IA', icon: BarChart3 },
+  { to: '/crecimiento', label: 'Crecimiento', icon: TrendingUp },
   { to: '/ads', label: 'ADS', icon: Megaphone },
   { to: '/recomendaciones', label: 'Recomendaciones', icon: Lightbulb },
   { to: '/ajustes', label: 'Cuentas', icon: Settings },
