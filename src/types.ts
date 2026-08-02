@@ -36,6 +36,8 @@ export interface Client {
   startingFollowers?: number;
   /** Si con este cliente se miden leads/ventas (no todos lo hacen) */
   tracksLeads?: boolean;
+  /** Logo del cliente, si se subió (si no, se usan sus iniciales) */
+  logo?: MediaRef;
 }
 
 /**

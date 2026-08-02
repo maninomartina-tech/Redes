@@ -53,6 +53,7 @@ export default function MediaUploader({
   multiple = false,
   accept = 'image/*,video/*',
   label = 'Arrastrá un archivo o hacé clic para elegirlo',
+  hint,
   previewClassName = 'aspect-square',
   disabled = false,
 }: {
@@ -61,6 +62,8 @@ export default function MediaUploader({
   multiple?: boolean;
   accept?: string;
   label?: string;
+  /** Aclaración debajo del texto. Por defecto se deduce de `accept`. */
+  hint?: string;
   previewClassName?: string;
   disabled?: boolean;
 }) {
@@ -159,7 +162,9 @@ export default function MediaUploader({
             <span className="text-xs font-medium text-ink-600">
               {subiendo ? 'Guardando…' : label}
             </span>
-            <span className="text-[11px] text-ink-400">Imágenes o video</span>
+            <span className="text-[11px] text-ink-400">
+              {hint ?? (accept.includes('video') ? 'Imágenes o video' : 'Imágenes')}
+            </span>
           </button>
         </div>
       )}

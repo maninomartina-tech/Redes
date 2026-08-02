@@ -5,6 +5,34 @@
 
 :root {
   color-scheme: light;
+
+  /* Paleta por defecto de Demm.
+     Se sobrescribe desde la sección Marca (ver src/lib/theme.ts). */
+  --c-canvas: 252 245 232;
+  --c-surface: 255 252 245;
+
+  --c-ink-50: 250 243 230;
+  --c-ink-100: 243 233 217;
+  --c-ink-200: 231 216 196;
+  --c-ink-300: 210 188 171;
+  --c-ink-400: 178 155 147;
+  --c-ink-500: 138 104 101;
+  --c-ink-600: 115 79 75;
+  --c-ink-700: 93 59 54;
+  --c-ink-800: 74 30 26;
+  --c-ink-900: 59 22 19;
+  --c-ink-950: 42 15 13;
+
+  --c-brand-50: 251 241 236;
+  --c-brand-100: 246 227 219;
+  --c-brand-200: 237 205 193;
+  --c-brand-300: 223 176 161;
+  --c-brand-400: 197 142 126;
+  --c-brand-500: 138 104 101;
+  --c-brand-600: 110 75 70;
+  --c-brand-700: 90 50 44;
+  --c-brand-800: 74 30 26;
+  --c-brand-900: 58 21 18;
 }
 
 html,

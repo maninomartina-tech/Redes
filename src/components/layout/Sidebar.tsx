@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   Megaphone,
+  Palette,
   Settings,
   Sparkles,
   TrendingUp,
@@ -49,11 +50,15 @@ export const creadoraNav: NavGroup[] = [
   },
   {
     title: 'Configuración',
-    items: [{ to: '/ajustes', label: 'Cuentas', icon: Settings }],
+    items: [
+      { to: '/marca', label: 'Marca', icon: Palette },
+      { to: '/ajustes', label: 'Cuentas', icon: Settings },
+    ],
   },
 ];
 
 export const clienteNav: NavGroup[] = [
+  { items: [{ to: '/cliente/inicio', label: 'Inicio', icon: LayoutDashboard }] },
   {
     title: 'Mi contenido',
     items: [

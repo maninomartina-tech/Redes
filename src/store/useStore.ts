@@ -6,6 +6,7 @@ import type {
   Client,
   Comment,
   Lead,
+  MediaRef,
   MonthlyStat,
   Post,
   PostStatus,
@@ -19,6 +20,7 @@ import {
   seedMonthlyStats,
   seedPosts,
 } from '@/data/seed';
+import { DEFAULT_BRANDING, applyBranding, type Branding } from '@/lib/theme';
 import {
   cancelSchedule as cancelarEnMeta,
   motivoNoProgramable,
@@ -62,6 +64,12 @@ interface State {
   ads: Ad[];
   monthlyStats: MonthlyStat[];
   leads: Lead[];
+
+  // identidad visual de la app
+  branding: Branding;
+  brandLogo?: MediaRef;
+  setBranding: (b: Partial<Branding>) => void;
+  setBrandLogo: (m?: MediaRef) => void;
 
   // navegación / rol
   setRole: (r: Role) => void;
@@ -115,6 +123,17 @@ export const useStore = create<State>()(
       ads: seedAds,
       monthlyStats: seedMonthlyStats,
       leads: seedLeads,
+      branding: DEFAULT_BRANDING,
+      brandLogo: undefined,
+
+      setBranding: (b) =>
+        set((s) => {
+          const nueva = { ...s.branding, ...b };
+          applyBranding(nueva);
+          return { branding: nueva };
+        }),
+
+      setBrandLogo: (brandLogo) => set({ brandLogo }),
 
       setRole: (role) => set({ role }),
       setClient: (currentClientId) => set({ currentClientId }),
@@ -340,7 +359,7 @@ export const useStore = create<State>()(
           ],
         })),
 
-      resetDemo: () =>
+      resetDemo: () => {
         set({
           clients: seedClients,
           posts: seedPosts,
@@ -348,8 +367,12 @@ export const useStore = create<State>()(
           ads: seedAds,
           monthlyStats: seedMonthlyStats,
           leads: seedLeads,
+          branding: DEFAULT_BRANDING,
+          brandLogo: undefined,
           currentClientId: seedClients[0].id,
-        }),
+        });
+        applyBranding(DEFAULT_BRANDING);
+      },
     }),
     {
       name: 'demm-redes-v1',
@@ -375,6 +398,9 @@ export const useStore = create<State>()(
           });
         }
         return s as State;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state?.branding) applyBranding(state.branding);
       },
     }
   )

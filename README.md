@@ -26,8 +26,9 @@ npm run preview  # sirve la build de producción
 
 - **Creadora** → tu panel de trabajo: planificación completa, producción,
   métricas, ADS y conexiones.
-- **Cliente** → solo ve lo aprobado, **semana a semana**, y puede dejar
-  comentarios / pedir correcciones.
+- **Cliente** → entra a un panel propio con la bienvenida a su cuenta, el
+  resumen del feed, lo que viene esta semana y lo que espera su aprobación.
+  Desde ahí llega a su semana, su feed, sus resultados y las recomendaciones.
 
 ### Módulos
 
@@ -43,6 +44,7 @@ npm run preview  # sirve la build de producción
 | **Crecimiento** | Carga manual mes a mes: seguidores, interacción y alcance. Más las consultas por WhatsApp/DM y las ventas que se concretaron. No depende de Meta. |
 | **ADS** | Seguimiento de campañas pagas: gasto, CTR, costo por resultado. |
 | **Recomendaciones** | Qué repetir y qué ajustar, según el contenido ya publicado. |
+| **Marca** | El logo y los colores de la app, editables desde adentro. Con el tono fuerte, el suave y el fondo se genera toda la paleta; avisa si algún color queda ilegible. También el logo de cada cliente. |
 | **Cuentas** | Conexión de las cuentas de cada cliente para publicar. |
 
 Se pueden gestionar **varios clientes** (selector arriba a la izquierda). El botón

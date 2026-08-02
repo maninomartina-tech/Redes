@@ -1,25 +1,43 @@
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
+import { useMediaUrl } from '@/lib/media';
 
 export function Avatar({
   name,
   color,
   size = 36,
+  logoId,
 }: {
   name: string;
   color?: string;
   size?: number;
+  /** Si el cliente tiene logo subido, se muestra en lugar de las iniciales. */
+  logoId?: string;
 }) {
+  const logo = useMediaUrl(logoId);
+
   const initials = name
     .replace(/[@]/g, '')
     .split(/\s+/)
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join('');
+
+  if (logo) {
+    return (
+      <img
+        src={logo}
+        alt={name}
+        className="shrink-0 rounded-full bg-surface object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
     <div
-      className="grid place-items-center rounded-full font-semibold text-white shrink-0"
+      className="grid shrink-0 place-items-center rounded-full font-semibold text-white"
       style={{
         width: size,
         height: size,

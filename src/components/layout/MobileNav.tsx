@@ -1,4 +1,12 @@
-import { CalendarDays, Grid3x3, MoreHorizontal, Sparkles, TrendingUp, X } from 'lucide-react';
+import {
+  CalendarDays,
+  Grid3x3,
+  Home,
+  MoreHorizontal,
+  Sparkles,
+  TrendingUp,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
@@ -13,6 +21,7 @@ const atajosCreadora: NavItem[] = [
 ];
 
 const atajosCliente: NavItem[] = [
+  { to: '/cliente/inicio', label: 'Inicio', icon: Home },
   { to: '/cliente/semana', label: 'Semana', icon: CalendarDays },
   { to: '/cliente/feed', label: 'Feed', icon: Grid3x3 },
   { to: '/cliente/metricas', label: 'Resultados', icon: TrendingUp },
