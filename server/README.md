@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 19 pruebas
+npm test                 # 21 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -98,6 +98,11 @@ Con eso listo, entrás a **Cuentas** en la app y tocás *Vincular Instagram*.
    publica.
 4. Si falla, **reintenta hasta 3 veces** y guarda el motivo. Después de eso
    queda en error, visible desde la app.
+5. Si el servidor estuvo caído, al volver publica lo que venció hace poco (hasta
+   `MAX_ATRASO_HORAS`, 6 por defecto). Lo más viejo **no se sube**: queda en
+   error para que decidas si todavía sirve. Es a propósito — un reel de la
+   semana pasada saliendo hoy, y encima junto con otros tres, es peor que no
+   publicarlo.
 
 Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 
@@ -140,11 +145,12 @@ la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
 
 ## Estado de las pruebas
 
-`npm test` corre **19 pruebas** con Meta reemplazada por un doble:
+`npm test` corre **21 pruebas** con Meta reemplazada por un doble:
 
-- **Cola (13):** alta, vencimiento, publicación, detección de video, reintentos,
-  cancelación, reprogramación, el aviso por falta de `PUBLIC_URL` y el servido
-  de archivos.
+- **Cola (15):** alta, vencimiento, publicación, detección de video, reintentos,
+  cancelación, reprogramación, el aviso por falta de `PUBLIC_URL`, el servido de
+  archivos y el límite de atraso (publica lo de hace 10 minutos, no lo de hace
+  dos días).
 - **Sincronización (6):** agrupación por mes (el alcance se suma, los seguidores
   no), métricas por publicación, conversión de centavos a pesos en ADS, filtrado
   de las acciones que sí son resultados, y que los errores de Meta se informen

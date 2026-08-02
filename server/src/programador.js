@@ -11,6 +11,14 @@ import { publicarEnInstagram } from './meta.js';
 const MAX_INTENTOS = 3;
 const INTERVALO_MS = 60_000;
 
+/**
+ * Cuánto atraso se tolera. Si el servidor estuvo caído y una publicación
+ * venció hace más que esto, no se sube: un reel de la semana pasada saliendo
+ * hoy —y encima junto con otros tres— es peor que no publicarlo. Queda en
+ * error para decidir a mano si se reprograma.
+ */
+const MAX_ATRASO_HORAS = Number(process.env.MAX_ATRASO_HORAS ?? 6);
+
 /** Publicaciones que ya deberían haber salido y siguen esperando. */
 function pendientes() {
   return db
@@ -47,6 +55,21 @@ function archivosDe(publicacion) {
 }
 
 export async function publicarUna(publicacion, { publicador = publicarEnInstagram } = {}) {
+  const atrasoHoras =
+    (Date.now() - new Date(publicacion.publicar_en).getTime()) / 3_600_000;
+
+  if (atrasoHoras > MAX_ATRASO_HORAS) {
+    const horas = Math.round(atrasoHoras);
+    marcar(publicacion.id, {
+      estado: 'error',
+      error:
+        `No se publicó: venció hace ${horas} h y ya perdió sentido subirlo tarde. ` +
+        `Revisá si el servidor estuvo caído y reprogramalo si todavía sirve.`,
+      intentos: publicacion.intentos + 1,
+    });
+    return { ok: false, error: 'demasiado atrasado' };
+  }
+
   const cuenta = db.prepare('SELECT * FROM cuentas WHERE id = ?').get(publicacion.cuenta_id);
   if (!cuenta) {
     marcar(publicacion.id, {

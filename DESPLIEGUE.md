@@ -70,6 +70,13 @@ visitas. Si se duerme, **no publica a horario**. Para que la programación
 funcione de verdad hace falta un plan que lo mantenga despierto (el más barato
 alcanza). Railway y Fly.io tienen el mismo detalle.
 
+### Qué pasa si el servidor se cae igual
+
+Al volver, publica lo que venció **hace menos de 6 horas** (configurable con
+`MAX_ATRASO_HORAS`). Lo más viejo queda marcado como error, no se sube: un reel
+de la semana pasada saliendo hoy junto con otros tres es peor que no publicarlo.
+Lo ves en la app y decidís si lo reprogramás.
+
 ---
 
 ## 3. Meta

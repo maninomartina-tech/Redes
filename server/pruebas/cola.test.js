@@ -231,6 +231,48 @@ describe('cola de publicaciones', () => {
     assert.equal(r.status, 409);
   });
 
+  it('no publica algo que venció hace demasiado', async () => {
+    const cuenta = conectarCuenta();
+    const archivo = subirArchivoFalso();
+    await programar({
+      postId: 'post_viejo',
+      accountId: cuenta,
+      // Venció hace dos días: el servidor estuvo caído.
+      publishAt: new Date(Date.now() - 48 * 3600_000).toISOString(),
+      archivos: [archivo],
+    });
+
+    let seIntentoPublicar = false;
+    await procesarCola({
+      publicador: async () => {
+        seIntentoPublicar = true;
+        return { id: 'no_deberia' };
+      },
+    });
+
+    assert.equal(seIntentoPublicar, false, 'no debe subir algo tan atrasado');
+    const fila = db.prepare("SELECT * FROM publicaciones WHERE post_id = 'post_viejo'").get();
+    assert.equal(fila.estado, 'error');
+    assert.match(fila.error, /venció hace 48 h/);
+  });
+
+  it('sí publica lo que venció hace poco', async () => {
+    const cuenta = conectarCuenta();
+    const archivo = subirArchivoFalso();
+    await programar({
+      postId: 'post_reciente',
+      accountId: cuenta,
+      // Diez minutos tarde: el servidor se reinició, se publica igual.
+      publishAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+      archivos: [archivo],
+    });
+
+    const r = await procesarCola({ publicador: async () => ({ id: 'ig_ok' }) });
+    assert.equal(r.publicadas, 1);
+    const fila = db.prepare("SELECT * FROM publicaciones WHERE post_id = 'post_reciente'").get();
+    assert.equal(fila.estado, 'publicado');
+  });
+
   it('avisa si falta la dirección pública para que Meta descargue', async () => {
     const cuenta = conectarCuenta();
     const archivo = subirArchivoFalso();
