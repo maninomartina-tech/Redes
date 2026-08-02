@@ -36,7 +36,7 @@ npm run preview  # sirve la build de producción
 | **Panel general** | Resumen del cliente: qué falta revisar, próximas publicaciones y correcciones abiertas. |
 | **Calendario** | Todo el contenido del mes por día, con estado y formato. |
 | **Planificación** | Tablero por etapas (idea → producción → revisión → aprobado → programado → publicado). |
-| **Detalle del contenido** | Cada pieza dividida en **3 partes**: 1) idea general, 2) guion/diálogo o contenido del post, 3) copy. Más el **resultado final** (video/post) y los comentarios. |
+| **Detalle del contenido** | **Inspiración** (de dónde nace: tendencia, link y imágenes de referencia), las **3 partes** —1) idea general, 2) guion/diálogo o contenido, 3) copy—, el **resultado final** que se sube desde el dispositivo o arrastrando, y los comentarios. Se guarda con *Guardar cambios*; si intentás cerrar con cambios pendientes, avisa. |
 | **Vista del feed** | Mockup de la grilla de Instagram para ver cómo queda el feed del mes. |
 | **Historias** | Planificador semanal de historias, día por día. |
 | **Métricas + IA** | Análisis de cada campaña por mes, con insights automáticos. |

@@ -79,6 +79,17 @@ export interface Lead {
   note?: string;
 }
 
+/** Archivo subido por la creadora (vive en IndexedDB, ver lib/media.ts) */
+export interface MediaRef {
+  id: string;
+  name: string;
+  kind: 'image' | 'video';
+  size: number;
+}
+
+/** Estado de la publicación automática en la red social */
+export type ScheduleState = 'sin_programar' | 'programado' | 'publicado' | 'error';
+
 export interface Comment {
   id: string;
   author: 'cliente' | 'creadora';
@@ -116,14 +127,28 @@ export interface Post {
   inspiracion?: string;
   /** Link a la referencia (reel de la tendencia, pin, etc.) */
   inspiracionUrl?: string;
+  /** Imágenes o videos de referencia subidos por la creadora */
+  inspiracionMedia?: MediaRef[];
 
   // --- Estructura en 3 partes que pidió la creadora ---
   ideaGeneral: string; // 1) la idea general
   contenido: string; // 2) el diálogo / guion / contenido (depende del tipo)
   copy: string; // 3) el copy / caption
   // --- Resultado final ---
-  mediaUrl?: string; // el video / post que quedó (URL o placeholder)
+  mediaUrl?: string; // placeholder de color mientras no hay pieza cargada
   mediaKind?: 'image' | 'video';
+  /** La pieza terminada que se va a publicar */
+  resultado?: MediaRef;
+
+  // --- Publicación automática ---
+  /** Estado del envío a la red social */
+  scheduleState?: ScheduleState;
+  /** Fecha y hora para la que quedó programada la publicación */
+  scheduledAt?: string;
+  /** Id que devuelve la red social una vez publicado */
+  externalId?: string;
+  /** Motivo por el que no se pudo programar o publicar */
+  scheduleError?: string;
 
   hashtags: string[];
   comments: Comment[];

@@ -19,6 +19,11 @@ import {
   seedMonthlyStats,
   seedPosts,
 } from '@/data/seed';
+import {
+  cancelSchedule as cancelarEnMeta,
+  motivoNoProgramable,
+  schedulePost,
+} from '@/lib/publish';
 
 const uid = (p: string) =>
   `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
@@ -67,6 +72,10 @@ interface State {
   updatePost: (id: string, patch: Partial<Post>) => void;
   removePost: (id: string) => void;
   setPostStatus: (id: string, status: PostStatus) => void;
+
+  // publicación automática
+  autoSchedule: (id: string) => Promise<void>;
+  cancelSchedule: (id: string) => Promise<void>;
 
   // comentarios (correcciones)
   addComment: (postId: string, c: Omit<Comment, 'id' | 'createdAt' | 'resolved'>) => void;
@@ -124,6 +133,7 @@ export const useStore = create<State>()(
           status: p.status ?? 'idea',
           inspiracion: p.inspiracion ?? '',
           inspiracionUrl: p.inspiracionUrl,
+          inspiracionMedia: p.inspiracionMedia ?? [],
           ideaGeneral: p.ideaGeneral ?? '',
           contenido: p.contenido ?? '',
           copy: p.copy ?? '',
@@ -138,18 +148,74 @@ export const useStore = create<State>()(
         return post;
       },
 
-      updatePost: (id, patch) =>
+      updatePost: (id, patch) => {
         set((s) => ({
           posts: s.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+        }));
+        // Si se sube la pieza final de algo ya aprobado, se programa sola.
+        if (patch.resultado) {
+          const p = get().posts.find((x) => x.id === id);
+          if (p?.status === 'aprobado') void get().autoSchedule(id);
+        }
+      },
 
       removePost: (id) =>
         set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
 
-      setPostStatus: (id, status) =>
+      /**
+       * Al aprobar una pieza que ya tiene el resultado final cargado, queda
+       * automáticamente programada para su fecha y hora. Si todavía falta la
+       * pieza, se programa sola en cuanto se suba (ver updatePost).
+       */
+      setPostStatus: (id, status) => {
         set((s) => ({
           posts: s.posts.map((p) => (p.id === id ? { ...p, status } : p)),
-        })),
+        }));
+        if (status === 'aprobado') void get().autoSchedule(id);
+      },
+
+      autoSchedule: async (id) => {
+        const post = get().posts.find((p) => p.id === id);
+        if (!post) return;
+        // Solo se programa lo aprobado y todavía no enviado.
+        if (post.status !== 'aprobado') return;
+        if (post.scheduleState === 'programado' || post.scheduleState === 'publicado') return;
+
+        const client = get().clients.find((c) => c.id === post.clientId);
+        const account = client?.accounts.find((a) => a.id === post.accountId);
+
+        const motivo = motivoNoProgramable(post, account);
+        if (motivo) {
+          get().updatePost(id, { scheduleState: 'sin_programar', scheduleError: motivo });
+          return;
+        }
+
+        const res = await schedulePost(post, account);
+        get().updatePost(id, {
+          scheduleState: res.ok ? 'programado' : 'error',
+          scheduledAt: res.ok ? post.date : undefined,
+          externalId: res.externalId,
+          scheduleError: res.ok ? undefined : res.message,
+        });
+        if (res.ok) {
+          set((s) => ({
+            posts: s.posts.map((p) => (p.id === id ? { ...p, status: 'programado' } : p)),
+          }));
+        }
+      },
+
+      cancelSchedule: async (id) => {
+        const post = get().posts.find((p) => p.id === id);
+        if (!post) return;
+        await cancelarEnMeta(post);
+        get().updatePost(id, {
+          scheduleState: 'sin_programar',
+          scheduledAt: undefined,
+          externalId: undefined,
+          scheduleError: undefined,
+          status: 'aprobado',
+        });
+      },
 
       addComment: (postId, c) =>
         set((s) => ({

@@ -16,17 +16,15 @@ import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import PostDetail from '@/components/PostDetail';
-import { MediaThumb, EmptyState } from '@/components/ui';
+import { MediaPreview } from '@/components/MediaUploader';
+import { EmptyState } from '@/components/ui';
 
 /**
- * Etapas del contenido tal como las ve el cliente.
- *
- * En planificación todavía no existe la pieza gráfica: se muestra de dónde
- * nace la publicación (posteos) o el texto y la idea (historias). Recién
- * cuando el contenido está aprobado se produce la pieza y pasa a verse.
+ * El cliente ve la pieza final apenas existe. Mientras no esté, ve de dónde
+ * nace la publicación (posteos) o el texto y la idea (historias).
  */
-function enPlanificacion(post: Post): boolean {
-  return ['idea', 'produccion', 'revision'].includes(post.status);
+function tieneResultado(post: Post): boolean {
+  return !!post.resultado;
 }
 
 export default function ClientWeek() {
@@ -79,7 +77,6 @@ export default function ClientWeek() {
         />
       )}
 
-      {/* ---------------- Posteos y reels ---------------- */}
       {posteos.length > 0 && (
         <section>
           <SeccionHeader
@@ -96,7 +93,6 @@ export default function ClientWeek() {
         </section>
       )}
 
-      {/* ---------------- Historias ---------------- */}
       {historias.length > 0 && (
         <section>
           <SeccionHeader
@@ -129,8 +125,7 @@ function SeccionHeader({
   cantidad: number;
   tono: 'brand' | 'peach';
 }) {
-  const cls =
-    tono === 'brand' ? 'bg-brand-100 text-brand-800' : 'bg-peach-100 text-peach-600';
+  const cls = tono === 'brand' ? 'bg-brand-100 text-brand-800' : 'bg-peach-100 text-peach-600';
   return (
     <div className="mb-3 flex items-center gap-2.5">
       <span className={`grid h-9 w-9 place-items-center rounded-xl ${cls}`}>{icon}</span>
@@ -142,58 +137,79 @@ function SeccionHeader({
   );
 }
 
-/* ---------------- Posteos y reels ---------------- */
+/** Panel de inspiración: se muestra mientras no hay pieza final. */
+function PanelInspiracion({ post, className = '' }: { post: Post; className?: string }) {
+  const refs = post.inspiracionMedia ?? [];
+  return (
+    <div className={`flex flex-col gap-2 bg-peach-50 p-4 ${className}`}>
+      <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-peach-600">
+        <Sparkle size={13} /> Inspiración
+      </div>
+
+      {refs.length > 0 && (
+        <div className={`grid gap-1.5 ${refs.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          {refs.slice(0, 4).map((m) => (
+            <MediaPreview key={m.id} media={m} className="aspect-square" />
+          ))}
+        </div>
+      )}
+
+      {post.inspiracion ? (
+        <p className="whitespace-pre-line text-xs leading-relaxed text-ink-600">
+          {post.inspiracion}
+        </p>
+      ) : (
+        refs.length === 0 && (
+          <p className="text-xs text-ink-400">Todavía sin referencia cargada.</p>
+        )
+      )}
+
+      {post.inspiracionUrl && (
+        <a
+          href={post.inspiracionUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex items-center gap-1 text-xs font-medium text-brand-800 underline underline-offset-2"
+        >
+          <LinkIcon size={12} /> Ver referencia
+        </a>
+      )}
+
+      <p className="mt-auto pt-1 text-[11px] text-ink-400">
+        La pieza final se sube cuando esté lista.
+      </p>
+    </div>
+  );
+}
 
 function PosteoCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const abiertos = post.comments.filter((c) => !c.resolved).length;
-  const planificando = enPlanificacion(post);
+  const listo = tieneResultado(post);
 
   return (
     <div className="card overflow-hidden md:flex">
-      {/* Izquierda: la inspiración mientras se planifica, la pieza cuando está lista */}
-      {planificando ? (
-        <div className="flex w-full flex-col justify-center gap-2 bg-peach-50 p-4 md:w-56 md:shrink-0">
-          <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-peach-600">
-            <Sparkle size={13} /> Inspiración
-          </div>
-          {post.inspiracion ? (
-            <p className="whitespace-pre-line text-xs leading-relaxed text-ink-600">
-              {post.inspiracion}
-            </p>
-          ) : (
-            <p className="text-xs text-ink-400">Todavía sin referencia cargada.</p>
-          )}
-          {post.inspiracionUrl && (
-            <a
-              href={post.inspiracionUrl}
-              target="_blank"
-              rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 text-xs font-medium text-brand-800 underline underline-offset-2"
-            >
-              <LinkIcon size={12} /> Ver referencia
-            </a>
-          )}
-          <p className="mt-1 text-[11px] text-ink-400">
-            La pieza gráfica se produce una vez aprobada la idea.
-          </p>
+      {listo ? (
+        <div className="w-full md:w-56 md:shrink-0">
+          <MediaPreview
+            media={post.resultado!}
+            className="aspect-[4/5] w-full md:h-full md:rounded-none"
+          />
         </div>
       ) : (
-        <MediaThumb
-          src={post.mediaUrl}
-          kind={post.mediaKind}
-          label={`${typeEmoji[post.type]} ${typeLabel[post.type]}`}
-          className="aspect-[4/3] w-full md:aspect-auto md:w-56 md:shrink-0"
-        />
+        <PanelInspiracion post={post} className="w-full justify-center md:w-56 md:shrink-0" />
       )}
 
       <div className="flex-1 p-4">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className={`chip ${statusChip[post.status]}`}>{statusLabel[post.status]}</span>
-          {planificando && (
+          {listo ? (
+            <span className="chip bg-mint-100 text-mint-600">Pieza lista</span>
+          ) : (
             <span className="chip bg-peach-100 text-peach-600">En planificación</span>
           )}
           <span className="text-xs text-ink-400">
-            {fmt(post.date, 'EEE d')} · {fmtTime(post.date)} h
+            {typeEmoji[post.type]} {typeLabel[post.type]} · {fmt(post.date, 'EEE d')} ·{' '}
+            {fmtTime(post.date)} h
           </span>
           <h4 className="w-full text-base font-bold text-ink-900">{post.title}</h4>
         </div>
@@ -223,11 +239,9 @@ function PosteoCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   );
 }
 
-/* ---------------- Historias ---------------- */
-
 function HistoriaCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   const abiertos = post.comments.filter((c) => !c.resolved).length;
-  const planificando = enPlanificacion(post);
+  const listo = tieneResultado(post);
 
   return (
     <div className="card flex flex-col overflow-hidden">
@@ -243,8 +257,20 @@ function HistoriaCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
         </span>
       </div>
 
-      {/* Mientras se planifica va solo el texto y la idea; después, la pieza */}
-      {planificando ? (
+      {listo ? (
+        <div className="flex flex-1 gap-3 p-3.5">
+          <MediaPreview
+            media={post.resultado!}
+            className="aspect-[9/16] w-20 shrink-0 rounded-lg"
+          />
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-bold text-ink-900">{post.title}</h4>
+            <p className="mt-1 line-clamp-5 whitespace-pre-line text-xs text-ink-600">
+              {post.contenido || post.copy}
+            </p>
+          </div>
+        </div>
+      ) : (
         <div className="flex-1 space-y-3 p-3.5">
           <h4 className="text-sm font-bold text-ink-900">{post.title}</h4>
           <div>
@@ -263,23 +289,7 @@ function HistoriaCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
               {post.contenido || post.copy || <span className="text-ink-400">—</span>}
             </p>
           </div>
-          <p className="text-[11px] text-ink-400">
-            La placa se diseña una vez aprobada.
-          </p>
-        </div>
-      ) : (
-        <div className="flex flex-1 gap-3 p-3.5">
-          <MediaThumb
-            src={post.mediaUrl}
-            kind={post.mediaKind}
-            className="aspect-[9/16] w-20 shrink-0 rounded-lg"
-          />
-          <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-bold text-ink-900">{post.title}</h4>
-            <p className="mt-1 line-clamp-5 whitespace-pre-line text-xs text-ink-600">
-              {post.contenido || post.copy}
-            </p>
-          </div>
+          <p className="text-[11px] text-ink-400">La placa se diseña cuando esté aprobada.</p>
         </div>
       )}
 
