@@ -5,10 +5,14 @@ import { analyzeAds } from '@/lib/ai';
 import { adStatusChip, money, nfmt, pct, platformLabel } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat } from '@/components/ui';
+import SyncButton from '@/components/SyncButton';
+import { sincronizarAds } from '@/lib/sync';
+import { useCurrentClient } from '@/store/useStore';
 import type { AdStatus, Platform } from '@/types';
 
 export default function Ads() {
-  const { ads, currentClientId, addAd } = useStore();
+  const { ads, currentClientId, addAd, upsertAdExterno } = useStore();
+  const client = useCurrentClient();
   const clientAds = ads.filter((a) => a.clientId === currentClientId);
   const analysis = useMemo(() => analyzeAds(clientAds), [clientAds]);
   const [open, setOpen] = useState(false);
@@ -19,9 +23,31 @@ export default function Ads() {
         title="ADS · Publicidad paga"
         subtitle="Seguimiento de las campañas pagas y su rendimiento."
         action={
-          <button className="btn-primary" onClick={() => setOpen(true)}>
-            <Plus size={16} /> Nueva campaña
-          </button>
+          <div className="flex flex-wrap items-start gap-2">
+            <SyncButton
+              label="Traer de Meta Ads"
+              onSync={async () => {
+                const cuenta = client.accounts.find((a) => a.metaAccountId);
+                if (!cuenta?.metaAccountId) {
+                  return {
+                    ok: false,
+                    error:
+                      'Primero vinculá la cuenta de Instagram de este cliente, en la sección Cuentas.',
+                  };
+                }
+                const r = await sincronizarAds(cuenta.metaAccountId, client.id);
+                if (!r.ok) return { ok: false, error: r.error };
+                r.datos.forEach((c) => upsertAdExterno(c));
+                return {
+                  ok: true,
+                  resumen: `Se trajeron ${r.datos.length} campaña(s) desde Meta Ads.`,
+                };
+              }}
+            />
+            <button className="btn-primary" onClick={() => setOpen(true)}>
+              <Plus size={16} /> Nueva campaña
+            </button>
+          </div>
         }
       />
 
@@ -29,9 +55,10 @@ export default function Ads() {
       <div className="mb-4 flex items-start gap-3 rounded-xl border border-brand-200 bg-brand-50 p-3.5 text-sm">
         <Link2 className="mt-0.5 shrink-0 text-brand-600" size={18} />
         <p className="text-ink-700">
-          <span className="font-semibold">Conexión con Meta Ads:</span> los datos se cargan de
-          ejemplo. Cuando conectes tu cuenta de <b>Meta Ads Manager</b> (Marketing API), las
-          campañas y su gasto se van a sincronizar solas acá.
+          <span className="font-semibold">Conexión con Meta Ads:</span> con la cuenta vinculada
+          y el id de la cuenta publicitaria cargado en el servidor
+          (<code className="rounded bg-ink-100 px-1 py-0.5 text-xs">META_AD_ACCOUNT_ID</code>),
+          el botón <b>Traer de Meta Ads</b> actualiza las campañas con su gasto y resultados.
         </p>
       </div>
 

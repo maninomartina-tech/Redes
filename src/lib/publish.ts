@@ -86,6 +86,25 @@ export async function consultarServidor(): Promise<EstadoServidor> {
   }
 }
 
+/** Cuenta de Instagram vinculada en el servidor. */
+export interface CuentaMeta {
+  id: string;
+  nombre: string;
+  usuario?: string;
+}
+
+/** Cuentas que quedaron vinculadas tras el login de Meta. */
+export async function listarCuentasMeta(): Promise<CuentaMeta[]> {
+  if (!hayServidor()) return [];
+  try {
+    const res = await fetch(`${API}/api/cuentas`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 /** Dirección para iniciar la conexión de una cuenta de Meta. */
 export function urlConexionMeta(): string | null {
   return hayServidor() ? `${API}/api/auth/meta/login` : null;

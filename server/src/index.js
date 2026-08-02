@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { ahora, db, uid } from './db.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
+import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -219,6 +220,87 @@ app.get('/api/auth/meta/callback', async (req, res) => {
   }
 });
 
+/* ------------------------------ sincronización --------------------------- */
+
+/** Rango por defecto: los últimos seis meses. */
+function rango(req) {
+  const hasta = req.query.hasta ? new Date(String(req.query.hasta)) : new Date();
+  const desde = req.query.desde
+    ? new Date(String(req.query.desde))
+    : new Date(new Date(hasta).setMonth(hasta.getMonth() - 6));
+  return { desde: desde.toISOString(), hasta: hasta.toISOString() };
+}
+
+function cuentaO404(id, res) {
+  const cuenta = db.prepare('SELECT * FROM cuentas WHERE id = ?').get(id);
+  if (!cuenta) {
+    res.status(404).json({ error: 'Esa cuenta no está vinculada en el servidor.' });
+    return null;
+  }
+  return cuenta;
+}
+
+/** Métricas de la cuenta, mes a mes. */
+app.get('/api/insights/cuenta/:id', async (req, res) => {
+  const cuenta = cuentaO404(req.params.id, res);
+  if (!cuenta) return;
+  try {
+    const { desde, hasta } = rango(req);
+    const r = await metricasDeCuenta({
+      igUserId: cuenta.id,
+      token: cuenta.token,
+      desde,
+      hasta,
+    });
+    res.json(r);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+/** Métricas de las publicaciones recientes. */
+app.get('/api/insights/publicaciones/:id', async (req, res) => {
+  const cuenta = cuentaO404(req.params.id, res);
+  if (!cuenta) return;
+  try {
+    const r = await metricasDePublicaciones({
+      igUserId: cuenta.id,
+      token: cuenta.token,
+      limite: Number(req.query.limite ?? 30),
+    });
+    res.json(r);
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
+/** Campañas de Meta Ads. */
+app.get('/api/ads/:cuentaId', async (req, res) => {
+  const cuenta = cuentaO404(req.params.cuentaId, res);
+  if (!cuenta) return;
+
+  const adAccountId = req.query.adAccountId ?? process.env.META_AD_ACCOUNT_ID;
+  if (!adAccountId) {
+    return res.status(400).json({
+      error:
+        'Falta el id de la cuenta publicitaria. Cargalo en META_AD_ACCOUNT_ID o pasalo como adAccountId.',
+    });
+  }
+
+  try {
+    const { desde, hasta } = rango(req);
+    const campanas = await campanasDeAds({
+      adAccountId: String(adAccountId),
+      token: cuenta.token,
+      desde,
+      hasta,
+    });
+    res.json({ campanas });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 /* ----------------------------- análisis con IA --------------------------- */
 
 app.post('/api/ai/analyze', async (req, res) => {
@@ -266,6 +348,7 @@ app.get('/api/salud', (_req, res) => {
     metaConfigurado: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
     urlPublica: process.env.PUBLIC_URL ?? null,
     iaConfigurada: Boolean(process.env.ANTHROPIC_API_KEY),
+    adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });

@@ -11,6 +11,7 @@ import type {
   Post,
   PostStatus,
   Role,
+  SocialAccount,
 } from '@/types';
 import {
   seedAds,
@@ -91,6 +92,7 @@ interface State {
 
   // cuentas
   toggleAccount: (clientId: string, accountId: string) => void;
+  updateAccount: (clientId: string, accountId: string, patch: Partial<SocialAccount>) => void;
   updateClient: (clientId: string, patch: Partial<Client>) => void;
 
   // crecimiento (carga manual)
@@ -105,6 +107,8 @@ interface State {
   // ads
   addAd: (a: Partial<Ad> & { clientId: string }) => void;
   updateAd: (id: string, patch: Partial<Ad>) => void;
+  /** Alta o actualización por id de Meta, para la sincronización. */
+  upsertAdExterno: (a: Omit<Ad, 'id'> & { externalId: string }) => void;
 
   // campañas
   addCampaign: (c: Partial<Campaign> & { clientId: string }) => void;
@@ -283,6 +287,31 @@ export const useStore = create<State>()(
               : c
           ),
         })),
+
+      updateAccount: (clientId, accountId, patch) =>
+        set((s) => ({
+          clients: s.clients.map((c) =>
+            c.id === clientId
+              ? {
+                  ...c,
+                  accounts: c.accounts.map((a) =>
+                    a.id === accountId ? { ...a, ...patch } : a
+                  ),
+                }
+              : c
+          ),
+        })),
+
+      upsertAdExterno: (a) =>
+        set((s) => {
+          const existente = s.ads.find(
+            (x) => x.clientId === a.clientId && x.name === a.name
+          );
+          if (existente) {
+            return { ads: s.ads.map((x) => (x.id === existente.id ? { ...x, ...a } : x)) };
+          }
+          return { ads: [{ ...a, id: uid('ad') }, ...s.ads] };
+        }),
 
       updateClient: (clientId, patch) =>
         set((s) => ({

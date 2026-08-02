@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 13 pruebas de la cola
+npm test                 # 19 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -43,15 +43,36 @@ Todo va en `server/.env` (ver `.env.example`):
 | `APP_ORIGIN` | Desde dónde se abre la app, para permitir las llamadas del navegador. |
 | `ANTHROPIC_API_KEY` | Opcional: informes con IA en lenguaje natural. |
 
-### Para probar en tu máquina
+### Cómo conseguir la dirección pública
 
-`PUBLIC_URL` tiene que ser alcanzable desde internet. Levantá un túnel:
+`PUBLIC_URL` tiene que ser alcanzable desde internet: `localhost` no le sirve a
+Meta. Dos caminos:
+
+**1. Para probar — un túnel, en un comando**
 
 ```bash
-npx localtunnel --port 4000     # o: ngrok http 4000
+npm run tunel
 ```
 
-y poné esa dirección en `PUBLIC_URL`.
+Abre un túnel, consigue la dirección y arranca el servidor ya configurado; no
+hay que copiar nada. Tené en cuenta que:
+
+- La dirección **cambia cada vez** que lo reiniciás, así que hay que actualizar
+  la URL de redirección en la app de Meta cada vez.
+- Solo vive mientras esa terminal esté abierta. Si la cerrás a las 3 de la
+  mañana, lo programado para las 9 no sale.
+
+**2. Para usarlo en serio — un servidor con dirección fija**
+
+Hay un `Dockerfile` listo. En [Render](https://render.com),
+[Railway](https://railway.app) o [Fly.io](https://fly.io) alcanza con apuntar al
+repo, elegir la carpeta `server/`, cargar las variables del `.env` y montar un
+volumen en `/datos` (ahí viven la base y las piezas subidas). Te queda una
+dirección fija tipo `https://demm-server.onrender.com`, que es la que va en
+`PUBLIC_URL` y en la app de Meta.
+
+Para publicar a horario **esta es la opción recomendada**: el túnel depende de
+que tu computadora esté prendida.
 
 ### Requisitos de Meta
 
@@ -95,15 +116,39 @@ Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 | `GET` | `/api/auth/meta/login` | Arranca la vinculación de una cuenta. |
 | `GET` | `/api/cuentas` | Cuentas vinculadas. |
 | `POST` | `/api/ai/analyze` | Informe de campaña con Claude. |
+| `GET` | `/api/insights/cuenta/:id` | Seguidores, alcance e interacción, por mes. |
+| `GET` | `/api/insights/publicaciones/:id` | Métricas de cada publicación reciente. |
+| `GET` | `/api/ads/:cuentaId` | Campañas de Meta Ads con gasto y resultados. |
 | `GET` | `/api/salud` | Qué está configurado y qué falta. |
 
 ---
 
+## Sincronización
+
+Además de publicar, el servidor trae de Meta lo que hoy se carga a mano:
+
+- **Crecimiento** → seguidores, alcance e interacción, mes a mes.
+- **Métricas** → likes, comentarios, guardados, compartidos y alcance de cada
+  publicación.
+- **ADS** → campañas con gasto, impresiones, clics y resultados.
+
+Lo que Meta no conoce —las consultas por WhatsApp, las ventas y el punto de
+partida de la cuenta— **nunca se toca**: eso sigue siendo tuyo.
+
+Si Meta rechaza alguna métrica (los nombres cambian entre versiones de la API),
+la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
+
 ## Estado de las pruebas
 
-`npm test` cubre la cola completa con Meta reemplazada por un doble: alta,
-vencimiento, publicación, detección de video, reintentos, cancelación, el aviso
-por falta de `PUBLIC_URL` y el servido de archivos. **13 pruebas, todas pasan.**
+`npm test` corre **19 pruebas** con Meta reemplazada por un doble:
+
+- **Cola (13):** alta, vencimiento, publicación, detección de video, reintentos,
+  cancelación, reprogramación, el aviso por falta de `PUBLIC_URL` y el servido
+  de archivos.
+- **Sincronización (6):** agrupación por mes (el alcance se suma, los seguidores
+  no), métricas por publicación, conversión de centavos a pesos en ADS, filtrado
+  de las acciones que sí son resultados, y que los errores de Meta se informen
+  en vez de devolver datos incompletos.
 
 Lo que **no** está probado contra el servicio real son las llamadas a la Graph
 API, porque no hay credenciales: están escritas siguiendo la documentación de

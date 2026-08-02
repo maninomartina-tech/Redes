@@ -15,6 +15,8 @@ import { computeGrowth, computeLeads, monthLabel, sourceLabel } from '@/lib/grow
 import { money, nfmt } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat, Toggle } from '@/components/ui';
+import SyncButton from '@/components/SyncButton';
+import { sincronizarCuenta } from '@/lib/sync';
 
 const leadStatusChip: Record<LeadStatus, string> = {
   nuevo: 'bg-sky-100 text-sky-600',
@@ -28,8 +30,16 @@ const statuses: LeadStatus[] = ['nuevo', 'contactado', 'ganado', 'perdido'];
 
 export default function Growth() {
   const client = useCurrentClient();
-  const { monthlyStats, leads, posts, updateClient, removeMonthlyStat, updateLead, removeLead } =
-    useStore();
+  const {
+    monthlyStats,
+    leads,
+    posts,
+    updateClient,
+    removeMonthlyStat,
+    updateLead,
+    removeLead,
+    upsertMonthlyStat,
+  } = useStore();
 
   const growth = useMemo(
     () => computeGrowth(client, monthlyStats, posts),
@@ -54,6 +64,29 @@ export default function Growth() {
       <SectionTitle
         title="Crecimiento de la cuenta"
         subtitle="Cargá los números mes a mes. No depende de Meta, así que sirve para cualquier cuenta."
+        action={
+          <SyncButton
+            descripcion="Trae seguidores, alcance e interacción. No toca las consultas ni las ventas."
+            onSync={async () => {
+              const cuenta = client.accounts.find((a) => a.metaAccountId);
+              if (!cuenta?.metaAccountId) {
+                return {
+                  ok: false,
+                  error:
+                    'Primero vinculá la cuenta de Instagram de este cliente, en la sección Cuentas.',
+                };
+              }
+              const r = await sincronizarCuenta(cuenta.metaAccountId, client.id);
+              if (!r.ok) return { ok: false, error: r.error, avisos: r.avisos };
+              r.datos.forEach((m) => upsertMonthlyStat(m));
+              return {
+                ok: true,
+                resumen: `Se actualizaron ${r.datos.length} mes(es) con los datos de Meta.`,
+                avisos: r.avisos,
+              };
+            }}
+          />
+        }
       />
 
       {/* punto de partida */}

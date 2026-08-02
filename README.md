@@ -93,9 +93,12 @@ Dos cosas que pide Meta, no la app:
   máquina alcanza con un túnel (`npx localtunnel --port 4000`).
 
 ### Métricas y ADS
-Meta Graph API (Insights) y Marketing API. La sincronización reemplazaría los
-datos de ejemplo de `src/data/seed.ts`; la sección ADS ya está preparada.
-**Todavía no está implementado.**
+Con el servidor andando y la cuenta vinculada, **Crecimiento** y **ADS** tienen
+un botón para traer los datos desde Meta: seguidores, alcance e interacción mes
+a mes, y las campañas con su gasto y resultados.
+
+Lo que Meta no conoce —las consultas por WhatsApp, las ventas y el punto de
+partida de la cuenta— nunca se pisa.
 
 ### Análisis con IA
 Ya está: el servidor expone `POST /api/ai/analyze` contra la API de Claude.

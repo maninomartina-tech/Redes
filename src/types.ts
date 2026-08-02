@@ -17,8 +17,11 @@ export interface SocialAccount {
   platform: Platform;
   handle: string;
   connected: boolean;
-  /** token simulado / referencia a credencial real (se conecta luego con Meta) */
-  tokenRef?: string;
+  /**
+   * Id de la cuenta de Instagram en Meta, una vez vinculada desde el servidor.
+   * Es lo que permite traer métricas y publicar en la cuenta correcta.
+   */
+  metaAccountId?: string;
 }
 
 export interface Client {

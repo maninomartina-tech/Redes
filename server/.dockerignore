@@ -1,0 +1,6 @@
+node_modules
+datos
+archivos
+.env
+*.db
+pruebas

@@ -14,7 +14,9 @@ import type { Platform } from '@/types';
 import { platformLabel } from '@/lib/format';
 import {
   consultarServidor,
+  listarCuentasMeta,
   urlConexionMeta,
+  type CuentaMeta,
   type EstadoServidor,
 } from '@/lib/publish';
 import { SectionTitle, Toggle } from '@/components/ui';
@@ -28,10 +30,13 @@ const platformIcon: Record<Platform, React.ReactNode> = {
 export default function Accounts() {
   const client = useCurrentClient();
   const toggleAccount = useStore((s) => s.toggleAccount);
+  const updateAccount = useStore((s) => s.updateAccount);
+  const [cuentasMeta, setCuentasMeta] = useState<CuentaMeta[]>([]);
   const [servidor, setServidor] = useState<EstadoServidor | null>(null);
 
   useEffect(() => {
     consultarServidor().then(setServidor);
+    listarCuentasMeta().then(setCuentasMeta);
   }, []);
 
   const loginMeta = urlConexionMeta();
@@ -47,26 +52,57 @@ export default function Accounts() {
 
       <div className="space-y-3">
         {client.accounts.map((acc) => (
-          <div key={acc.id} className="card flex items-center gap-4 p-4">
-            <span
-              className={`grid h-11 w-11 place-items-center rounded-xl ${
-                acc.connected ? 'bg-brand-800 text-canvas' : 'bg-ink-100 text-ink-400'
-              }`}
-            >
-              {platformIcon[acc.platform]}
-            </span>
-            <div className="mr-auto">
-              <p className="font-semibold text-ink-900">{platformLabel[acc.platform]}</p>
-              <p className="text-sm text-ink-500">{acc.handle}</p>
+          <div key={acc.id} className="card p-4">
+            <div className="flex items-center gap-4">
+              <span
+                className={`grid h-11 w-11 place-items-center rounded-xl ${
+                  acc.connected ? 'bg-brand-800 text-canvas' : 'bg-ink-100 text-ink-400'
+                }`}
+              >
+                {platformIcon[acc.platform]}
+              </span>
+              <div className="mr-auto">
+                <p className="font-semibold text-ink-900">{platformLabel[acc.platform]}</p>
+                <p className="text-sm text-ink-500">{acc.handle}</p>
+              </div>
+              <span
+                className={`chip ${
+                  acc.connected ? 'bg-mint-100 text-mint-600' : 'bg-ink-100 text-ink-500'
+                }`}
+              >
+                {acc.connected ? 'Conectada' : 'Desconectada'}
+              </span>
+              <Toggle
+                checked={acc.connected}
+                onChange={() => toggleAccount(client.id, acc.id)}
+              />
             </div>
-            <span
-              className={`chip ${
-                acc.connected ? 'bg-mint-100 text-mint-600' : 'bg-ink-100 text-ink-500'
-              }`}
-            >
-              {acc.connected ? 'Conectada' : 'Desconectada'}
-            </span>
-            <Toggle checked={acc.connected} onChange={() => toggleAccount(client.id, acc.id)} />
+
+            {/* Qué cuenta real de Meta corresponde a esta */}
+            {acc.platform === 'instagram' && cuentasMeta.length > 0 && (
+              <div className="mt-3 border-t border-ink-200/70 pt-3">
+                <label className="label">Cuenta de Instagram vinculada</label>
+                <select
+                  value={acc.metaAccountId ?? ''}
+                  onChange={(e) =>
+                    updateAccount(client.id, acc.id, {
+                      metaAccountId: e.target.value || undefined,
+                    })
+                  }
+                  className="input mt-1"
+                >
+                  <option value="">Sin vincular</option>
+                  {cuentasMeta.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.usuario ?? c.nombre} ({c.id})
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-ink-400">
+                  Es la que se usa para publicar y para traer las métricas de este cliente.
+                </p>
+              </div>
+            )}
           </div>
         ))}
       </div>
