@@ -68,33 +68,42 @@ de Meta:
 
 ---
 
-## Conectar servicios reales (siguiente paso)
+## Publicación automática de verdad
 
-La app deja **listos los puntos de conexión**. Hoy funcionan en modo demo (datos
-de ejemplo / análisis local) para no depender de credenciales. Para pasarlos a
-producción hace falta un backend que guarde las claves de forma segura (nunca en
-el front):
+El servidor que la hace posible está en **[`server/`](server/README.md)**. La app
+funciona sin él (la programación queda registrada), pero para que las piezas se
+suban solas a Instagram hay que levantarlo:
 
-### 1. Publicación automática en Instagram / Facebook
-- **Qué se usa:** Graph API de Meta — *Instagram Content Publishing API*.
-- **Requisitos:** app de Meta aprobada con el permiso `instagram_content_publish`,
-  cuentas Business/Creator vinculadas a una página de Facebook, y tokens de larga
-  duración.
-- **Dónde se enchufa:** `src/lib/publish.ts` → endpoint `POST /api/publish`.
+```bash
+cd server && npm install && cp .env.example .env   # completá los valores
+npm start
+```
 
-### 2. Métricas y ADS
-- **Qué se usa:** Meta Graph API (Insights) y **Marketing API** para ADS.
-- **Dónde se enchufa:** la sincronización reemplaza los datos de ejemplo de
-  `src/data/seed.ts`; la sección ADS ya está preparada para recibirlos.
+y apuntar la app con `VITE_API_URL=http://localhost:4000`.
 
-### 3. Análisis con IA (Claude)
-- **Qué se usa:** API de Anthropic (Claude) para informes en lenguaje natural.
-- **Dónde se enchufa:** `src/lib/ai.ts` → función `analyzeWithClaude()` →
-  endpoint `POST /api/ai/analyze`. Mientras no haya backend, genera el análisis
-  de forma local.
+En **Cuentas** la app te dice en todo momento qué está conectado y qué falta.
 
-> **Importante:** las API keys de Meta y de Anthropic van siempre en el backend,
-> nunca en el código del front.
+Dos cosas que pide Meta, no la app:
+
+- La cuenta de Instagram tiene que ser **Business o Creator**, vinculada a una
+  página de Facebook, y la app de Meta necesita el permiso
+  `instagram_content_publish`.
+- Meta **descarga** la pieza desde una dirección pública, así que el servidor
+  tiene que ser accesible desde internet (`PUBLIC_URL`). Para probar en tu
+  máquina alcanza con un túnel (`npx localtunnel --port 4000`).
+
+### Métricas y ADS
+Meta Graph API (Insights) y Marketing API. La sincronización reemplazaría los
+datos de ejemplo de `src/data/seed.ts`; la sección ADS ya está preparada.
+**Todavía no está implementado.**
+
+### Análisis con IA
+Ya está: el servidor expone `POST /api/ai/analyze` contra la API de Claude.
+Se activa cargando `ANTHROPIC_API_KEY` en `server/.env`. Sin esa clave, el
+análisis se genera igual de forma local.
+
+> Las claves de Meta y de Anthropic viven solo en `server/.env`, que está
+> ignorado por git. El navegador nunca las ve.
 
 ---
 
@@ -105,7 +114,12 @@ src/
   components/      UI reutilizable, layout, detalle de post, tarjetas
   views/           cada módulo (calendario, planificación, feed, métricas, ads…)
   store/           estado global con persistencia (zustand)
-  lib/             fechas, formato, motor de IA, publicación
+  lib/             fechas, formato, colores, archivos, motor de IA, publicación
   data/            datos de ejemplo
   types.ts         modelo de datos
+
+server/            backend: cola de publicaciones, Meta e IA (ver su README)
+  src/meta.js      llamadas a la Graph API
+  src/programador.js  publica lo que vence, con reintentos
+  pruebas/         pruebas de la cola
 ```

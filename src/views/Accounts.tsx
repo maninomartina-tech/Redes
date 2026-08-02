@@ -1,7 +1,22 @@
-import { Camera, Link2, Music2, ShieldCheck, Users } from 'lucide-react';
+import {
+  Camera,
+  CheckCircle2,
+  Link2,
+  Music2,
+  ServerOff,
+  ShieldCheck,
+  TriangleAlert,
+  Users,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Platform } from '@/types';
 import { platformLabel } from '@/lib/format';
+import {
+  consultarServidor,
+  urlConexionMeta,
+  type EstadoServidor,
+} from '@/lib/publish';
 import { SectionTitle, Toggle } from '@/components/ui';
 
 const platformIcon: Record<Platform, React.ReactNode> = {
@@ -13,6 +28,13 @@ const platformIcon: Record<Platform, React.ReactNode> = {
 export default function Accounts() {
   const client = useCurrentClient();
   const toggleAccount = useStore((s) => s.toggleAccount);
+  const [servidor, setServidor] = useState<EstadoServidor | null>(null);
+
+  useEffect(() => {
+    consultarServidor().then(setServidor);
+  }, []);
+
+  const loginMeta = urlConexionMeta();
 
   return (
     <div>
@@ -21,18 +43,7 @@ export default function Accounts() {
         subtitle={`Conexiones de ${client.name} para publicar automáticamente.`}
       />
 
-      <div className="mb-4 flex items-start gap-3 rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm">
-        <ShieldCheck className="mt-0.5 shrink-0 text-brand-600" size={20} />
-        <div className="text-ink-700">
-          <p className="font-semibold text-ink-800">Cómo funciona la publicación automática</p>
-          <p className="mt-1">
-            Para publicar solo en Instagram/Facebook se usa la <b>Graph API de Meta</b>{' '}
-            (Instagram Content Publishing). Requiere una app de Meta aprobada y cuentas
-            Business/Creator. Al conectar acá, la app agenda cada pieza y la publica el día
-            programado. Mientras tanto, la conexión funciona en modo demo.
-          </p>
-        </div>
-      </div>
+      <EstadoDelServidor estado={servidor} loginMeta={loginMeta} />
 
       <div className="space-y-3">
         {client.accounts.map((acc) => (
@@ -59,11 +70,94 @@ export default function Accounts() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <div className="mt-6 flex items-center gap-2 text-sm text-ink-400">
-        <Link2 size={15} />
-        Próximamente: conexión directa con Meta, TikTok Business y programación nativa de reels,
-        carruseles e historias.
+/** Muestra qué falta para que la publicación automática funcione de verdad. */
+function EstadoDelServidor({
+  estado,
+  loginMeta,
+}: {
+  estado: EstadoServidor | null;
+  loginMeta: string | null;
+}) {
+  if (!estado) {
+    return (
+      <div className="mb-4 rounded-xl border border-ink-200/70 bg-surface p-4 text-sm text-ink-500">
+        Consultando el servidor…
+      </div>
+    );
+  }
+
+  if (!estado.conectado) {
+    return (
+      <div className="mb-4 flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
+        <ServerOff className="mt-0.5 shrink-0 text-butter-600" size={20} />
+        <div className="text-ink-700">
+          <p className="font-semibold text-ink-800">La publicación automática está apagada</p>
+          <p className="mt-1">
+            La app está guardando la programación, pero todavía no hay un servidor que suba
+            las piezas a la hora indicada. El servidor está en la carpeta{' '}
+            <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">server/</code> del
+            proyecto: se levanta con <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">npm start</code>{' '}
+            y se apunta la app con <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">VITE_API_URL</code>.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const faltantes: string[] = [];
+  if (!estado.metaConfigurado) faltantes.push('las credenciales de Meta (META_APP_ID y META_APP_SECRET)');
+  if (!estado.urlPublica)
+    faltantes.push('la dirección pública del servidor (PUBLIC_URL), desde donde Meta descarga las piezas');
+
+  return (
+    <div className="mb-4 space-y-3">
+      <div className="flex items-start gap-3 rounded-xl border border-mint-200 bg-mint-50 p-4 text-sm">
+        <CheckCircle2 className="mt-0.5 shrink-0 text-mint-600" size={20} />
+        <div className="text-ink-700">
+          <p className="font-semibold text-ink-800">Servidor conectado</p>
+          <p className="mt-1">
+            {estado.cuentasConectadas > 0
+              ? `Hay ${estado.cuentasConectadas} cuenta(s) de Instagram vinculadas. Lo aprobado se publica solo a la hora programada.`
+              : 'Todavía no vinculaste ninguna cuenta de Instagram.'}
+          </p>
+          {loginMeta && estado.metaConfigurado && (
+            <a href={loginMeta} className="btn-primary mt-3 !py-1.5 text-xs">
+              <Link2 size={14} />
+              {estado.cuentasConectadas > 0 ? 'Vincular otra cuenta' : 'Vincular Instagram'}
+            </a>
+          )}
+        </div>
+      </div>
+
+      {faltantes.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
+          <TriangleAlert className="mt-0.5 shrink-0 text-butter-600" size={20} />
+          <div className="text-ink-700">
+            <p className="font-semibold text-ink-800">Falta configurar</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              {faltantes.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <p className="mt-1.5 text-xs text-ink-500">
+              Todo va en el archivo <code className="rounded bg-ink-100 px-1 py-0.5">server/.env</code>{' '}
+              (ver <code className="rounded bg-ink-100 px-1 py-0.5">.env.example</code>).
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-start gap-3 rounded-xl border border-ink-200/70 bg-surface p-4 text-sm">
+        <ShieldCheck className="mt-0.5 shrink-0 text-brand-800" size={20} />
+        <p className="text-ink-600">
+          Meta exige que la cuenta de Instagram sea <b>Business o Creator</b> y esté vinculada
+          a una página de Facebook, y que la app tenga aprobado el permiso{' '}
+          <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">instagram_content_publish</code>.
+        </p>
       </div>
     </div>
   );
