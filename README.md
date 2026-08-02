@@ -18,6 +18,9 @@ npm run build    # genera la versión de producción en /dist
 npm run preview  # sirve la build de producción
 ```
 
+Para ponerla online: **[DESPLIEGUE.md](DESPLIEGUE.md)** (la app va en Netlify;
+el servidor, en Render o similar).
+
 ---
 
 ## Qué incluye
