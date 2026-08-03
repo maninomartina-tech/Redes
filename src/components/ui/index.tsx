@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useMediaUrl } from '@/lib/media';
 import type { MediaRef } from '@/types';
 
@@ -177,11 +178,29 @@ export function Modal({
     if (!open) return;
     const h = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
+
+    // Sin esto, el fondo sigue desplazándose detrás del modal.
+    const previo = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      window.removeEventListener('keydown', h);
+      document.body.style.overflow = previo;
+    };
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+
+  /*
+   * Va al final del documento, no donde se lo escribe.
+   *
+   * `position: fixed` no siempre se mide contra la pantalla: si algún elemento
+   * que lo contiene tiene desenfoque o transformación, el modal queda encajado
+   * dentro de ese elemento. Pasaba con el de "Agregar cuenta", que se abre
+   * desde la barra superior —que lleva desenfoque— y aparecía aplastado en una
+   * franja de 64 píxeles. Sacándolo acá, da igual desde dónde se abra.
+   */
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/25 p-4 backdrop-blur-sm sm:p-8">
       <div
         className={`card my-4 w-full ${wide ? 'max-w-5xl' : 'max-w-lg'} animate-[fadeIn_.15s_ease]`}
@@ -197,7 +216,8 @@ export function Modal({
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
