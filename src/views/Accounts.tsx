@@ -277,9 +277,12 @@ function EstadoDelServidor({
   }
 
   const faltantes: string[] = [];
-  if (!estado.metaConfigurado) faltantes.push('las credenciales de Meta (META_APP_ID y META_APP_SECRET)');
+  if (!estado.metaConfigurado)
+    faltantes.push('las credenciales de Meta (META_APP_ID y META_APP_SECRET)');
   if (!estado.urlPublica)
-    faltantes.push('la dirección pública del servidor (PUBLIC_URL), desde donde Meta descarga las piezas');
+    faltantes.push(
+      'la dirección pública del servidor (PUBLIC_URL), desde donde Meta descarga las piezas'
+    );
 
   return (
     <div className="mb-4 space-y-3">
@@ -305,15 +308,22 @@ function EstadoDelServidor({
         <div className="flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
           <TriangleAlert className="mt-0.5 shrink-0 text-butter-600" size={20} />
           <div className="text-ink-700">
-            <p className="font-semibold text-ink-800">Falta configurar</p>
+            <p className="font-semibold text-ink-800">
+              Falta configurar, si querés conectar Instagram
+            </p>
+            <p className="mb-1 mt-0.5 text-xs leading-snug text-ink-500">
+              Nada de esto hace falta para trabajar a mano: podés planificar,
+              pasarles el link a tus clientes y cargar las métricas igual.
+            </p>
             <ul className="mt-1 list-disc space-y-0.5 pl-4">
               {faltantes.map((f) => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            <p className="mt-1.5 text-xs text-ink-500">
-              Todo va en el archivo <code className="rounded bg-ink-100 px-1 py-0.5">server/.env</code>{' '}
-              (ver <code className="rounded bg-ink-100 px-1 py-0.5">.env.example</code>).
+            <p className="mt-1.5 text-xs leading-snug text-ink-500">
+              Si el servidor está en Render, se cargan en <b>Environment</b>, dentro
+              del servicio. Si lo corrés en tu computadora, van en el archivo{' '}
+              <code className="rounded bg-ink-100 px-1 py-0.5">server/.env</code>.
             </p>
           </div>
         </div>
