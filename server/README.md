@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 27 pruebas
+npm test                 # 44 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -38,6 +38,7 @@ Todo va en `server/.env` (ver `.env.example`):
 
 | Variable | Para qué |
 | --- | --- |
+| `CLAVE_CREADORA` | Tu clave para entrar al panel. Sin esto el espacio compartido queda apagado: la app anda igual, pero solo contra tu navegador. |
 | `PUBLIC_URL` | La dirección pública del servidor: Meta descarga las piezas desde acá. **En Render y Railway se detecta sola**; solo hace falta cargarla en otros hostings. No sirve `localhost`. |
 | `META_APP_ID` / `META_APP_SECRET` | De tu app en [developers.facebook.com](https://developers.facebook.com). |
 | `APP_ORIGIN` | Desde dónde se abre la app, para permitir las llamadas del navegador. |
@@ -115,6 +116,12 @@ Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 
 | Método | Ruta | Qué hace |
 | --- | --- | --- |
+| `POST` | `/api/auth/entrar` | Entra con la clave y devuelve una sesión. |
+| `GET`/`PUT` | `/api/espacio` | Lee o guarda todo tu espacio de trabajo. Pide sesión. |
+| `POST`/`DELETE` | `/api/portales/:clienteId` | Crea o da de baja el link de un cliente. Pide sesión. |
+| `GET` | `/api/portal/:token` | Lo que ve un cliente con su link: **solo lo suyo**. |
+| `POST` | `/api/portal/:token/comentario` | El cliente deja una corrección. |
+| `POST` | `/api/portal/:token/decision` | El cliente aprueba o pide cambios. |
 | `POST` | `/api/media` | Sube un archivo. Devuelve su id y su URL pública. |
 | `GET` | `/archivos/:id` | Sirve el archivo. **Público**: es de donde lo baja Meta. |
 | `POST` | `/api/publicaciones/programar` | Agenda una publicación. |
@@ -164,9 +171,30 @@ partida de la cuenta— **nunca se toca**: eso sigue siendo tuyo.
 Si Meta rechaza alguna métrica (los nombres cambian entre versiones de la API),
 la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
 
+## El espacio de trabajo y los links de cliente
+
+Todo lo que cargás —clientes, contenido, crecimiento, ventas— vive acá y no en
+el navegador. Es lo que hace posibles dos cosas que antes no lo eran: entrar
+desde cualquier dispositivo, y que un cliente vea su planificación.
+
+- **Vos** entrás con `CLAVE_CREADORA` y ves todo.
+- **Cada cliente** entra con un link secreto (`#/c/<token>`), sin usuario ni
+  contraseña, y ve **únicamente lo suyo**. Los links se generan desde *Accesos*
+  en la app; rehacer uno da de baja el anterior en el momento.
+
+El recorte lo hace el servidor, no la app: filtrar en el navegador no sirve de
+nada, porque la respuesta completa se puede mirar igual. Lo que un cliente
+recibe es su cliente, sus contenidos, sus campañas y sus métricas —las ventas
+solo si ese cliente las mide— y nada más: ni la lista de clientes ni los ADS.
+Desde su link solo puede comentar y aprobar o pedir cambios; no puede publicar
+ni tocar contenido ajeno.
+
+Se guarda como un único documento JSON: hay una sola persona escribiendo y el
+volumen es chico, así que no compensa la complejidad de un esquema relacional.
+
 ## Estado de las pruebas
 
-`npm test` corre **27 pruebas** con Meta reemplazada por un doble:
+`npm test` corre **44 pruebas** con Meta reemplazada por un doble:
 
 - **Cola (15):** alta, vencimiento, publicación, detección de video, reintentos,
   cancelación, reprogramación, el aviso por falta de `PUBLIC_URL`, el servido de
@@ -179,6 +207,13 @@ la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
 - **Solo lectura (6):** que no se pida el permiso de publicar, que sí se pidan
   los de métricas y ADS, que se rechace programar con una explicación, y que el
   feed llegue con la portada correcta (en los videos, la miniatura).
+- **Espacio y portales (17):** que sin la clave no se lea ni se escriba nada,
+  que al cerrar sesión el token deje de servir, que un cliente vea solo lo suyo
+  —comprobado sobre la respuesta, no sobre la pantalla—, que las ventas lleguen
+  solo a quien las mide, que no pueda comentar ni cambiar el estado de otro
+  cliente, que no pueda declarar algo "publicado", que no pueda administrar
+  links, que al rehacer un link el anterior deje de funcionar, y que su
+  comentario y su aprobación te lleguen.
 
 Lo que **no** está probado contra el servicio real son las llamadas a la Graph
 API, porque no hay credenciales: están escritas siguiendo la documentación de
@@ -189,6 +224,9 @@ Meta, pero la primera publicación de verdad conviene hacerla mirando.
 ## Seguridad
 
 - El `.env` y la base de datos están en `.gitignore`: las claves nunca se suben.
+- **Mandá cada link de cliente en privado.** No hay contraseña: quien lo tenga,
+  entra. Si sospechás que se filtró, rehacelo desde *Accesos* y el viejo muere
+  al instante.
 - Los tokens quedan solo en el servidor; la app del navegador nunca los ve.
 - `/archivos/:id` es público a propósito (Meta necesita entrar sin credenciales).
   Los nombres son aleatorios, pero no guardes ahí nada privado.

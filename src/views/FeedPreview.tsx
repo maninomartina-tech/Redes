@@ -114,6 +114,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
               <MediaThumb
                 src={p.mediaUrl}
                 imageUrl={p.igImageUrl}
+                media={p.resultado}
                 kind={p.mediaKind}
                 className="h-full w-full"
               />

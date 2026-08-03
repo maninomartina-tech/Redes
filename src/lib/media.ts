@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API, hayServidor } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Archivos subidos (inspiración y pieza final).
@@ -17,6 +18,10 @@ export interface MediaRef {
   kind: 'image' | 'video';
   /** tamaño en bytes ya procesado */
   size: number;
+  /** id de la copia en el servidor, si ya se respaldó */
+  remoteId?: string;
+  /** dirección pública de esa copia */
+  url?: string;
 }
 
 const DB_NAME = 'demm-media';
@@ -117,22 +122,62 @@ export async function deleteMedia(id: string): Promise<void> {
 }
 
 /**
+ * Sube al servidor una copia del archivo y devuelve la referencia con su
+ * dirección pública.
+ *
+ * Hace falta por dos motivos: el cliente abre su link desde otro dispositivo
+ * —donde el IndexedDB de este navegador no existe— y Meta descarga la pieza
+ * por URL en vez de recibirla adjunta.
+ *
+ * Si no hay servidor, o falla la subida, devuelve la referencia tal cual: la
+ * app sigue funcionando de este lado.
+ */
+export async function respaldarEnServidor(media: MediaRef): Promise<MediaRef> {
+  if (!hayServidor() || media.remoteId) return media;
+  try {
+    const blob = await getMediaBlob(media.id);
+    if (!blob) return media;
+
+    const form = new FormData();
+    form.append('archivo', blob, media.name);
+
+    const res = await fetch(`${API}/api/media`, { method: 'POST', body: form });
+    if (!res.ok) return media;
+
+    const { id, url } = await res.json();
+    // Sin `PUBLIC_URL` el servidor devuelve una dirección relativa, que desde
+    // el dispositivo del cliente no apunta a ningún lado. La completamos.
+    const absoluta = /^https?:\/\//i.test(url) ? url : `${API}${url}`;
+    return { ...media, remoteId: id, url: absoluta };
+  } catch {
+    return media;
+  }
+}
+
+/**
  * Devuelve una URL utilizable en <img> o <video> para un archivo guardado.
+ *
+ * Primero busca la copia local, que se ve al instante; si no está —porque el
+ * archivo se subió desde otro dispositivo— usa la del servidor.
  * Libera la URL sola cuando el componente se desmonta.
  */
-export function useMediaUrl(id?: string): string | undefined {
+export function useMediaUrl(id?: string, remota?: string): string | undefined {
   const [url, setUrl] = useState<string>();
 
   useEffect(() => {
     if (!id) {
-      setUrl(undefined);
+      setUrl(remota);
       return;
     }
     let vigente = true;
     let creada: string | undefined;
 
     getMediaBlob(id).then((blob) => {
-      if (!blob || !vigente) return;
+      if (!vigente) return;
+      if (!blob) {
+        setUrl(remota);
+        return;
+      }
       creada = URL.createObjectURL(blob);
       setUrl(creada);
     });
@@ -141,7 +186,7 @@ export function useMediaUrl(id?: string): string | undefined {
       vigente = false;
       if (creada) URL.revokeObjectURL(creada);
     };
-  }, [id]);
+  }, [id, remota]);
 
   return url;
 }

@@ -4,6 +4,7 @@ import {
   Grid3x3,
   LayoutDashboard,
   Lightbulb,
+  Link2,
   Megaphone,
   Palette,
   Settings,
@@ -14,6 +15,7 @@ import {
 import type { ComponentType } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
+import { useBaseCliente } from '@/lib/rutas';
 import Logo from '@/components/Logo';
 
 export interface NavItem {
@@ -52,32 +54,35 @@ export const creadoraNav: NavGroup[] = [
     title: 'Configuración',
     items: [
       { to: '/marca', label: 'Marca', icon: Palette },
+      { to: '/accesos', label: 'Accesos', icon: Link2 },
       { to: '/ajustes', label: 'Cuentas', icon: Settings },
     ],
   },
 ];
 
-export const clienteNav: NavGroup[] = [
-  { items: [{ to: '/cliente/inicio', label: 'Inicio', icon: LayoutDashboard }] },
+/** El menú del cliente cuelga de dónde entró: su link o la vista previa. */
+export const clienteNav = (base: string): NavGroup[] => [
+  { items: [{ to: `${base}/inicio`, label: 'Inicio', icon: LayoutDashboard }] },
   {
     title: 'Mi contenido',
     items: [
-      { to: '/cliente/semana', label: 'Mi semana', icon: CalendarDays },
-      { to: '/cliente/feed', label: 'Mi feed', icon: Grid3x3 },
+      { to: `${base}/semana`, label: 'Mi semana', icon: CalendarDays },
+      { to: `${base}/feed`, label: 'Mi feed', icon: Grid3x3 },
     ],
   },
   {
     title: 'Resultados',
     items: [
-      { to: '/cliente/metricas', label: 'Resultados', icon: BarChart3 },
-      { to: '/cliente/recomendaciones', label: 'Recomendaciones', icon: Lightbulb },
+      { to: `${base}/metricas`, label: 'Resultados', icon: BarChart3 },
+      { to: `${base}/recomendaciones`, label: 'Recomendaciones', icon: Lightbulb },
     ],
   },
 ];
 
 export default function Sidebar() {
   const role = useStore((s) => s.role);
-  const groups = role === 'creadora' ? creadoraNav : clienteNav;
+  const base = useBaseCliente();
+  const groups = role === 'creadora' ? creadoraNav : clienteNav(base);
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-200/70 bg-surface md:flex">

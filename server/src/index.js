@@ -10,20 +10,34 @@ import { permisos, publicUrl, soloLectura } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
+import {
+  borrarPortal,
+  cerrarSesion,
+  comentarDesdePortal,
+  crearPortal,
+  datosDelPortal,
+  decidirDesdePortal,
+  guardarEspacio,
+  hayClave,
+  iniciarSesion,
+  leerEspacio,
+  listarPortales,
+  sesionValida,
+} from './espacio.js';
 
 const raiz = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const dirArchivos = process.env.FILES_PATH ?? resolve(raiz, 'archivos');
 mkdirSync(dirArchivos, { recursive: true });
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '25mb' }));
 
 // La app corre en otro puerto durante el desarrollo.
 app.use((req, res, next) => {
   const origen = process.env.APP_ORIGIN ?? '*';
   res.setHeader('Access-Control-Allow-Origin', origen);
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -220,6 +234,83 @@ app.get('/api/auth/meta/callback', async (req, res) => {
   }
 });
 
+/* --------------------- espacio de trabajo y portales --------------------- */
+
+/** Deja pasar solo a la creadora. */
+function soloCreadora(req, res, next) {
+  const token = (req.headers.authorization ?? '').replace(/^Bearer /, '');
+  if (!sesionValida(token)) {
+    return res.status(401).json({ error: 'Sesión vencida. Volvé a entrar con tu clave.' });
+  }
+  next();
+}
+
+app.get('/api/auth/estado', (_req, res) => {
+  res.json({ clave: hayClave() });
+});
+
+app.post('/api/auth/entrar', (req, res) => {
+  if (!hayClave()) {
+    return res.status(501).json({
+      error: 'Falta definir CLAVE_CREADORA en el servidor.',
+    });
+  }
+  const token = iniciarSesion(req.body?.clave);
+  if (!token) return res.status(401).json({ error: 'Clave incorrecta.' });
+  res.json({ token });
+});
+
+app.post('/api/auth/salir', soloCreadora, (req, res) => {
+  cerrarSesion((req.headers.authorization ?? '').replace(/^Bearer /, ''));
+  res.json({ ok: true });
+});
+
+/** Todo el espacio de trabajo. */
+app.get('/api/espacio', soloCreadora, (_req, res) => {
+  res.json(leerEspacio());
+});
+
+app.put('/api/espacio', soloCreadora, (req, res) => {
+  if (!req.body?.datos) return res.status(400).json({ error: 'Faltan los datos.' });
+  const version = guardarEspacio(req.body.datos);
+  res.json({ ok: true, version });
+});
+
+/* --------- links de cliente (los administra solo la creadora) ------------ */
+
+app.get('/api/portales', soloCreadora, (_req, res) => {
+  res.json(listarPortales());
+});
+
+app.post('/api/portales/:clienteId', soloCreadora, (req, res) => {
+  res.json({ token: crearPortal(req.params.clienteId) });
+});
+
+app.delete('/api/portales/:clienteId', soloCreadora, (req, res) => {
+  borrarPortal(req.params.clienteId);
+  res.json({ ok: true });
+});
+
+/* ------------- lo que ve el cliente con su link (sin clave) -------------- */
+
+app.get('/api/portal/:token', (req, res) => {
+  const datos = datosDelPortal(req.params.token);
+  if (!datos) return res.status(404).json({ error: 'Este link no es válido o fue dado de baja.' });
+  res.json(datos);
+});
+
+app.post('/api/portal/:token/comentario', (req, res) => {
+  const r = comentarDesdePortal(req.params.token, req.body?.postId, req.body?.texto);
+  if (!r?.ok) return res.status(400).json(r ?? { error: 'No se pudo comentar.' });
+  res.json(r);
+});
+
+app.post('/api/portal/:token/decision', (req, res) => {
+  const r = decidirDesdePortal(req.params.token, req.body?.postId, req.body?.decision);
+  if (!r?.ok) return res.status(400).json(r ?? { error: 'No se pudo guardar.' });
+  res.json(r);
+});
+
 /* ------------------------------ sincronización --------------------------- */
 
 /** Rango por defecto: los últimos seis meses. */
@@ -350,6 +441,7 @@ app.get('/api/salud', (_req, res) => {
     iaConfigurada: Boolean(process.env.ANTHROPIC_API_KEY),
     adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
     soloLectura: soloLectura(),
+    claveDefinida: hayClave(),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });
@@ -366,6 +458,13 @@ if (process.env.NODE_ENV !== 'test') {
       console.warn(
         '⚠ Falta la dirección pública. Meta necesita desde dónde descargar los archivos.\n' +
           '  Definí PUBLIC_URL, o usá `npm run tunel` para probar en tu máquina.'
+      );
+    }
+    if (!hayClave()) {
+      console.warn(
+        '⚠ Falta CLAVE_CREADORA: el espacio compartido queda apagado.\n' +
+          '  La app sigue andando contra el navegador, pero no vas a poder entrar\n' +
+          '  desde otro dispositivo ni darles link a tus clientes.'
       );
     }
     if (soloLectura()) {

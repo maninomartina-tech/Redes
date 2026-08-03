@@ -28,33 +28,68 @@ import {
   motivoNoProgramable,
   schedulePost,
 } from '@/lib/publish';
+import {
+  SesionVencida,
+  comentarEnPortal,
+  decidirEnPortal,
+  entrar as entrarEnServidor,
+  hayServidor,
+  salir as salirDelServidor,
+  subirEspacio,
+  traerEspacio,
+  traerPortal,
+  type DatosEspacio,
+} from '@/lib/espacio';
 
 const uid = (p: string) =>
   `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
 
+/** Un link de cliente: `#/c/<token>`. */
+export function tokenDelPortalEnLaUrl(): string | null {
+  const m = /^#\/c\/([^/?]+)/.exec(window.location.hash);
+  return m ? m[1] : null;
+}
+
+function almacenamientoEnMemoria(): Storage {
+  const mem = new Map<string, string>();
+  return {
+    get length() {
+      return mem.size;
+    },
+    clear: () => mem.clear(),
+    getItem: (k: string) => mem.get(k) ?? null,
+    key: (i: number) => Array.from(mem.keys())[i] ?? null,
+    removeItem: (k: string) => void mem.delete(k),
+    setItem: (k: string, v: string) => void mem.set(k, v),
+  } as Storage;
+}
+
 /**
  * localStorage puede no estar disponible (modo incógnito, iframe restringido).
  * En ese caso guardamos en memoria para que la app siga funcionando.
+ *
+ * Y si se entró por un link de cliente, tampoco se guarda: si la creadora abre
+ * el link de un cliente para revisarlo, no queremos que eso le pise su propia
+ * copia local.
  */
 function safeStorage(): Storage {
+  if (tokenDelPortalEnLaUrl()) return almacenamientoEnMemoria();
   try {
     const probe = '__demm_probe__';
     window.localStorage.setItem(probe, '1');
     window.localStorage.removeItem(probe);
     return window.localStorage;
   } catch {
-    const mem = new Map<string, string>();
-    return {
-      get length() {
-        return mem.size;
-      },
-      clear: () => mem.clear(),
-      getItem: (k: string) => mem.get(k) ?? null,
-      key: (i: number) => Array.from(mem.keys())[i] ?? null,
-      removeItem: (k: string) => void mem.delete(k),
-      setItem: (k: string, v: string) => void mem.set(k, v),
-    } as Storage;
+    return almacenamientoEnMemoria();
   }
+}
+
+/** Cómo está la app respecto del servidor. */
+export interface Sincro {
+  estado: 'local' | 'entrando' | 'cargando' | 'listo' | 'guardando' | 'error';
+  mensaje?: string;
+  /** Última vez que quedó guardado todo en el servidor */
+  guardadoEn?: string;
 }
 
 interface State {
@@ -77,6 +112,19 @@ interface State {
   setRole: (r: Role) => void;
   setClient: (id: string) => void;
 
+  // --- espacio compartido ---
+  /** Sesión de la creadora en el servidor. */
+  sesion: string | null;
+  /** Token del link, cuando la app se abrió como cliente. */
+  portal: string | null;
+  sincro: Sincro;
+  entrarComoCreadora: (clave: string) => Promise<string | null>;
+  cerrarSesionCreadora: () => Promise<void>;
+  /** Trae del servidor todo el espacio de trabajo. */
+  cargarDelServidor: () => Promise<void>;
+  /** Abre la app en modo cliente con el contenido de ese link. */
+  abrirPortal: (token: string) => Promise<string | null>;
+
   // posts
   addPost: (p: Partial<Post> & { clientId: string }) => Post;
   updatePost: (id: string, patch: Partial<Post>) => void;
@@ -92,6 +140,8 @@ interface State {
   // publicación automática
   autoSchedule: (id: string) => Promise<void>;
   cancelSchedule: (id: string) => Promise<void>;
+  /** Programa lo que el cliente aprobó mientras la app estaba cerrada. */
+  programarAprobados: () => Promise<void>;
 
   // comentarios (correcciones)
   addComment: (postId: string, c: Omit<Comment, 'id' | 'createdAt' | 'resolved'>) => void;
@@ -123,6 +173,35 @@ interface State {
   resetDemo: () => void;
 }
 
+/** Lo que se guarda en el servidor: los datos, no la navegación ni la sesión. */
+function datosDelEspacio(s: State): DatosEspacio {
+  return {
+    clients: s.clients,
+    posts: s.posts,
+    campaigns: s.campaigns,
+    ads: s.ads,
+    monthlyStats: s.monthlyStats,
+    leads: s.leads,
+    branding: s.branding,
+    brandLogo: s.brandLogo,
+  };
+}
+
+/**
+ * Mientras se aplica lo que vino del servidor no hay que devolvérselo: sería
+ * un ida y vuelta sin sentido y, si dos pestañas estuvieran abiertas, un
+ * rebote entre las dos.
+ */
+let aplicando = false;
+function aplicarDelServidor(fn: () => void) {
+  aplicando = true;
+  try {
+    fn();
+  } finally {
+    aplicando = false;
+  }
+}
+
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
@@ -148,6 +227,112 @@ export const useStore = create<State>()(
 
       setRole: (role) => set({ role }),
       setClient: (currentClientId) => set({ currentClientId }),
+
+      /* ---------------------- espacio compartido ---------------------- */
+
+      sesion: null,
+      portal: null,
+      sincro: { estado: 'local' },
+
+      entrarComoCreadora: async (clave) => {
+        set({ sincro: { estado: 'entrando' } });
+        try {
+          const sesion = await entrarEnServidor(clave);
+          set({ sesion });
+          await get().cargarDelServidor();
+          return null;
+        } catch (e) {
+          const mensaje = e instanceof Error ? e.message : 'No se pudo entrar.';
+          set({ sincro: { estado: 'error', mensaje } });
+          return mensaje;
+        }
+      },
+
+      cerrarSesionCreadora: async () => {
+        const { sesion } = get();
+        if (sesion) await salirDelServidor(sesion);
+        set({ sesion: null, sincro: { estado: 'local' } });
+      },
+
+      /**
+       * Trae el espacio del servidor. La primera vez está vacío: en ese caso
+       * sube lo que ya había en este navegador, así no se pierde nada de lo
+       * que se venía cargando antes de tener servidor.
+       */
+      cargarDelServidor: async () => {
+        const { sesion } = get();
+        if (!sesion) return;
+        set({ sincro: { estado: 'cargando' } });
+        try {
+          const { datos, version } = await traerEspacio(sesion);
+
+          if (version === 0 || (datos.clients ?? []).length === 0) {
+            await subirEspacio(sesion, datosDelEspacio(get()));
+            set({ sincro: { estado: 'listo', guardadoEn: new Date().toISOString() } });
+            return;
+          }
+
+          aplicarDelServidor(() => {
+            const branding = datos.branding ?? DEFAULT_BRANDING;
+            applyBranding(branding);
+            set({
+              clients: datos.clients,
+              posts: datos.posts ?? [],
+              campaigns: datos.campaigns ?? [],
+              ads: datos.ads ?? [],
+              monthlyStats: datos.monthlyStats ?? [],
+              leads: datos.leads ?? [],
+              branding,
+              brandLogo: datos.brandLogo,
+              currentClientId:
+                datos.clients.find((c) => c.id === get().currentClientId)?.id ??
+                datos.clients[0].id,
+              sincro: { estado: 'listo' },
+            });
+          });
+
+          // Lo que el cliente aprobó mientras esto estaba cerrado.
+          await get().programarAprobados();
+        } catch (e) {
+          set({
+            sincro: {
+              estado: e instanceof SesionVencida ? 'local' : 'error',
+              mensaje: e instanceof Error ? e.message : 'No se pudo traer tu información.',
+            },
+            ...(e instanceof SesionVencida ? { sesion: null } : {}),
+          });
+        }
+      },
+
+      abrirPortal: async (portal) => {
+        set({ sincro: { estado: 'cargando' }, portal });
+        try {
+          const d = await traerPortal(portal);
+          aplicarDelServidor(() => {
+            const branding = d.branding ?? DEFAULT_BRANDING;
+            applyBranding(branding);
+            set({
+              role: 'cliente',
+              clients: [d.cliente],
+              currentClientId: d.cliente.id,
+              posts: d.posts,
+              campaigns: d.campaigns,
+              monthlyStats: d.monthlyStats,
+              leads: d.leads,
+              ads: [],
+              branding,
+              brandLogo: d.brandLogo ?? undefined,
+              sincro: { estado: 'listo' },
+            });
+          });
+          return null;
+        } catch (e) {
+          const mensaje =
+            e instanceof Error ? e.message : 'Este link no es válido o fue dado de baja.';
+          set({ sincro: { estado: 'error', mensaje } });
+          return mensaje;
+        }
+      },
 
       addPost: (p) => {
         const client = get().clients.find((c) => c.id === p.clientId)!;
@@ -281,6 +466,24 @@ export const useStore = create<State>()(
         set((s) => ({
           posts: s.posts.map((p) => (p.id === id ? { ...p, status } : p)),
         }));
+
+        // Desde el link del cliente la decisión la registra el servidor, que
+        // es el único lugar donde la creadora la va a ver.
+        const { portal } = get();
+        if (portal) {
+          if (status === 'aprobado' || status === 'revision') {
+            void decidirEnPortal(portal, id, status).catch(() => {
+              set({
+                sincro: {
+                  estado: 'error',
+                  mensaje: 'No se pudo guardar tu respuesta. Revisá tu conexión.',
+                },
+              });
+            });
+          }
+          return;
+        }
+
         if (status === 'aprobado') void get().autoSchedule(id);
       },
 
@@ -314,6 +517,22 @@ export const useStore = create<State>()(
         }
       },
 
+      /**
+       * El cliente aprueba desde su link, que escribe en el servidor. La
+       * programación, en cambio, la dispara esta app. Al traer el espacio
+       * revisamos qué se aprobó mientras tanto y lo agendamos.
+       */
+      programarAprobados: async () => {
+        const pendientes = get().posts.filter(
+          (p) =>
+            p.status === 'aprobado' &&
+            p.resultado &&
+            p.scheduleState !== 'programado' &&
+            p.scheduleState !== 'publicado'
+        );
+        for (const p of pendientes) await get().autoSchedule(p.id);
+      },
+
       cancelSchedule: async (id) => {
         const post = get().posts.find((p) => p.id === id);
         if (!post) return;
@@ -327,7 +546,18 @@ export const useStore = create<State>()(
         });
       },
 
-      addComment: (postId, c) =>
+      addComment: (postId, c) => {
+        const { portal } = get();
+        if (portal) {
+          void comentarEnPortal(portal, postId, c.text).catch(() => {
+            set({
+              sincro: {
+                estado: 'error',
+                mensaje: 'No se pudo enviar tu comentario. Revisá tu conexión.',
+              },
+            });
+          });
+        }
         set((s) => ({
           posts: s.posts.map((p) =>
             p.id === postId
@@ -345,7 +575,8 @@ export const useStore = create<State>()(
                 }
               : p
           ),
-        })),
+        }));
+      },
 
       toggleComment: (postId, commentId) =>
         set((s) => ({
@@ -494,6 +725,8 @@ export const useStore = create<State>()(
       name: 'demm-redes-v1',
       storage: createJSONStorage(safeStorage),
       version: 2,
+      /** El estado de la sincronización se recalcula al arrancar. */
+      partialize: ({ sincro: _sincro, portal: _portal, ...resto }) => resto,
       /**
        * Datos guardados antes de que existiera el módulo de crecimiento:
        * completamos lo que falte para que la app no se rompa.
@@ -521,6 +754,67 @@ export const useStore = create<State>()(
     }
   )
 );
+
+/* ---------------------------------------------------------------------------
+ * Guardado automático.
+ *
+ * No hay botón de "guardar": cada cambio se manda al servidor. Se espera un
+ * momento antes de mandarlo para no disparar una llamada por cada tecla
+ * mientras se escribe un copy.
+ * ------------------------------------------------------------------------- */
+
+const CLAVES_DE_DATOS = [
+  'clients',
+  'posts',
+  'campaigns',
+  'ads',
+  'monthlyStats',
+  'leads',
+  'branding',
+  'brandLogo',
+] as const;
+
+const ESPERA_MS = 1200;
+
+let temporizador: ReturnType<typeof setTimeout> | undefined;
+let anterior = useStore.getState();
+
+async function guardarAhora() {
+  const s = useStore.getState();
+  if (!s.sesion) return;
+
+  useStore.setState({ sincro: { ...s.sincro, estado: 'guardando' } });
+  try {
+    await subirEspacio(s.sesion, datosDelEspacio(s));
+    useStore.setState({
+      sincro: { estado: 'listo', guardadoEn: new Date().toISOString() },
+    });
+  } catch (e) {
+    if (e instanceof SesionVencida) {
+      useStore.setState({ sesion: null, sincro: { estado: 'local', mensaje: e.message } });
+      return;
+    }
+    useStore.setState({
+      sincro: {
+        estado: 'error',
+        mensaje:
+          'No se pudieron guardar los últimos cambios en el servidor. ' +
+          'Quedaron en este dispositivo; se reintenta con el próximo cambio.',
+      },
+    });
+  }
+}
+
+if (hayServidor()) {
+  useStore.subscribe((s) => {
+    const cambio = CLAVES_DE_DATOS.some((k) => s[k] !== anterior[k]);
+    anterior = s;
+    if (!cambio || aplicando || !s.sesion) return;
+
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => void guardarAhora(), ESPERA_MS);
+  });
+}
 
 // selectores útiles
 export const useCurrentClient = () =>

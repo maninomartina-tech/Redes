@@ -90,6 +90,13 @@ export interface MediaRef {
   name: string;
   kind: 'image' | 'video';
   size: number;
+  /**
+   * Copia en el servidor. Sin esto el archivo existe solo en el navegador de
+   * quien lo subió: el cliente entraría a su link y no vería ninguna pieza.
+   */
+  remoteId?: string;
+  /** Dirección pública de esa copia. */
+  url?: string;
 }
 
 /** Estado de la publicación automática en la red social */

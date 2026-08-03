@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { useMediaUrl } from '@/lib/media';
+import type { MediaRef } from '@/types';
 
 export function Avatar({
   name,
@@ -56,6 +57,7 @@ export function MediaThumb({
   className = '',
   label,
   imageUrl,
+  media,
 }: {
   /** Valor CSS de fondo (los degradados de ejemplo) */
   src?: string;
@@ -64,9 +66,14 @@ export function MediaThumb({
   label?: string;
   /** Imagen real, por ejemplo la portada que devuelve Instagram */
   imageUrl?: string;
+  /** La pieza cargada, para que el feed muestre lo que de verdad va a salir */
+  media?: MediaRef;
 }) {
-  const fondo = imageUrl
-    ? { backgroundImage: `url("${imageUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+  const subida = useMediaUrl(media?.id, media?.url);
+
+  const imagen = imageUrl ?? subida;
+  const fondo = imagen
+    ? { backgroundImage: `url("${imagen}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : src
     ? { background: src }
     : undefined;

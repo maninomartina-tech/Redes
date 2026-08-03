@@ -1,12 +1,74 @@
-import { ChevronDown, Eye, PenTool, RotateCcw } from 'lucide-react';
+import {
+  Check,
+  ChevronDown,
+  Cloud,
+  CloudOff,
+  Eye,
+  Loader2,
+  LogOut,
+  PenTool,
+  RotateCcw,
+  TriangleAlert,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Avatar } from '@/components/ui';
+import { hayServidor } from '@/lib/espacio';
+
+/** Dónde se están guardando los cambios. */
+function EstadoSincro() {
+  const { estado, mensaje } = useStore((s) => s.sincro);
+  const sesion = useStore((s) => s.sesion);
+
+  if (!hayServidor()) return null;
+
+  const [Icono, texto, clase] = !sesion
+    ? [CloudOff, 'Solo en este dispositivo', 'text-ink-400']
+    : estado === 'guardando' || estado === 'cargando'
+      ? [Loader2, 'Guardando…', 'text-ink-400']
+      : estado === 'error'
+        ? [TriangleAlert, 'Sin guardar', 'text-amber-600']
+        : [Check, 'Guardado', 'text-ink-400'];
+
+  return (
+    <span
+      title={mensaje ?? 'Tus cambios se guardan en el servidor y los ven tus clientes.'}
+      className={`hidden items-center gap-1.5 text-xs font-medium sm:inline-flex ${clase}`}
+    >
+      <Icono size={14} className={estado === 'guardando' ? 'animate-spin' : ''} />
+      {texto}
+    </span>
+  );
+}
 
 export default function Topbar() {
   const { role, setRole, clients, currentClientId, setClient, resetDemo } = useStore();
+  const portal = useStore((s) => s.portal);
+  const sesion = useStore((s) => s.sesion);
+  const cerrarSesionCreadora = useStore((s) => s.cerrarSesionCreadora);
   const [open, setOpen] = useState(false);
+
   const current = clients.find((c) => c.id === currentClientId) ?? clients[0];
+
+  // Con el link de un cliente no hay nada que elegir: es su propio espacio.
+  if (portal) {
+    return (
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-ink-200/70 bg-canvas/85 px-4 backdrop-blur-md md:px-6">
+        <div className="flex items-center gap-2.5">
+          <Avatar name={current.name} color={current.color} logoId={current.logo?.id} size={30} />
+          <span className="leading-tight">
+            <span className="block max-w-[12rem] truncate text-sm font-semibold text-ink-800">
+              {current.name}
+            </span>
+            <span className="block text-[11px] text-ink-400">{current.handle}</span>
+          </span>
+        </div>
+        <span className="chip bg-brand-100 text-brand-800">
+          <Cloud size={13} /> Tu espacio
+        </span>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-ink-200/70 bg-canvas/85 px-4 backdrop-blur-md md:px-6">
@@ -51,6 +113,8 @@ export default function Topbar() {
       </div>
 
       <div className="flex items-center gap-2">
+        <EstadoSincro />
+
         <button
           className="btn-ghost hidden sm:inline-flex"
           onClick={resetDemo}
@@ -82,6 +146,16 @@ export default function Topbar() {
             <Eye size={15} /> Cliente
           </button>
         </div>
+
+        {sesion && (
+          <button
+            className="btn-ghost hidden sm:inline-flex"
+            onClick={cerrarSesionCreadora}
+            title="Salir"
+          >
+            <LogOut size={16} />
+          </button>
+        )}
       </div>
     </header>
   );

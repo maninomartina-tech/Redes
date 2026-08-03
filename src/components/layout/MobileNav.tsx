@@ -10,6 +10,7 @@ import {
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
+import { useBaseCliente } from '@/lib/rutas';
 import { clienteNav, creadoraNav, type NavItem } from '@/components/layout/Sidebar';
 
 /** Accesos directos de la barra inferior. El resto vive en "Más". */
@@ -20,20 +21,21 @@ const atajosCreadora: NavItem[] = [
   { to: '/crecimiento', label: 'Crecim.', icon: TrendingUp },
 ];
 
-const atajosCliente: NavItem[] = [
-  { to: '/cliente/inicio', label: 'Inicio', icon: Home },
-  { to: '/cliente/semana', label: 'Semana', icon: CalendarDays },
-  { to: '/cliente/feed', label: 'Feed', icon: Grid3x3 },
-  { to: '/cliente/metricas', label: 'Resultados', icon: TrendingUp },
+const atajosCliente = (base: string): NavItem[] => [
+  { to: `${base}/inicio`, label: 'Inicio', icon: Home },
+  { to: `${base}/semana`, label: 'Semana', icon: CalendarDays },
+  { to: `${base}/feed`, label: 'Feed', icon: Grid3x3 },
+  { to: `${base}/metricas`, label: 'Resultados', icon: TrendingUp },
 ];
 
 export default function MobileNav() {
   const role = useStore((s) => s.role);
+  const base = useBaseCliente();
   const location = useLocation();
   const [openMenu, setOpenMenu] = useState(false);
 
-  const atajos = role === 'creadora' ? atajosCreadora : atajosCliente;
-  const grupos = role === 'creadora' ? creadoraNav : clienteNav;
+  const atajos = role === 'creadora' ? atajosCreadora : atajosCliente(base);
+  const grupos = role === 'creadora' ? creadoraNav : clienteNav(base);
 
   // Marca "Más" como activo cuando la sección actual no está entre los atajos.
   const enAtajos = atajos.some((a) => a.to === location.pathname);

@@ -1,5 +1,6 @@
 import type { MediaRef, Post, SocialAccount } from '@/types';
-import { getMediaBlob } from '@/lib/media';
+import { respaldarEnServidor } from '@/lib/media';
+import { API, hayServidor } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Publicación automática en redes.
@@ -15,9 +16,6 @@ import { getMediaBlob } from '@/lib/media';
 // Si el servidor no está configurado, la app sigue funcionando: deja todo
 // registrado y avisa que la subida real está pendiente.
 // ---------------------------------------------------------------------------
-
-/** Dirección del backend. Se configura con VITE_API_URL al compilar. */
-const API = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
 export interface ScheduleResult {
   ok: boolean;
@@ -40,10 +38,7 @@ export function motivoNoProgramable(
   return null;
 }
 
-/** ¿Hay un backend configurado? */
-export function hayServidor(): boolean {
-  return API.length > 0;
-}
+export { hayServidor };
 
 /** Estado del servidor: qué está configurado y qué falta. */
 export interface EstadoServidor {
@@ -110,19 +105,17 @@ export function urlConexionMeta(): string | null {
   return hayServidor() ? `${API}/api/auth/meta/login` : null;
 }
 
-/** Sube al servidor un archivo guardado en el navegador. */
+/** Id de la copia de la pieza en el servidor, subiéndola si todavía no está. */
 async function subirArchivo(media: MediaRef): Promise<string> {
-  const blob = await getMediaBlob(media.id);
-  if (!blob) throw new Error('No se encontró la pieza en este dispositivo.');
+  if (media.remoteId) return media.remoteId;
 
-  const form = new FormData();
-  form.append('archivo', blob, media.name);
-
-  const res = await fetch(`${API}/api/media`, { method: 'POST', body: form });
-  if (!res.ok) throw new Error('No se pudo subir la pieza al servidor.');
-
-  const { id } = await res.json();
-  return id;
+  const respaldada = await respaldarEnServidor(media);
+  if (!respaldada.remoteId) {
+    throw new Error(
+      'No se pudo subir la pieza al servidor. Revisá que el archivo siga en este dispositivo.'
+    );
+  }
+  return respaldada.remoteId;
 }
 
 /**

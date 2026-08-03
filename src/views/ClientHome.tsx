@@ -21,11 +21,13 @@ import { MediaPreview } from '@/components/MediaUploader';
 import PostDetail from '@/components/PostDetail';
 import Logo from '@/components/Logo';
 import { Avatar, MediaThumb } from '@/components/ui';
+import { useBaseCliente } from '@/lib/rutas';
 
 export default function ClientHome() {
   const { posts, monthlyStats } = useStore();
   const client = useCurrentClient();
   const navigate = useNavigate();
+  const base = useBaseCliente();
   const [selected, setSelected] = useState<string | null>(null);
 
   const míos = useMemo(
@@ -125,7 +127,7 @@ export default function ClientHome() {
                   : 'Revisalas y aprobá o pedí cambios.'}
               </p>
             </div>
-            <button className="btn-primary" onClick={() => navigate('/cliente/semana')}>
+            <button className="btn-primary" onClick={() => navigate(`${base}/semana`)}>
               Revisar ahora
             </button>
           </div>
@@ -139,7 +141,7 @@ export default function ClientHome() {
             <h3 className="font-bold text-ink-900">Cómo va quedando tu feed</h3>
             <button
               className="btn-ghost !py-1 text-xs"
-              onClick={() => navigate('/cliente/feed')}
+              onClick={() => navigate(`${base}/feed`)}
             >
               Ver todo <ArrowRight size={13} />
             </button>
@@ -186,7 +188,7 @@ export default function ClientHome() {
             <h3 className="font-bold text-ink-900">Lo que viene esta semana</h3>
             <button
               className="btn-ghost !py-1 text-xs"
-              onClick={() => navigate('/cliente/semana')}
+              onClick={() => navigate(`${base}/semana`)}
             >
               Ver semana <ArrowRight size={13} />
             </button>
@@ -214,25 +216,25 @@ export default function ClientHome() {
             icono={<CalendarDays size={18} />}
             titulo="Mi semana"
             detalle="Posteos, reels e historias día por día."
-            onClick={() => navigate('/cliente/semana')}
+            onClick={() => navigate(`${base}/semana`)}
           />
           <Acceso
             icono={<Grid3x3 size={18} />}
             titulo="Mi feed"
             detalle="Cómo queda la grilla del mes."
-            onClick={() => navigate('/cliente/feed')}
+            onClick={() => navigate(`${base}/feed`)}
           />
           <Acceso
             icono={<BarChart3 size={18} />}
             titulo="Resultados"
             detalle="Crecimiento, interacción y ventas."
-            onClick={() => navigate('/cliente/metricas')}
+            onClick={() => navigate(`${base}/metricas`)}
           />
           <Acceso
             icono={<Lightbulb size={18} />}
             titulo="Recomendaciones"
             detalle="Qué está funcionando mejor."
-            onClick={() => navigate('/cliente/recomendaciones')}
+            onClick={() => navigate(`${base}/recomendaciones`)}
           />
         </div>
       </section>

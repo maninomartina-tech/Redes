@@ -1,7 +1,13 @@
 import { ImagePlus, Loader2, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { MediaRef } from '@/types';
-import { deleteMedia, formatSize, saveMedia, useMediaUrl } from '@/lib/media';
+import {
+  deleteMedia,
+  formatSize,
+  respaldarEnServidor,
+  saveMedia,
+  useMediaUrl,
+} from '@/lib/media';
 
 /** Vista previa de un archivo ya guardado. */
 export function MediaPreview({
@@ -13,7 +19,7 @@ export function MediaPreview({
   className?: string;
   onRemove?: () => void;
 }) {
-  const url = useMediaUrl(media.id);
+  const url = useMediaUrl(media.id, media.url);
 
   return (
     <div className={`group relative overflow-hidden rounded-xl bg-ink-100 ${className}`}>
@@ -83,7 +89,9 @@ export default function MediaUploader({
           setError(`"${file.name}" no es una imagen ni un video.`);
           continue;
         }
-        nuevos.push(await saveMedia(file));
+        // Se guarda acá (se ve al instante) y se respalda en el servidor, que
+        // es de donde lo va a mirar el cliente desde su propio dispositivo.
+        nuevos.push(await respaldarEnServidor(await saveMedia(file)));
       }
       if (nuevos.length === 0) return;
 
