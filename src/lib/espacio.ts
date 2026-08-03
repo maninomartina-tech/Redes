@@ -102,13 +102,13 @@ export async function estadoAcceso(): Promise<EstadoAcceso> {
   }
 }
 
-export async function entrar(clave: string): Promise<string> {
+export async function entrar(usuario: string, clave: string): Promise<string> {
   const d = await pedir<{ token: string }>(
     '/api/auth/entrar',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clave }),
+      body: JSON.stringify({ usuario, clave }),
     },
     false
   );

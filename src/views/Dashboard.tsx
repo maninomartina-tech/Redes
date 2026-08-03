@@ -14,7 +14,7 @@ import { statusChip, statusLabel, statusOrder, typeEmoji } from '@/lib/format';
 import { nfmt } from '@/lib/format';
 import { computeGrowth, computeLeads } from '@/lib/growth';
 import { Avatar, MediaThumb, SectionTitle, Stat } from '@/components/ui';
-import AddContentButton from '@/components/AddContentButton';
+import ClientLinkButton from '@/components/ClientLinkButton';
 import PostDetail from '@/components/PostDetail';
 import { useState } from 'react';
 
@@ -60,7 +60,7 @@ export default function Dashboard() {
           </span>
         }
         subtitle="Panel general del cliente seleccionado."
-        action={<AddContentButton onCreated={setSelected} />}
+        action={<ClientLinkButton />}
       />
 
       {/* KPIs */}

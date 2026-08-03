@@ -1,4 +1,11 @@
-import { AlertCircle, KeyRound, Loader2, LogIn, MonitorSmartphone } from 'lucide-react';
+import {
+  AlertCircle,
+  KeyRound,
+  Loader2,
+  LogIn,
+  MonitorSmartphone,
+  User,
+} from 'lucide-react';
 import { useState } from 'react';
 import Logo from '@/components/Logo';
 import { useStore } from '@/store/useStore';
@@ -14,15 +21,17 @@ export default function Ingreso({ seguirLocal }: { seguirLocal: () => void }) {
   const entrarComoCreadora = useStore((s) => s.entrarComoCreadora);
   const estado = useStore((s) => s.sincro.estado);
 
+  const [usuario, setUsuario] = useState('');
   const [clave, setClave] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const entrando = estado === 'entrando' || estado === 'cargando';
+  const completo = usuario.trim().length > 0 && clave.length > 0;
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!clave.trim() || entrando) return;
-    setError(await entrarComoCreadora(clave));
+    if (!completo || entrando) return;
+    setError(await entrarComoCreadora(usuario.trim(), clave));
   };
 
   return (
@@ -44,8 +53,34 @@ export default function Ingreso({ seguirLocal }: { seguirLocal: () => void }) {
           </div>
 
           <div>
+            <label className="label" htmlFor="usuario">
+              Usuario
+            </label>
+            <div className="relative mt-1">
+              <User
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400"
+              />
+              <input
+                id="usuario"
+                autoFocus
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="input pl-9"
+                placeholder="demm"
+                value={usuario}
+                onChange={(e) => {
+                  setUsuario(e.target.value);
+                  setError(null);
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
             <label className="label" htmlFor="clave">
-              Tu clave
+              Contraseña
             </label>
             <div className="relative mt-1">
               <KeyRound
@@ -55,7 +90,6 @@ export default function Ingreso({ seguirLocal }: { seguirLocal: () => void }) {
               <input
                 id="clave"
                 type="password"
-                autoFocus
                 autoComplete="current-password"
                 className="input pl-9"
                 placeholder="••••••••"
@@ -78,7 +112,7 @@ export default function Ingreso({ seguirLocal }: { seguirLocal: () => void }) {
           <button
             type="submit"
             className="btn-primary w-full"
-            disabled={entrando || !clave.trim()}
+            disabled={entrando || !completo}
           >
             {entrando ? (
               <>

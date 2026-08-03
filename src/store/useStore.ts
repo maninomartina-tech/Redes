@@ -121,7 +121,7 @@ interface State {
   /** Token del link, cuando la app se abrió como cliente. */
   portal: string | null;
   sincro: Sincro;
-  entrarComoCreadora: (clave: string) => Promise<string | null>;
+  entrarComoCreadora: (usuario: string, clave: string) => Promise<string | null>;
   cerrarSesionCreadora: () => Promise<void>;
   /** Trae del servidor todo el espacio de trabajo. */
   cargarDelServidor: () => Promise<void>;
@@ -254,10 +254,10 @@ export const useStore = create<State>()(
       portal: null,
       sincro: { estado: 'local' },
 
-      entrarComoCreadora: async (clave) => {
+      entrarComoCreadora: async (usuario, clave) => {
         set({ sincro: { estado: 'entrando' } });
         try {
-          const sesion = await entrarEnServidor(clave);
+          const sesion = await entrarEnServidor(usuario, clave);
           set({ sesion });
           await get().cargarDelServidor();
           return null;

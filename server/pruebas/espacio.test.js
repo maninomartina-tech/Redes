@@ -13,6 +13,7 @@ const tmp = mkdtempSync(join(tmpdir(), 'demm-espacio-'));
 process.env.DB_PATH = join(tmp, 'test.db');
 process.env.FILES_PATH = join(tmp, 'archivos');
 process.env.CLAVE_CREADORA = 'clave-secreta';
+process.env.USUARIO_CREADORA = 'demm';
 process.env.NODE_ENV = 'test';
 
 const { app } = await import('../src/index.js');
@@ -55,7 +56,7 @@ before(async () => {
   const r = await fetch(`${base}/api/auth/entrar`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ clave: 'clave-secreta' }),
+    body: JSON.stringify({ usuario: 'demm', clave: 'clave-secreta' }),
   });
   sesion = (await r.json()).token;
 
@@ -76,9 +77,28 @@ describe('ingreso de la creadora', () => {
     const r = await fetch(`${base}/api/auth/entrar`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ clave: 'cualquiera' }),
+      body: JSON.stringify({ usuario: 'demm', clave: 'cualquiera' }),
     });
     assert.equal(r.status, 401);
+  });
+
+  it('rechaza un usuario incorrecto aunque la clave esté bien', async () => {
+    const r = await fetch(`${base}/api/auth/entrar`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ usuario: 'otra', clave: 'clave-secreta' }),
+    });
+    assert.equal(r.status, 401);
+  });
+
+  it('no dice cuál de los dos está mal', async () => {
+    const r = await fetch(`${base}/api/auth/entrar`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ usuario: 'otra', clave: 'otra' }),
+    });
+    const { error } = await r.json();
+    assert.match(error, /Usuario o contraseña/);
   });
 
   it('sin sesión no se puede leer el espacio', async () => {
@@ -106,7 +126,7 @@ describe('ingreso de la creadora', () => {
     const login = await fetch(`${base}/api/auth/entrar`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ clave: 'clave-secreta' }),
+      body: JSON.stringify({ usuario: 'demm', clave: 'clave-secreta' }),
     });
     const t = (await login.json()).token;
 

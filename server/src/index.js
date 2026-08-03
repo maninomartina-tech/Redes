@@ -21,6 +21,7 @@ import {
   hayClave,
   iniciarSesion,
   leerEspacio,
+  usuarioCreadora,
   listarPortales,
   sesionValida,
 } from './espacio.js';
@@ -249,14 +250,23 @@ app.get('/api/auth/estado', (_req, res) => {
   res.json({ clave: hayClave() });
 });
 
+/**
+ * Aviso para la puesta en marcha: si nadie definió USUARIO_CREADORA, conviene
+ * saber con cuál se entra en vez de adivinarlo.
+ */
+app.get('/api/auth/usuario', soloCreadora, (_req, res) => {
+  res.json({ usuario: usuarioCreadora() });
+});
+
 app.post('/api/auth/entrar', (req, res) => {
   if (!hayClave()) {
     return res.status(501).json({
       error: 'Falta definir CLAVE_CREADORA en el servidor.',
     });
   }
-  const token = iniciarSesion(req.body?.clave);
-  if (!token) return res.status(401).json({ error: 'Clave incorrecta.' });
+  const token = iniciarSesion(req.body?.usuario, req.body?.clave);
+  // A propósito no se aclara cuál de los dos está mal.
+  if (!token) return res.status(401).json({ error: 'Usuario o contraseña incorrectos.' });
   res.json({ token });
 });
 

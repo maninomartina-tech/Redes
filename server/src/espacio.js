@@ -83,8 +83,20 @@ export function hayClave() {
   return Boolean(process.env.CLAVE_CREADORA);
 }
 
-export function iniciarSesion(clave) {
+/**
+ * El usuario con el que entra la creadora.
+ *
+ * Tiene un valor por defecto a propósito: el usuario no es un secreto —lo que
+ * protege es la contraseña— y así un `.env` viejo, con solo CLAVE_CREADORA,
+ * sigue funcionando.
+ */
+export function usuarioCreadora() {
+  return process.env.USUARIO_CREADORA || 'demm';
+}
+
+export function iniciarSesion(usuario, clave) {
   if (!hayClave()) return null;
+  if (!usuario || !comparar(usuario, usuarioCreadora())) return null;
   if (!clave || !comparar(clave, process.env.CLAVE_CREADORA)) return null;
 
   const token = randomBytes(24).toString('base64url');

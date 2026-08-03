@@ -36,8 +36,10 @@ services:
     envVars:
       # Los que Render va a pedir al crear el servicio.
       #
-      # La clave con la que entrás al panel. Sin esto, el espacio de trabajo
-      # queda abierto a cualquiera que dé con la dirección del servidor.
+      # El usuario y la contraseña con los que entrás al panel. Sin la
+      # contraseña, el espacio de trabajo no se puede usar desde ningún lado.
+      - key: USUARIO_CREADORA
+        sync: false
       - key: CLAVE_CREADORA
         sync: false
       - key: META_APP_ID

@@ -68,7 +68,8 @@ el servicio, el disco y las variables se crean solos.
    que va a crear.
 3. Te va a pedir solo los valores secretos:
    ```
-   CLAVE_CREADORA     = ...    (la clave con la que entrás vos)
+   USUARIO_CREADORA   = ...    (tu usuario; si lo dejás vacío es "demm")
+   CLAVE_CREADORA     = ...    (tu contraseña)
    META_APP_ID        = ...
    META_APP_SECRET    = ...
    APP_ORIGIN         = https://demm.netlify.app     (tu dirección de Netlify)
@@ -110,12 +111,12 @@ Lo ves en la app y decidís si lo reprogramás.
 
 ## 3. Tu clave y los links de tus clientes
 
-`CLAVE_CREADORA` es la que separa tu planificación del resto de internet: sin
-ella nadie entra al panel, ni siquiera vos. Poné algo largo y que no uses en
-otro lado.
+Entrás con **usuario y contraseña**: `USUARIO_CREADORA` (si no lo cargás, es
+`demm`) y `CLAVE_CREADORA`. La contraseña es la que separa tu planificación del
+resto de internet, así que poné algo largo y que no uses en otro lado.
 
-Tus clientes **no la usan**. Cada uno entra con su propio link secreto, que
-generás desde **Accesos** en la app y le mandás por privado. Con ese link ve su
+Tus clientes **no las usan**. Cada uno entra con su propio link secreto, que
+copiás con el botón del panel —o desde **Accesos**— y le mandás por privado. Con ese link ve su
 semana, su feed y sus resultados —y nada más—, puede dejar comentarios y
 aprobar. Si alguna vez sospechás que un link se filtró, tocás *Rehacer* y el
 anterior deja de funcionar en el momento.

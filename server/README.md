@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 44 pruebas
+npm test                 # 46 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -38,7 +38,8 @@ Todo va en `server/.env` (ver `.env.example`):
 
 | Variable | Para qué |
 | --- | --- |
-| `CLAVE_CREADORA` | Tu clave para entrar al panel. Sin esto el espacio compartido queda apagado: la app anda igual, pero solo contra tu navegador. |
+| `USUARIO_CREADORA` | Con qué usuario entrás al panel. Si no se define, es `demm`. |
+| `CLAVE_CREADORA` | Tu contraseña. Sin esto el espacio compartido queda apagado: la app anda igual, pero solo contra tu navegador. |
 | `PUBLIC_URL` | La dirección pública del servidor: Meta descarga las piezas desde acá. **En Render y Railway se detecta sola**; solo hace falta cargarla en otros hostings. No sirve `localhost`. |
 | `META_APP_ID` / `META_APP_SECRET` | De tu app en [developers.facebook.com](https://developers.facebook.com). |
 | `APP_ORIGIN` | Desde dónde se abre la app, para permitir las llamadas del navegador. |
@@ -116,7 +117,7 @@ Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 
 | Método | Ruta | Qué hace |
 | --- | --- | --- |
-| `POST` | `/api/auth/entrar` | Entra con la clave y devuelve una sesión. |
+| `POST` | `/api/auth/entrar` | Entra con usuario y contraseña, y devuelve una sesión. |
 | `GET`/`PUT` | `/api/espacio` | Lee o guarda todo tu espacio de trabajo. Pide sesión. |
 | `POST`/`DELETE` | `/api/portales/:clienteId` | Crea o da de baja el link de un cliente. Pide sesión. |
 | `GET` | `/api/portal/:token` | Lo que ve un cliente con su link: **solo lo suyo**. |
@@ -177,7 +178,7 @@ Todo lo que cargás —clientes, contenido, crecimiento, ventas— vive acá y n
 el navegador. Es lo que hace posibles dos cosas que antes no lo eran: entrar
 desde cualquier dispositivo, y que un cliente vea su planificación.
 
-- **Vos** entrás con `CLAVE_CREADORA` y ves todo.
+- **Vos** entrás con `USUARIO_CREADORA` y `CLAVE_CREADORA`, y ves todo.
 - **Cada cliente** entra con un link secreto (`#/c/<token>`), sin usuario ni
   contraseña, y ve **únicamente lo suyo**. Los links se generan desde *Accesos*
   en la app; rehacer uno da de baja el anterior en el momento.
@@ -194,7 +195,7 @@ volumen es chico, así que no compensa la complejidad de un esquema relacional.
 
 ## Estado de las pruebas
 
-`npm test` corre **44 pruebas** con Meta reemplazada por un doble:
+`npm test` corre **46 pruebas** con Meta reemplazada por un doble:
 
 - **Cola (15):** alta, vencimiento, publicación, detección de video, reintentos,
   cancelación, reprogramación, el aviso por falta de `PUBLIC_URL`, el servido de
@@ -207,7 +208,9 @@ volumen es chico, así que no compensa la complejidad de un esquema relacional.
 - **Solo lectura (6):** que no se pida el permiso de publicar, que sí se pidan
   los de métricas y ADS, que se rechace programar con una explicación, y que el
   feed llegue con la portada correcta (en los videos, la miniatura).
-- **Espacio y portales (17):** que sin la clave no se lea ni se escriba nada,
+- **Espacio y portales (19):** que sin usuario y contraseña correctos no se
+  entre —y que el error no diga cuál de los dos está mal—, que sin sesión no se
+  lea ni se escriba nada,
   que al cerrar sesión el token deje de servir, que un cliente vea solo lo suyo
   —comprobado sobre la respuesta, no sobre la pantalla—, que las ventas lleguen
   solo a quien las mide, que no pueda comentar ni cambiar el estado de otro
