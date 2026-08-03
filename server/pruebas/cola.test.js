@@ -291,7 +291,7 @@ describe('cola de publicaciones', () => {
 
     assert.equal(r.ok, false);
     const despues = db.prepare('SELECT * FROM publicaciones WHERE id = ?').get(datos.id);
-    assert.match(despues.error, /PUBLIC_URL/);
+    assert.match(despues.error, /dirección pública/);
   });
 
   it('sirve el archivo para que Meta pueda descargarlo', async () => {

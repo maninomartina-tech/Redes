@@ -1,5 +1,6 @@
 import { ahora, db } from './db.js';
 import { publicarEnInstagram } from './meta.js';
+import { publicUrl } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Programador: cada minuto revisa la cola y publica lo que ya venció.
@@ -42,8 +43,7 @@ function marcar(id, campos) {
 
 /** URL pública desde la que Meta va a descargar cada archivo. */
 function urlPublica(archivoId) {
-  const base = (process.env.PUBLIC_URL ?? '').replace(/\/$/, '');
-  return `${base}/archivos/${archivoId}`;
+  return `${publicUrl()}/archivos/${archivoId}`;
 }
 
 function archivosDe(publicacion) {
@@ -90,11 +90,11 @@ export async function publicarUna(publicacion, { publicador = publicarEnInstagra
     return { ok: false, error: 'sin archivo' };
   }
 
-  if (!process.env.PUBLIC_URL) {
+  if (!publicUrl()) {
     marcar(publicacion.id, {
       estado: 'error',
       error:
-        'Falta configurar PUBLIC_URL: Meta necesita una dirección pública desde donde descargar el archivo.',
+        'Falta la dirección pública del servidor: Meta necesita desde dónde descargar el archivo.',
       intentos: publicacion.intentos + 1,
     });
     return { ok: false, error: 'sin PUBLIC_URL' };

@@ -42,26 +42,28 @@ Después **Deploys → Trigger deploy → Deploy site**.
 
 ## 2. El servidor en Render
 
-1. Entrá a [render.com](https://render.com) → **New → Web Service**.
-2. Conectá el mismo repositorio.
-3. Completá:
-   - **Root Directory**: `server`
-   - **Runtime**: Docker (toma el `Dockerfile` que ya está)
-4. En **Environment**, cargá las variables (están explicadas en
-   `server/.env.example`):
+El repositorio trae un `render.yaml`, así que **no hay que armar nada a mano**:
+el servicio, el disco y las variables se crean solos.
+
+1. Entrá a [render.com](https://render.com) → **New → Blueprint**.
+2. Conectá este mismo repositorio. Render lee el `render.yaml` y te muestra lo
+   que va a crear.
+3. Te va a pedir solo los valores secretos:
    ```
-   META_APP_ID          = ...
-   META_APP_SECRET      = ...
-   META_AD_ACCOUNT_ID   = ...        (opcional, para traer ADS)
-   ANTHROPIC_API_KEY    = ...        (opcional, para los informes con IA)
-   APP_ORIGIN           = https://demm.netlify.app
-   PUBLIC_URL           = https://tu-servidor.onrender.com
+   META_APP_ID        = ...
+   META_APP_SECRET    = ...
+   APP_ORIGIN         = https://demm.netlify.app     (tu dirección de Netlify)
+   META_AD_ACCOUNT_ID = ...    (opcional, para traer ADS)
+   ANTHROPIC_API_KEY  = ...    (opcional, para los informes con IA)
    ```
-   `PUBLIC_URL` es la dirección que Render te asigna: la ponés después del
-   primer despliegue y volvés a desplegar.
-5. En **Disks**, agregá uno montado en `/datos` (1 GB alcanza para empezar).
-   Ahí viven la base de datos y las piezas subidas; sin disco se borran en cada
-   despliegue.
+4. **Apply**.
+
+Eso es todo. El disco en `/datos` y el plan ya vienen definidos en el archivo.
+
+> **La dirección pública se configura sola.** El servidor la toma de la variable
+> que Render define al desplegar, así que no hay que copiarla ni volver a
+> desplegar. Lo verificás en **Cuentas** dentro de la app: ahí figura cuál está
+> usando.
 
 ### Por qué importa el plan
 

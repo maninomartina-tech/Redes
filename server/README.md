@@ -38,7 +38,7 @@ Todo va en `server/.env` (ver `.env.example`):
 
 | Variable | Para qué |
 | --- | --- |
-| `PUBLIC_URL` | **La más importante.** La dirección pública del servidor: Meta descarga las piezas desde acá. No sirve `localhost`. |
+| `PUBLIC_URL` | La dirección pública del servidor: Meta descarga las piezas desde acá. **En Render y Railway se detecta sola**; solo hace falta cargarla en otros hostings. No sirve `localhost`. |
 | `META_APP_ID` / `META_APP_SECRET` | De tu app en [developers.facebook.com](https://developers.facebook.com). |
 | `APP_ORIGIN` | Desde dónde se abre la app, para permitir las llamadas del navegador. |
 | `ANTHROPIC_API_KEY` | Opcional: informes con IA en lenguaje natural. |
@@ -64,12 +64,15 @@ hay que copiar nada. Tené en cuenta que:
 
 **2. Para usarlo en serio — un servidor con dirección fija**
 
-Hay un `Dockerfile` listo. En [Render](https://render.com),
-[Railway](https://railway.app) o [Fly.io](https://fly.io) alcanza con apuntar al
-repo, elegir la carpeta `server/`, cargar las variables del `.env` y montar un
-volumen en `/datos` (ahí viven la base y las piezas subidas). Te queda una
-dirección fija tipo `https://demm-server.onrender.com`, que es la que va en
-`PUBLIC_URL` y en la app de Meta.
+En la raíz del repo hay un `render.yaml`: en [Render](https://render.com) se
+elige **New → Blueprint**, se apunta al repositorio y queda todo creado, pidiendo
+solo los valores secretos. También hay un `Dockerfile` para
+[Railway](https://railway.app), [Fly.io](https://fly.io) o cualquier otro.
+
+**En Render y en Railway la dirección se configura sola**: el servidor la toma
+de la variable que la plataforma define al desplegar (`RENDER_EXTERNAL_URL` /
+`RAILWAY_PUBLIC_DOMAIN`). Solo hace falta cargar `PUBLIC_URL` a mano si usás
+otro hosting.
 
 Para publicar a horario **esta es la opción recomendada**: el túnel depende de
 que tu computadora esté prendida.

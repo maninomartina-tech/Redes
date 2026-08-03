@@ -6,6 +6,7 @@ import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ahora, db, uid } from './db.js';
+import { publicUrl } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
@@ -46,7 +47,7 @@ app.post('/api/media', subida.single('archivo'), (req, res) => {
      VALUES (?, ?, ?, ?, ?, ?)`
   ).run(id, req.file.originalname, req.file.mimetype, req.file.path, req.file.size, ahora());
 
-  res.json({ id, url: `${process.env.PUBLIC_URL ?? ''}/archivos/${id}` });
+  res.json({ id, url: `${publicUrl()}/archivos/${id}` });
 });
 
 // Meta descarga las piezas desde acá, por eso es público y sin autenticación.
@@ -149,7 +150,7 @@ app.delete('/api/cuentas/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-const redirectUri = () => `${process.env.PUBLIC_URL ?? ''}/api/auth/meta/callback`;
+const redirectUri = () => `${publicUrl()}/api/auth/meta/callback`;
 
 /** Paso 1: manda al usuario a autorizar la app en Meta. */
 app.get('/api/auth/meta/login', (_req, res) => {
@@ -346,7 +347,7 @@ app.get('/api/salud', (_req, res) => {
   res.json({
     ok: true,
     metaConfigurado: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
-    urlPublica: process.env.PUBLIC_URL ?? null,
+    urlPublica: publicUrl() || null,
     iaConfigurada: Boolean(process.env.ANTHROPIC_API_KEY),
     adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
@@ -358,9 +359,13 @@ const PORT = process.env.PORT ?? 4000;
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Servidor de Demm en http://localhost:${PORT}`);
-    if (!process.env.PUBLIC_URL) {
+    const url = publicUrl();
+    if (url) {
+      console.log(`Dirección pública: ${url}`);
+    } else {
       console.warn(
-        '⚠ Falta PUBLIC_URL. Meta necesita una dirección pública para descargar los archivos.'
+        '⚠ Falta la dirección pública. Meta necesita desde dónde descargar los archivos.\n' +
+          '  Definí PUBLIC_URL, o usá `npm run tunel` para probar en tu máquina.'
       );
     }
     iniciarProgramador();

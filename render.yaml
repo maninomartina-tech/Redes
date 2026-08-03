@@ -1,0 +1,54 @@
+# Configuración lista para Render.
+#
+# Con este archivo no hay que armar el servicio a mano: en Render se elige
+# "New → Blueprint", se apunta a este repositorio y queda todo creado —el
+# servicio, el disco y las variables— pidiendo solo los valores secretos.
+#
+# La dirección pública no hace falta cargarla: el servidor la toma sola de
+# RENDER_EXTERNAL_URL, que Render define al desplegar (ver src/config.js).
+
+services:
+  - type: web
+    name: demm-server
+    runtime: docker
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+    region: oregon
+
+    # El plan gratuito duerme el servicio tras un rato sin visitas, y dormido
+    # no publica a horario. Por eso va el plan pago más chico.
+    plan: starter
+
+    # Render reinicia el servicio si esta ruta deja de responder.
+    healthCheckPath: /api/salud
+
+    # Acá viven la base de datos y las piezas subidas. Sin disco se borrarían
+    # en cada despliegue.
+    disk:
+      name: datos
+      mountPath: /datos
+      sizeGB: 1
+
+    envVars:
+      # Los que Render va a pedir al crear el servicio.
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      # Dirección de la app en Netlify, para permitirle hablar con el servidor.
+      - key: APP_ORIGIN
+        sync: false
+
+      # Opcionales: se pueden dejar vacíos y cargar después.
+      - key: META_AD_ACCOUNT_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+      # Valores fijos.
+      - key: META_API_VERSION
+        value: v21.0
+      - key: MAX_ATRASO_HORAS
+        value: 6
+      - key: NODE_ENV
+        value: production
