@@ -24,6 +24,7 @@ import {
 } from '@/lib/publish';
 import { Avatar, Modal, SectionTitle, Toggle } from '@/components/ui';
 import ClientForm from '@/components/ClientForm';
+import Backup from '@/components/Backup';
 
 const platformIcon: Record<Platform, React.ReactNode> = {
   instagram: <Camera size={20} />,
@@ -151,6 +152,10 @@ export default function Accounts() {
         >
           <Plus size={16} /> Agregar otra red a {client.name}
         </button>
+      </div>
+
+      <div className="mt-6">
+        <Backup />
       </div>
 
       <ClientForm open={nuevaCuenta} onClose={() => setNuevaCuenta(false)} />

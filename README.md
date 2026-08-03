@@ -59,7 +59,7 @@ link que le mandaste.
 | **Informe mensual** | El resumen que se le manda al cliente: crecimiento, qué se publicó, lo que mejor funcionó y las ventas del mes. Se guarda como PDF desde el navegador. |
 | **Marca** | El logo y los colores de la app, editables desde adentro. Con el tono fuerte, el suave y el fondo se genera toda la paleta; avisa si algún color queda ilegible. También el logo de cada cliente. |
 | **Accesos** | El link secreto con el que entra cada cliente a ver lo suyo. |
-| **Cuentas** | Alta y edición de cada cuenta de cliente, sus redes, y la conexión con Meta. |
+| **Cuentas** | Alta y edición de cada cuenta de cliente, sus redes, la conexión con Meta y la **copia de seguridad** de todo tu espacio. |
 
 Se pueden gestionar **varios clientes** (selector arriba a la izquierda, con
 *Agregar cuenta*). El botón de restaurar (↺) vuelve a los datos de ejemplo.

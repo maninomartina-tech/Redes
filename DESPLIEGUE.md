@@ -85,20 +85,22 @@ Eso es todo. El disco en `/datos` y el plan ya vienen definidos en el archivo.
 > desplegar. Lo verificás en **Cuentas** dentro de la app: ahí figura cuál está
 > usando.
 
-### Qué plan te conviene
+### Por qué el plan pago
 
-Depende del modo:
+El `render.yaml` usa el plan pago más chico (`starter`), y no es un capricho:
 
-**Modo solo lectura** → podés ir gratis. En `render.yaml` cambiás `plan: starter`
-por `plan: free` y borrás el bloque `disk` (el plan gratuito no admite disco).
-Dos contras, ninguna grave para este modo:
+**El plan gratuito de Render no admite disco.** Sin disco, la base de datos se
+borra en cada despliegue —y ahí adentro está *toda tu planificación*: clientes,
+contenido, crecimiento, ventas y los links de tus clientes. Un cambio menor en
+la app te dejaría el panel en blanco. No vale la pena.
 
-- El servicio se duerme; al tocar "Sincronizar" tarda unos segundos en despertar.
-- Sin disco, en cada despliegue hay que volver a vincular la cuenta de Instagram.
+A eso se suma que, en el plan gratis, el servicio **se duerme**: dormido no
+publica a horario, así que tampoco sirve cuando actives la publicación
+automática. Railway y Fly.io tienen el mismo detalle.
 
-**Modo completo** → tiene que ser pago, sin vuelta. En el plan gratis el
-servicio se duerme, y **dormido no publica a horario**. Railway y Fly.io tienen
-el mismo detalle.
+> Igual, bajá una copia cada tanto desde **Cuentas → Copia de seguridad**. Es un
+> archivo que te guardás vos y que se puede volver a subir en la misma pantalla.
+> Es la red que no depende de ningún proveedor.
 
 ### Qué pasa si el servidor se cae igual
 

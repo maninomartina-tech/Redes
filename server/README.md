@@ -148,8 +148,12 @@ traer el feed y las métricas:
   aprobación** para empezar.
 - El programador no arranca, y si se intenta programar algo el servidor lo
   rechaza explicando por qué.
-- Como no hay nada que publicar a horario, el servicio puede dormirse: **sirve
-  el hosting gratuito**.
+- Como no hay nada que publicar a horario, el servicio puede dormirse sin que
+  se pierda ninguna publicación.
+
+Ojo: eso **no** quiere decir que sirva un hosting sin disco. El espacio de
+trabajo vive en la base de datos, así que sin disco persistente se borra en
+cada despliegue.
 
 Es la forma recomendada de arrancar. Para activar la publicación automática,
 poné `false`.
