@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 21 pruebas
+npm test                 # 27 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -131,11 +131,29 @@ Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 
 ---
 
+## Modo solo lectura
+
+Con `MODO_SOLO_LECTURA=true` el servidor se conecta a Instagram únicamente para
+traer el feed y las métricas:
+
+- No le pide a Meta el permiso de publicar, así que **no hace falta la
+  aprobación** para empezar.
+- El programador no arranca, y si se intenta programar algo el servidor lo
+  rechaza explicando por qué.
+- Como no hay nada que publicar a horario, el servicio puede dormirse: **sirve
+  el hosting gratuito**.
+
+Es la forma recomendada de arrancar. Para activar la publicación automática,
+poné `false`.
+
 ## Sincronización
 
 Además de publicar, el servidor trae de Meta lo que hoy se carga a mano:
 
 - **Crecimiento** → seguidores, alcance e interacción, mes a mes.
+- **Feed** → las publicaciones que ya están en Instagram entran a la grilla de
+  la app, con su portada y su texto. Lo que se planificó acá y ya salió se
+  actualiza en vez de duplicarse.
 - **Métricas** → likes, comentarios, guardados, compartidos y alcance de cada
   publicación.
 - **ADS** → campañas con gasto, impresiones, clics y resultados.
@@ -148,7 +166,7 @@ la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
 
 ## Estado de las pruebas
 
-`npm test` corre **21 pruebas** con Meta reemplazada por un doble:
+`npm test` corre **27 pruebas** con Meta reemplazada por un doble:
 
 - **Cola (15):** alta, vencimiento, publicación, detección de video, reintentos,
   cancelación, reprogramación, el aviso por falta de `PUBLIC_URL`, el servido de
@@ -158,6 +176,9 @@ la app lo dice en pantalla en vez de mostrar un hueco sin explicación.
   no), métricas por publicación, conversión de centavos a pesos en ADS, filtrado
   de las acciones que sí son resultados, y que los errores de Meta se informen
   en vez de devolver datos incompletos.
+- **Solo lectura (6):** que no se pida el permiso de publicar, que sí se pidan
+  los de métricas y ADS, que se rechace programar con una explicación, y que el
+  feed llegue con la portada correcta (en los videos, la miniatura).
 
 Lo que **no** está probado contra el servicio real son las llamadas a la Graph
 API, porque no hay credenciales: están escritas siguiendo la documentación de

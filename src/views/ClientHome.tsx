@@ -156,7 +156,12 @@ export default function ClientHome() {
                 {p.resultado ? (
                   <MediaPreview media={p.resultado} className="h-full w-full !rounded-none" />
                 ) : (
-                  <MediaThumb src={p.mediaUrl} kind={p.mediaKind} className="h-full w-full" />
+                  <MediaThumb
+                    src={p.mediaUrl}
+                    imageUrl={p.igImageUrl}
+                    kind={p.mediaKind}
+                    className="h-full w-full"
+                  />
                 )}
                 <span className="absolute right-1 top-1 text-xs drop-shadow">
                   {typeEmoji[p.type]}
@@ -277,6 +282,7 @@ function FilaSemana({ post, onOpen }: { post: Post; onOpen: () => void }) {
       ) : (
         <MediaThumb
           src={post.mediaUrl}
+          imageUrl={post.igImageUrl}
           kind={post.mediaKind}
           className="h-11 w-11 shrink-0 rounded-xl"
         />

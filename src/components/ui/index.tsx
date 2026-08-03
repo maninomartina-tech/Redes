@@ -55,17 +55,24 @@ export function MediaThumb({
   kind,
   className = '',
   label,
+  imageUrl,
 }: {
+  /** Valor CSS de fondo (los degradados de ejemplo) */
   src?: string;
   kind?: 'image' | 'video';
   className?: string;
   label?: string;
+  /** Imagen real, por ejemplo la portada que devuelve Instagram */
+  imageUrl?: string;
 }) {
+  const fondo = imageUrl
+    ? { backgroundImage: `url("${imageUrl}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : src
+    ? { background: src }
+    : undefined;
+
   return (
-    <div
-      className={`relative overflow-hidden bg-ink-100 ${className}`}
-      style={src ? { background: src } : undefined}
-    >
+    <div className={`relative overflow-hidden bg-ink-100 ${className}`} style={fondo}>
       {label && (
         <span className="absolute left-2 top-2 rounded-md bg-ink-900/45 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
           {label}

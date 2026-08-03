@@ -6,7 +6,7 @@ import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ahora, db, uid } from './db.js';
-import { publicUrl } from './config.js';
+import { permisos, publicUrl, soloLectura } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
@@ -62,6 +62,14 @@ app.get('/archivos/:id', (req, res) => {
 /* ------------------------------ publicaciones ---------------------------- */
 
 app.post('/api/publicaciones/programar', (req, res) => {
+  if (soloLectura()) {
+    return res.status(409).json({
+      error:
+        'El servidor está en modo solo lectura: trae el feed y las métricas, pero no publica. ' +
+        'Para activar la publicación automática, poné MODO_SOLO_LECTURA=false.',
+    });
+  }
+
   const { postId, accountId, publishAt, archivos, caption, type } = req.body ?? {};
 
   if (!postId || !accountId || !publishAt || !archivos?.length) {
@@ -160,16 +168,7 @@ app.get('/api/auth/meta/login', (_req, res) => {
   const url = new URL('https://www.facebook.com/v21.0/dialog/oauth');
   url.searchParams.set('client_id', process.env.META_APP_ID);
   url.searchParams.set('redirect_uri', redirectUri());
-  url.searchParams.set(
-    'scope',
-    [
-      'instagram_basic',
-      'instagram_content_publish',
-      'pages_show_list',
-      'pages_read_engagement',
-      'business_management',
-    ].join(',')
-  );
+  url.searchParams.set('scope', permisos().join(','));
   res.redirect(url.toString());
 });
 
@@ -350,6 +349,7 @@ app.get('/api/salud', (_req, res) => {
     urlPublica: publicUrl() || null,
     iaConfigurada: Boolean(process.env.ANTHROPIC_API_KEY),
     adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
+    soloLectura: soloLectura(),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });
@@ -368,7 +368,13 @@ if (process.env.NODE_ENV !== 'test') {
           '  Definí PUBLIC_URL, o usá `npm run tunel` para probar en tu máquina.'
       );
     }
-    iniciarProgramador();
+    if (soloLectura()) {
+      console.log(
+        'Modo solo lectura: se traen el feed y las métricas, no se publica nada.'
+      );
+    } else {
+      iniciarProgramador();
+    }
   });
 }
 

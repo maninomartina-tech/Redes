@@ -15,8 +15,12 @@ services:
     dockerfilePath: ./Dockerfile
     region: oregon
 
-    # El plan gratuito duerme el servicio tras un rato sin visitas, y dormido
-    # no publica a horario. Por eso va el plan pago más chico.
+    # El plan gratuito de Render NO admite disco, y acá abajo se declara uno,
+    # así que este archivo usa el plan pago más chico.
+    #
+    # Si querés arrancar gratis en modo solo lectura: cambiá esto a "free" y
+    # borrá el bloque "disk". Funciona, con una contra: al perder el disco, en
+    # cada despliegue hay que volver a vincular la cuenta de Instagram.
     plan: starter
 
     # Render reinicia el servicio si esta ruta deja de responder.
@@ -44,6 +48,12 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+
+      # Solo lectura: trae el feed y las métricas, no publica.
+      # Empezar así evita el trámite de aprobación de Meta para publicar.
+      # Cuando quieras la publicación automática, poné false.
+      - key: MODO_SOLO_LECTURA
+        value: true
 
       # Valores fijos.
       - key: META_API_VERSION

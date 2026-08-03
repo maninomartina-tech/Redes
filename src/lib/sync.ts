@@ -64,6 +64,8 @@ export async function sincronizarCuenta(
 export interface PublicacionSincronizada {
   externalId: string;
   permalink: string;
+  /** Portada que devuelve Instagram (puede venir vacía) */
+  imagen: string | null;
   caption: string;
   tipo: string;
   fecha: string;

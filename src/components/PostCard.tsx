@@ -19,6 +19,7 @@ export default function PostCard({
     >
       <MediaThumb
         src={post.mediaUrl}
+        imageUrl={post.igImageUrl}
         kind={post.mediaKind}
         label={`${typeEmoji[post.type]} ${typeLabel[post.type]}`}
         className="aspect-[4/3] w-full"

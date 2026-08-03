@@ -140,6 +140,7 @@ export default function Recommendations({ clientMode = false }: { clientMode?: b
                   <span className="w-4 text-sm font-bold text-ink-300">{i + 1}</span>
                   <MediaThumb
                     src={p.mediaUrl}
+                    imageUrl={p.igImageUrl}
                     kind={p.mediaKind}
                     className="h-12 w-12 shrink-0 rounded-lg"
                   />

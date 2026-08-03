@@ -145,6 +145,14 @@ export interface Post {
   /** La pieza terminada que se va a publicar */
   resultado?: MediaRef;
 
+  // --- Rastro en Instagram (para lo traído de la cuenta) ---
+  /** Id de la publicación en Instagram, si vino de ahí o ya se publicó */
+  igMediaId?: string;
+  /** Link a la publicación en Instagram */
+  igPermalink?: string;
+  /** Imagen de portada que devuelve Instagram */
+  igImageUrl?: string;
+
   // --- Publicación automática ---
   /** Estado del envío a la red social */
   scheduleState?: ScheduleState;

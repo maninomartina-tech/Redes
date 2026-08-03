@@ -105,7 +105,9 @@ export async function metricasDePublicaciones({ igUserId, token, limite = 30 }) 
     medios = await pedir(
       `/${igUserId}/media`,
       {
-        fields: 'id,caption,media_type,media_product_type,timestamp,permalink,like_count,comments_count',
+        fields:
+          'id,caption,media_type,media_product_type,timestamp,permalink,' +
+          'like_count,comments_count,media_url,thumbnail_url',
         limit: limite,
       },
       token
@@ -135,6 +137,8 @@ export async function metricasDePublicaciones({ igUserId, token, limite = 30 }) 
     publicaciones.push({
       externalId: m.id,
       permalink: m.permalink,
+      // En los videos, media_url es el archivo; thumbnail_url es la portada.
+      imagen: m.thumbnail_url ?? m.media_url ?? null,
       caption: m.caption ?? '',
       tipo: m.media_product_type === 'REELS' ? 'reel' : m.media_type === 'CAROUSEL_ALBUM' ? 'carrusel' : 'post',
       fecha: m.timestamp,

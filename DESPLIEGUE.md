@@ -12,6 +12,21 @@ que falta sin él es que las piezas **se suban solas** a Instagram.
 
 ---
 
+## Dos formas de usarlo
+
+| | **Solo lectura** (para empezar) | **Completo** |
+| --- | --- | --- |
+| Trae el feed real y las métricas | Sí | Sí |
+| Publica solo a horario | No | Sí |
+| Aprobación de Meta para publicar | **No hace falta** | Sí |
+| Hosting | Puede ser gratis | **Pago** |
+
+**Arrancá por solo lectura.** Ya tenés el feed real de tus clientes, sus
+métricas y el crecimiento automático, sin trámites ni gastos. La publicación
+automática la activás después, cambiando `MODO_SOLO_LECTURA` a `false`.
+
+---
+
 ## 1. La app en Netlify
 
 1. Entrá a [netlify.com](https://netlify.com) y elegí **Add new site → Import an
@@ -65,12 +80,20 @@ Eso es todo. El disco en `/datos` y el plan ya vienen definidos en el archivo.
 > desplegar. Lo verificás en **Cuentas** dentro de la app: ahí figura cuál está
 > usando.
 
-### Por qué importa el plan
+### Qué plan te conviene
 
-En el **plan gratis de Render el servicio se duerme** después de un rato sin
-visitas. Si se duerme, **no publica a horario**. Para que la programación
-funcione de verdad hace falta un plan que lo mantenga despierto (el más barato
-alcanza). Railway y Fly.io tienen el mismo detalle.
+Depende del modo:
+
+**Modo solo lectura** → podés ir gratis. En `render.yaml` cambiás `plan: starter`
+por `plan: free` y borrás el bloque `disk` (el plan gratuito no admite disco).
+Dos contras, ninguna grave para este modo:
+
+- El servicio se duerme; al tocar "Sincronizar" tarda unos segundos en despertar.
+- Sin disco, en cada despliegue hay que volver a vincular la cuenta de Instagram.
+
+**Modo completo** → tiene que ser pago, sin vuelta. En el plan gratis el
+servicio se duerme, y **dormido no publica a horario**. Railway y Fly.io tienen
+el mismo detalle.
 
 ### Qué pasa si el servidor se cae igual
 

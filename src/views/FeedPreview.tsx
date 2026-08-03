@@ -3,10 +3,13 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import { fmt } from '@/lib/date';
 import { typeEmoji } from '@/lib/format';
 import { Avatar, MediaThumb, SectionTitle } from '@/components/ui';
+import SyncButton from '@/components/SyncButton';
+import { sincronizarPublicaciones } from '@/lib/sync';
 import PostDetail from '@/components/PostDetail';
 
 export default function FeedPreview({ clientMode = false }: { clientMode?: boolean }) {
   const posts = useStore((s) => s.posts);
+  const importarDeInstagram = useStore((s) => s.importarDeInstagram);
   const client = useCurrentClient();
   const [onlyReady, setOnlyReady] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -28,15 +31,51 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
             : 'Cómo se va a ver la grilla con el contenido planificado del mes.'
         }
         action={
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-600">
-            <input
-              type="checkbox"
-              checked={onlyReady}
-              onChange={(e) => setOnlyReady(e.target.checked)}
-              className="h-4 w-4 rounded border-ink-300 text-brand-600"
-            />
-            Solo aprobado/publicado
-          </label>
+          <div className="flex flex-wrap items-start justify-end gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-600">
+              <input
+                type="checkbox"
+                checked={onlyReady}
+                onChange={(e) => setOnlyReady(e.target.checked)}
+                className="h-4 w-4 rounded border-ink-300 text-brand-600"
+              />
+              Solo aprobado/publicado
+            </label>
+
+            {!clientMode && (
+              <SyncButton
+                label="Traer feed de Instagram"
+                descripcion="Suma lo ya publicado con sus métricas. No duplica lo que planificaste acá."
+                onSync={async () => {
+                  const cuenta = client.accounts.find((a) => a.metaAccountId);
+                  if (!cuenta?.metaAccountId) {
+                    return {
+                      ok: false,
+                      error:
+                        'Primero vinculá la cuenta de Instagram de este cliente, en la sección Cuentas.',
+                    };
+                  }
+                  const r = await sincronizarPublicaciones(cuenta.metaAccountId);
+                  if (!r.ok) return { ok: false, error: r.error, avisos: r.avisos };
+
+                  const { nuevas, actualizadas } = importarDeInstagram(
+                    client.id,
+                    cuenta.id,
+                    r.datos
+                  );
+                  return {
+                    ok: true,
+                    resumen:
+                      `${nuevas} publicación(es) nueva(s) en el feed` +
+                      (actualizadas > 0
+                        ? ` y ${actualizadas} actualizada(s) con sus métricas.`
+                        : '.'),
+                    avisos: r.avisos,
+                  };
+                }}
+              />
+            )}
+          </div>
         }
       />
 
@@ -72,7 +111,12 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
               onClick={() => setSelected(p.id)}
               className="group relative aspect-square"
             >
-              <MediaThumb src={p.mediaUrl} kind={p.mediaKind} className="h-full w-full" />
+              <MediaThumb
+                src={p.mediaUrl}
+                imageUrl={p.igImageUrl}
+                kind={p.mediaKind}
+                className="h-full w-full"
+              />
               <span className="absolute right-1 top-1 text-sm drop-shadow">
                 {typeEmoji[p.type]}
               </span>

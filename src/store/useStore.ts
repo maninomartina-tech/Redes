@@ -22,6 +22,7 @@ import {
   seedPosts,
 } from '@/data/seed';
 import { DEFAULT_BRANDING, applyBranding, type Branding } from '@/lib/theme';
+import type { PublicacionSincronizada } from '@/lib/sync';
 import {
   cancelSchedule as cancelarEnMeta,
   motivoNoProgramable,
@@ -81,6 +82,12 @@ interface State {
   updatePost: (id: string, patch: Partial<Post>) => void;
   removePost: (id: string) => void;
   setPostStatus: (id: string, status: PostStatus) => void;
+  /** Trae al feed lo publicado en Instagram. Devuelve cuántas entraron y cuántas se actualizaron. */
+  importarDeInstagram: (
+    clientId: string,
+    accountId: string,
+    publicaciones: PublicacionSincronizada[]
+  ) => { nuevas: number; actualizadas: number };
 
   // publicación automática
   autoSchedule: (id: string) => Promise<void>;
@@ -184,6 +191,86 @@ export const useStore = create<State>()(
 
       removePost: (id) =>
         set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
+
+      /**
+       * Trae al feed lo que ya está publicado en Instagram.
+       *
+       * Si una pieza ya existe en la app —porque se planificó acá y salió— se
+       * actualiza con sus métricas en vez de duplicarla. Se reconoce por el id
+       * de Instagram o, para lo que se programó desde acá, por la fecha.
+       */
+      importarDeInstagram: (clientId, accountId, publicaciones) => {
+        let nuevas = 0;
+        let actualizadas = 0;
+
+        set((s) => {
+          const posts = [...s.posts];
+
+          publicaciones.forEach((pub) => {
+            const metrics = pub.metrics;
+            const igImageUrl = pub.imagen ?? undefined;
+
+            // 1) ¿Ya la habíamos traído antes?
+            let i = posts.findIndex(
+              (p) => p.clientId === clientId && p.igMediaId === pub.externalId
+            );
+
+            // 2) Si no, ¿hay algo planificado acá que salió ese mismo día?
+            if (i === -1) {
+              const dia = pub.fecha.slice(0, 10);
+              i = posts.findIndex(
+                (p) =>
+                  p.clientId === clientId &&
+                  !p.igMediaId &&
+                  ['programado', 'publicado'].includes(p.status) &&
+                  p.date.slice(0, 10) === dia
+              );
+            }
+
+            if (i !== -1) {
+              posts[i] = {
+                ...posts[i],
+                status: 'publicado',
+                metrics,
+                igMediaId: pub.externalId,
+                igPermalink: pub.permalink,
+                igImageUrl: igImageUrl ?? posts[i].igImageUrl,
+              };
+              actualizadas++;
+              return;
+            }
+
+            // 3) Es contenido que no pasó por la app: se suma al feed.
+            const primeraLinea = pub.caption.split('\n')[0]?.trim() ?? '';
+            posts.unshift({
+              id: uid('post'),
+              clientId,
+              accountId,
+              platform: 'instagram',
+              type: (['reel', 'carrusel', 'post'].includes(pub.tipo)
+                ? pub.tipo
+                : 'post') as Post['type'],
+              title: primeraLinea.slice(0, 80) || 'Publicación de Instagram',
+              date: pub.fecha,
+              status: 'publicado',
+              ideaGeneral: '',
+              contenido: '',
+              copy: pub.caption,
+              hashtags: [],
+              comments: [],
+              metrics,
+              igMediaId: pub.externalId,
+              igPermalink: pub.permalink,
+              igImageUrl,
+            });
+            nuevas++;
+          });
+
+          return { posts };
+        });
+
+        return { nuevas, actualizadas };
+      },
 
       /**
        * Al aprobar una pieza que ya tiene el resultado final cargado, queda
