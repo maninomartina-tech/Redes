@@ -43,6 +43,14 @@ export interface Client {
   logo?: MediaRef;
 }
 
+/** Un grupo de hashtags guardado para reutilizar. */
+export interface HashtagSet {
+  id: string;
+  clientId: string;
+  name: string;
+  tags: string[];
+}
+
 /**
  * Foto mensual de la cuenta. Se carga a mano: no depende de Meta, así que
  * sirve igual para cuentas sin conexión a la API.
@@ -169,6 +177,11 @@ export interface Post {
   externalId?: string;
   /** Motivo por el que no se pudo programar o publicar */
   scheduleError?: string;
+  /**
+   * Se subió a mano, no por la app. Mientras Meta no apruebe el permiso de
+   * publicar, este es el camino normal.
+   */
+  publicadoAMano?: boolean;
 
   hashtags: string[];
   comments: Comment[];

@@ -3,8 +3,11 @@ import {
   CheckCircle2,
   Link2,
   Music2,
+  Pencil,
+  Plus,
   ServerOff,
   ShieldCheck,
+  Trash2,
   TriangleAlert,
   Users,
 } from 'lucide-react';
@@ -19,7 +22,8 @@ import {
   type CuentaMeta,
   type EstadoServidor,
 } from '@/lib/publish';
-import { SectionTitle, Toggle } from '@/components/ui';
+import { Avatar, Modal, SectionTitle, Toggle } from '@/components/ui';
+import ClientForm from '@/components/ClientForm';
 
 const platformIcon: Record<Platform, React.ReactNode> = {
   instagram: <Camera size={20} />,
@@ -31,8 +35,12 @@ export default function Accounts() {
   const client = useCurrentClient();
   const toggleAccount = useStore((s) => s.toggleAccount);
   const updateAccount = useStore((s) => s.updateAccount);
+  const removeAccount = useStore((s) => s.removeAccount);
   const [cuentasMeta, setCuentasMeta] = useState<CuentaMeta[]>([]);
   const [servidor, setServidor] = useState<EstadoServidor | null>(null);
+  const [nuevaCuenta, setNuevaCuenta] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [nuevaRed, setNuevaRed] = useState(false);
 
   useEffect(() => {
     consultarServidor().then(setServidor);
@@ -45,10 +53,32 @@ export default function Accounts() {
     <div>
       <SectionTitle
         title="Cuentas conectadas"
-        subtitle={`Conexiones de ${client.name} para publicar automáticamente.`}
+        subtitle={`Redes de ${client.name} y su conexión con Meta.`}
+        action={
+          <button className="btn-primary" onClick={() => setNuevaCuenta(true)}>
+            <Plus size={16} /> Agregar cuenta
+          </button>
+        }
       />
 
       <EstadoDelServidor estado={servidor} loginMeta={loginMeta} />
+
+      {/* Ficha de la cuenta que está seleccionada */}
+      <div className="card mb-3 flex items-center gap-4 p-4">
+        <Avatar name={client.name} color={client.color} logoId={client.logo?.id} size={44} />
+        <div className="mr-auto min-w-0">
+          <p className="truncate font-semibold text-ink-900">{client.name}</p>
+          <p className="truncate text-sm text-ink-500">
+            {client.handle}
+            {client.startingFollowers != null && (
+              <> · arrancó en {client.startingFollowers.toLocaleString('es-AR')} seguidores</>
+            )}
+          </p>
+        </div>
+        <button className="btn-outline !py-1.5 text-xs" onClick={() => setEditando(true)}>
+          <Pencil size={14} /> Editar
+        </button>
+      </div>
 
       <div className="space-y-3">
         {client.accounts.map((acc) => (
@@ -76,6 +106,15 @@ export default function Accounts() {
                 checked={acc.connected}
                 onChange={() => toggleAccount(client.id, acc.id)}
               />
+              {client.accounts.length > 1 && (
+                <button
+                  className="btn-ghost !px-2 text-rose-600 hover:bg-rose-50"
+                  onClick={() => removeAccount(client.id, acc.id)}
+                  title={`Quitar ${platformLabel[acc.platform]}`}
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
             </div>
 
             {/* Qué cuenta real de Meta corresponde a esta */}
@@ -105,8 +144,96 @@ export default function Accounts() {
             )}
           </div>
         ))}
+
+        <button
+          onClick={() => setNuevaRed(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ink-200 bg-surface/60 py-4 text-sm font-medium text-ink-500 transition hover:border-brand-300 hover:text-brand-800"
+        >
+          <Plus size={16} /> Agregar otra red a {client.name}
+        </button>
       </div>
+
+      <ClientForm open={nuevaCuenta} onClose={() => setNuevaCuenta(false)} />
+      <ClientForm
+        key={client.id}
+        open={editando}
+        onClose={() => setEditando(false)}
+        cliente={client}
+      />
+      <NuevaRed open={nuevaRed} onClose={() => setNuevaRed(false)} clientId={client.id} />
     </div>
+  );
+}
+
+/** Suma otra red social a la cuenta que está abierta. */
+function NuevaRed({
+  open,
+  onClose,
+  clientId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  clientId: string;
+}) {
+  const addAccount = useStore((s) => s.addAccount);
+  const [platform, setPlatform] = useState<Platform>('instagram');
+  const [handle, setHandle] = useState('');
+
+  const guardar = () => {
+    if (!handle.trim()) return;
+    addAccount(clientId, { platform, handle: handle.trim() });
+    setHandle('');
+    onClose();
+  };
+
+  return (
+    <Modal open={open} onClose={onClose} title="Agregar una red">
+      <div className="space-y-4 p-5">
+        <div>
+          <span className="label">Red</span>
+          <div className="mt-1.5 grid grid-cols-3 gap-2">
+            {(['instagram', 'tiktok', 'facebook'] as Platform[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPlatform(p)}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition ${
+                  platform === p
+                    ? 'border-brand-400 bg-brand-50 text-brand-800'
+                    : 'border-ink-200 bg-surface text-ink-600 hover:bg-ink-50'
+                }`}
+              >
+                {platformIcon[p]}
+                {platformLabel[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="label" htmlFor="red-handle">
+            Usuario
+          </label>
+          <input
+            id="red-handle"
+            autoFocus
+            className="input mt-1"
+            placeholder="@aurora.skin"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && guardar()}
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-ink-200/70 pt-4">
+          <button className="btn-outline" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn-primary" onClick={guardar} disabled={!handle.trim()}>
+            Agregar
+          </button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

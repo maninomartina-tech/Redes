@@ -4,8 +4,9 @@ App para gestionar las redes sociales de tus clientes: **planificás, el cliente
 aprueba, y se publica**. Incluye calendario dinámico, vista del feed, historias,
 métricas con IA, seguimiento de ADS y recomendaciones de contenido.
 
-Hecha con **React + Vite + TypeScript + Tailwind**. Los datos se guardan en el
-navegador (localStorage), así que funciona sin backend para probarla.
+Hecha con **React + Vite + TypeScript + Tailwind**. Sin servidor funciona
+igual, guardando en el navegador; con servidor la planificación se comparte y
+cada cliente entra a ver lo suyo con su propio link.
 
 ---
 
@@ -43,15 +44,33 @@ el servidor, en Render o similar).
 | **Detalle del contenido** | **Inspiración** (de dónde nace: tendencia, link y imágenes de referencia), las **3 partes** —1) idea general, 2) guion/diálogo o contenido, 3) copy—, el **resultado final** que se sube desde el dispositivo o arrastrando, y los comentarios. Se guarda con *Guardar cambios*; si intentás cerrar con cambios pendientes, avisa. |
 | **Vista del feed** | Mockup de la grilla de Instagram para ver cómo queda el feed del mes. |
 | **Historias** | Planificador semanal de historias, día por día. |
+| **Para publicar** | La cola de lo que hay que subir a mano, en orden: el copy listo para pegar, la pieza para bajar al teléfono y el botón *Ya lo publiqué*. Avisa lo que se pasó de hora. |
+| **Hashtags** | Grupos guardados por cliente, para meterlos en el copy con un clic en vez de reescribirlos. |
 | **Métricas + IA** | Análisis de cada campaña por mes, con insights automáticos. |
 | **Crecimiento** | Carga manual mes a mes: seguidores, interacción y alcance. Más las consultas por WhatsApp/DM y las ventas que se concretaron. No depende de Meta. |
 | **ADS** | Seguimiento de campañas pagas: gasto, CTR, costo por resultado. |
-| **Recomendaciones** | Qué repetir y qué ajustar, según el contenido ya publicado. |
+| **Recomendaciones** | Qué repetir y qué ajustar, según el contenido ya publicado, más los **mejores horarios** por día y franja. |
+| **Informe mensual** | El resumen que se le manda al cliente: crecimiento, qué se publicó, lo que mejor funcionó y las ventas del mes. Se guarda como PDF desde el navegador. |
 | **Marca** | El logo y los colores de la app, editables desde adentro. Con el tono fuerte, el suave y el fondo se genera toda la paleta; avisa si algún color queda ilegible. También el logo de cada cliente. |
-| **Cuentas** | Conexión de las cuentas de cada cliente para publicar. |
+| **Accesos** | El link secreto con el que entra cada cliente a ver lo suyo. |
+| **Cuentas** | Alta y edición de cada cuenta de cliente, sus redes, y la conexión con Meta. |
 
-Se pueden gestionar **varios clientes** (selector arriba a la izquierda). El botón
-de restaurar (↺) vuelve a los datos de ejemplo.
+Se pueden gestionar **varios clientes** (selector arriba a la izquierda, con
+*Agregar cuenta*). El botón de restaurar (↺) vuelve a los datos de ejemplo.
+
+### Mientras Meta no apruebe el permiso
+
+Se puede trabajar entero a mano, y la app está pensada para eso:
+
+1. **Para publicar** te da la cola del día con el copy y la pieza; subís desde
+   Instagram y marcás *Ya lo publiqué*.
+2. Cuando tengas los números, los cargás en el contenido (*Métricas de esta
+   publicación*). Es lo que alimenta el informe, las recomendaciones y los
+   mejores horarios.
+3. **Crecimiento** ya funcionaba así: seguidores, interacción y ventas a mano.
+
+Con el permiso aprobado, lo único que cambia es que los pasos 1 y 2 se hacen
+solos; todo lo demás queda igual.
 
 ### Crecimiento de la cuenta
 

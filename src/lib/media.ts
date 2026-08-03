@@ -191,6 +191,35 @@ export function useMediaUrl(id?: string, remota?: string): string | undefined {
   return url;
 }
 
+/**
+ * Baja el archivo al dispositivo.
+ *
+ * Mientras la publicación se hace a mano, este es el paso real del trabajo:
+ * la pieza tiene que terminar en el teléfono para subirla desde Instagram.
+ */
+export async function descargarMedia(media: MediaRef): Promise<boolean> {
+  let url: string | undefined;
+  let creada = false;
+
+  const blob = await getMediaBlob(media.id);
+  if (blob) {
+    url = URL.createObjectURL(blob);
+    creada = true;
+  } else if (media.url) {
+    url = media.url;
+  }
+  if (!url) return false;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = media.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  if (creada) setTimeout(() => URL.revokeObjectURL(url!), 60_000);
+  return true;
+}
+
 export function formatSize(bytes: number): string {
   if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;

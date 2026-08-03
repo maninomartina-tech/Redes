@@ -5,10 +5,13 @@ import type {
   Campaign,
   Client,
   Comment,
+  HashtagSet,
   Lead,
   MediaRef,
   MonthlyStat,
+  Platform,
   Post,
+  PostMetrics,
   PostStatus,
   Role,
   SocialAccount,
@@ -151,6 +154,22 @@ interface State {
   toggleAccount: (clientId: string, accountId: string) => void;
   updateAccount: (clientId: string, accountId: string, patch: Partial<SocialAccount>) => void;
   updateClient: (clientId: string, patch: Partial<Client>) => void;
+  /** Alta de una cuenta de cliente. Queda seleccionada. */
+  addClient: (c: Partial<Client> & { name: string; handle: string }) => Client;
+  /** Baja de una cuenta, con todo lo que colgaba de ella. */
+  removeClient: (clientId: string) => void;
+  addAccount: (clientId: string, a: Partial<SocialAccount> & { handle: string }) => void;
+  removeAccount: (clientId: string, accountId: string) => void;
+
+  // publicación a mano (mientras Meta no apruebe el permiso)
+  marcarPublicado: (id: string, datos?: { fecha?: string; permalink?: string }) => void;
+  setMetrics: (id: string, m: PostMetrics) => void;
+
+  // hashtags guardados
+  hashtagSets: HashtagSet[];
+  addHashtagSet: (clientId: string, name: string, tags: string[]) => void;
+  updateHashtagSet: (id: string, patch: Partial<HashtagSet>) => void;
+  removeHashtagSet: (id: string) => void;
 
   // crecimiento (carga manual)
   upsertMonthlyStat: (s: Omit<MonthlyStat, 'id'> & { id?: string }) => void;
@@ -182,6 +201,7 @@ function datosDelEspacio(s: State): DatosEspacio {
     ads: s.ads,
     monthlyStats: s.monthlyStats,
     leads: s.leads,
+    hashtagSets: s.hashtagSets,
     branding: s.branding,
     brandLogo: s.brandLogo,
   };
@@ -282,6 +302,7 @@ export const useStore = create<State>()(
               ads: datos.ads ?? [],
               monthlyStats: datos.monthlyStats ?? [],
               leads: datos.leads ?? [],
+              hashtagSets: datos.hashtagSets ?? [],
               branding,
               brandLogo: datos.brandLogo,
               currentClientId:
@@ -636,6 +657,125 @@ export const useStore = create<State>()(
           clients: s.clients.map((c) => (c.id === clientId ? { ...c, ...patch } : c)),
         })),
 
+      addClient: (c) => {
+        const id = uid('cli');
+        const cliente: Client = {
+          id,
+          name: c.name,
+          handle: c.handle.startsWith('@') ? c.handle : `@${c.handle}`,
+          color: c.color ?? '#7A4A3F',
+          // Toda cuenta arranca al menos con su Instagram.
+          accounts: c.accounts ?? [
+            {
+              id: uid('acc'),
+              platform: 'instagram',
+              handle: c.handle.startsWith('@') ? c.handle : `@${c.handle}`,
+              connected: false,
+            },
+          ],
+          startDate: c.startDate,
+          startingFollowers: c.startingFollowers,
+          tracksLeads: c.tracksLeads ?? false,
+          logo: c.logo,
+        };
+        set((s) => ({ clients: [...s.clients, cliente], currentClientId: id }));
+        return cliente;
+      },
+
+      /**
+       * Da de baja una cuenta con todo lo suyo. Dejar el contenido huérfano
+       * ensuciaría las métricas de las demás, así que se va junto.
+       */
+      removeClient: (clientId) =>
+        set((s) => {
+          const clients = s.clients.filter((c) => c.id !== clientId);
+          return {
+            clients,
+            posts: s.posts.filter((p) => p.clientId !== clientId),
+            campaigns: s.campaigns.filter((c) => c.clientId !== clientId),
+            ads: s.ads.filter((a) => a.clientId !== clientId),
+            monthlyStats: s.monthlyStats.filter((m) => m.clientId !== clientId),
+            leads: s.leads.filter((l) => l.clientId !== clientId),
+            hashtagSets: s.hashtagSets.filter((h) => h.clientId !== clientId),
+            currentClientId:
+              s.currentClientId === clientId ? clients[0]?.id ?? '' : s.currentClientId,
+          };
+        }),
+
+      addAccount: (clientId, a) =>
+        set((s) => ({
+          clients: s.clients.map((c) =>
+            c.id === clientId
+              ? {
+                  ...c,
+                  accounts: [
+                    ...c.accounts,
+                    {
+                      id: uid('acc'),
+                      platform: (a.platform ?? 'instagram') as Platform,
+                      handle: a.handle.startsWith('@') ? a.handle : `@${a.handle}`,
+                      connected: a.connected ?? false,
+                      metaAccountId: a.metaAccountId,
+                    },
+                  ],
+                }
+              : c
+          ),
+        })),
+
+      removeAccount: (clientId, accountId) =>
+        set((s) => ({
+          clients: s.clients.map((c) =>
+            c.id === clientId
+              ? { ...c, accounts: c.accounts.filter((a) => a.id !== accountId) }
+              : c
+          ),
+        })),
+
+      /**
+       * "Ya lo subí a Instagram."
+       *
+       * Mientras Meta no apruebe el permiso de publicar, este es el camino
+       * normal: se sube a mano y se marca acá, para que el feed, las métricas
+       * y lo que ve el cliente queden al día.
+       */
+      marcarPublicado: (id, datos) =>
+        set((s) => ({
+          posts: s.posts.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  status: 'publicado',
+                  publicadoAMano: true,
+                  date: datos?.fecha ?? p.date,
+                  igPermalink: datos?.permalink || p.igPermalink,
+                  scheduleState: undefined,
+                  scheduleError: undefined,
+                }
+              : p
+          ),
+        })),
+
+      setMetrics: (id, metrics) =>
+        set((s) => ({
+          posts: s.posts.map((p) => (p.id === id ? { ...p, metrics } : p)),
+        })),
+
+      hashtagSets: [],
+
+      addHashtagSet: (clientId, name, tags) =>
+        set((s) => ({
+          hashtagSets: [...s.hashtagSets, { id: uid('ht'), clientId, name, tags }],
+        })),
+
+      updateHashtagSet: (id, patch) =>
+        set((s) => ({
+          hashtagSets: s.hashtagSets.map((h) => (h.id === id ? { ...h, ...patch } : h)),
+        })),
+
+      removeHashtagSet: (id) =>
+        set((s) => ({ hashtagSets: s.hashtagSets.filter((h) => h.id !== id) })),
+
       // Una sola carga por cliente y mes: si ya existe ese mes, lo reemplaza.
       upsertMonthlyStat: (stat) =>
         set((s) => {
@@ -714,6 +854,7 @@ export const useStore = create<State>()(
           ads: seedAds,
           monthlyStats: seedMonthlyStats,
           leads: seedLeads,
+          hashtagSets: [],
           branding: DEFAULT_BRANDING,
           brandLogo: undefined,
           currentClientId: seedClients[0].id,
@@ -733,6 +874,7 @@ export const useStore = create<State>()(
        */
       migrate: (persisted, from) => {
         const s = persisted as Partial<State>;
+        s.hashtagSets ??= [];
         if (from < 2) {
           s.monthlyStats ??= seedMonthlyStats;
           s.leads ??= seedLeads;
@@ -770,6 +912,7 @@ const CLAVES_DE_DATOS = [
   'ads',
   'monthlyStats',
   'leads',
+  'hashtagSets',
   'branding',
   'brandLogo',
 ] as const;

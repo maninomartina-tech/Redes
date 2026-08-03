@@ -19,6 +19,8 @@ import { fmtDateTime } from '@/lib/date';
 import { statusChip, statusLabel, statusOrder, typeEmoji, typeLabel } from '@/lib/format';
 import { Avatar, Modal } from '@/components/ui';
 import MediaUploader from '@/components/MediaUploader';
+import MetricsForm from '@/components/MetricsForm';
+import HashtagPicker from '@/components/HashtagPicker';
 
 const types: PostType[] = ['reel', 'post', 'carrusel', 'historia'];
 
@@ -33,6 +35,7 @@ type Borrador = Pick<
   | 'ideaGeneral'
   | 'contenido'
   | 'copy'
+  | 'hashtags'
   | 'resultado'
 >;
 
@@ -46,6 +49,7 @@ function tomarBorrador(p: Post): Borrador {
     ideaGeneral: p.ideaGeneral,
     contenido: p.contenido,
     copy: p.copy,
+    hashtags: p.hashtags ?? [],
     resultado: p.resultado,
   };
 }
@@ -219,15 +223,12 @@ export default function PostDetail({
                 placeholder="El texto que acompaña la publicación."
                 className="input resize-y"
               />
-              {post.hashtags.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {post.hashtags.map((h) => (
-                    <span key={h} className="chip bg-ink-100 text-ink-500">
-                      #{h}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <HashtagPicker
+                clientId={post.clientId}
+                value={draft.hashtags}
+                onChange={(hashtags) => set({ hashtags })}
+                readOnly={readOnly}
+              />
             </Part>
 
             {/* resultado final */}
@@ -251,6 +252,9 @@ export default function PostDetail({
                 </p>
               )}
             </div>
+
+            {/* Los números, que sin el permiso de Meta se cargan a mano */}
+            {post.status === 'publicado' && !readOnly && <MetricsForm post={post} />}
           </div>
 
           {/* ---- Columna derecha ---- */}

@@ -22,6 +22,9 @@ import ClientResults from '@/views/ClientResults';
 import ClientHome from '@/views/ClientHome';
 import Branding from '@/views/Branding';
 import ClientAccess from '@/views/ClientAccess';
+import ToPublish from '@/views/ToPublish';
+import Hashtags from '@/views/Hashtags';
+import Report from '@/views/Report';
 import Ingreso from '@/views/Ingreso';
 import Portal from '@/views/Portal';
 
@@ -77,10 +80,13 @@ function Panel() {
         <Route path="/planificacion" element={<PlanningBoard />} />
         <Route path="/feed" element={<FeedPreview />} />
         <Route path="/historias" element={<StoriesPlanner />} />
+        <Route path="/publicar" element={<ToPublish />} />
+        <Route path="/hashtags" element={<Hashtags />} />
         <Route path="/metricas" element={<Metrics />} />
         <Route path="/crecimiento" element={<Growth />} />
         <Route path="/ads" element={<Ads />} />
         <Route path="/recomendaciones" element={<Recommendations />} />
+        <Route path="/informe" element={<Report />} />
         <Route path="/marca" element={<Branding />} />
         <Route path="/accesos" element={<ClientAccess />} />
         <Route path="/ajustes" element={<Accounts />} />

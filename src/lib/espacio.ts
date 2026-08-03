@@ -1,4 +1,13 @@
-import type { Ad, Campaign, Client, Lead, MediaRef, MonthlyStat, Post } from '@/types';
+import type {
+  Ad,
+  Campaign,
+  Client,
+  HashtagSet,
+  Lead,
+  MediaRef,
+  MonthlyStat,
+  Post,
+} from '@/types';
 import type { Branding } from '@/lib/theme';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +35,7 @@ export interface DatosEspacio {
   ads: Ad[];
   monthlyStats: MonthlyStat[];
   leads: Lead[];
+  hashtagSets: HashtagSet[];
   branding?: Branding;
   brandLogo?: MediaRef;
 }

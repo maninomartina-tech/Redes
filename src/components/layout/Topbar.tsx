@@ -7,12 +7,14 @@ import {
   Loader2,
   LogOut,
   PenTool,
+  Plus,
   RotateCcw,
   TriangleAlert,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Avatar } from '@/components/ui';
+import ClientForm from '@/components/ClientForm';
 import { hayServidor } from '@/lib/espacio';
 
 /** Dónde se están guardando los cambios. */
@@ -47,6 +49,7 @@ export default function Topbar() {
   const sesion = useStore((s) => s.sesion);
   const cerrarSesionCreadora = useStore((s) => s.cerrarSesionCreadora);
   const [open, setOpen] = useState(false);
+  const [nuevaCuenta, setNuevaCuenta] = useState(false);
 
   const current = clients.find((c) => c.id === currentClientId) ?? clients[0];
 
@@ -100,16 +103,33 @@ export default function Topbar() {
                     c.id === currentClientId ? 'bg-brand-100' : ''
                   }`}
                 >
-                  <Avatar name={c.name} color={c.color} size={28} />
+                  <Avatar name={c.name} color={c.color} logoId={c.logo?.id} size={28} />
                   <span>
                     <span className="block font-medium text-ink-800">{c.name}</span>
                     <span className="block text-xs text-ink-400">{c.handle}</span>
                   </span>
                 </button>
               ))}
+
+              <div className="mt-1 border-t border-ink-200/70 pt-1">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setNuevaCuenta(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-brand-800 transition hover:bg-brand-50"
+                >
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-100">
+                    <Plus size={15} />
+                  </span>
+                  Agregar cuenta
+                </button>
+              </div>
             </div>
           </>
         )}
+
+        <ClientForm open={nuevaCuenta} onClose={() => setNuevaCuenta(false)} />
       </div>
 
       <div className="flex items-center gap-2">

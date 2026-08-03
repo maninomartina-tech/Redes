@@ -1,10 +1,11 @@
-import { Bookmark, Clock, Lightbulb, Repeat, TrendingUp, Trophy } from 'lucide-react';
+import { Bookmark, Lightbulb, Repeat, TrendingUp, Trophy } from 'lucide-react';
 import { useMemo } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { fmt } from '@/lib/date';
 import { nfmt, typeLabel } from '@/lib/format';
 import { EmptyState, MediaThumb, SectionTitle } from '@/components/ui';
+import BestTimes from '@/components/BestTimes';
 
 interface Rec {
   icon: React.ReactNode;
@@ -47,14 +48,6 @@ function buildRecs(published: Post[]): Rec[] {
         Math.round(bestAvg)
       )} por pieza). Reforzá este formato el próximo mes.`,
     });
-
-  // Mejor horario/día
-  const best = [...published].sort((a, b) => eng(b) - eng(a))[0];
-  recs.push({
-    icon: <Clock size={16} />,
-    title: `Mejor momento: ${fmt(best.date, "EEEE 'a las' HH:00")} h`,
-    detail: `Tu contenido de mayor rendimiento salió ese día y horario. Probá concentrar los lanzamientos importantes ahí.`,
-  });
 
   // Guardados
   const totalSaves = published.reduce((s, p) => s + p.metrics!.saves, 0);
@@ -127,6 +120,9 @@ export default function Recommendations({ clientMode = false }: { clientMode?: b
               </div>
             ))}
           </div>
+
+          {/* cuándo publicar */}
+          <BestTimes publicados={published} />
 
           {/* top contenido publicado */}
           <div className="card p-4">

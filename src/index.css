@@ -98,3 +98,39 @@ body {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Impresión.
+
+   El informe mensual se guarda como PDF desde el navegador. Para eso, todo lo
+   que es navegación —menús, barras, botones— tiene que desaparecer y quedar
+   solo la hoja.
+   --------------------------------------------------------------------------- */
+@media print {
+  aside,
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .hoja {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Que no se corte una sección al medio entre dos páginas. */
+  .hoja section,
+  .hoja footer {
+    break-inside: avoid;
+  }
+}
