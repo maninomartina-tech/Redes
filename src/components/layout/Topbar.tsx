@@ -111,18 +111,15 @@ export default function Topbar() {
                 </button>
               ))}
 
-              <div className="mt-1 border-t border-ink-200/70 pt-1">
+              <div className="mt-1.5 border-t border-ink-200/70 pt-1.5">
                 <button
                   onClick={() => {
                     setOpen(false);
                     setNuevaCuenta(true);
                   }}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm font-medium text-brand-800 transition hover:bg-brand-50"
+                  className="btn-soft w-full !justify-start !rounded-xl"
                 >
-                  <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-100">
-                    <Plus size={15} />
-                  </span>
-                  Agregar cuenta
+                  <Plus size={16} /> Agregar cuenta
                 </button>
               </div>
             </div>
