@@ -24,6 +24,51 @@ import HashtagPicker from '@/components/HashtagPicker';
 
 const types: PostType[] = ['reel', 'post', 'carrusel', 'historia'];
 
+/**
+ * Campo de texto que, del lado del cliente, se muestra como texto.
+ *
+ * Antes le llegaban los mismos textarea deshabilitados que usa la creadora:
+ * parecían un formulario para completar, recortaban el texto largo a la altura
+ * fija del campo y encima el tipo de contenido era un desplegable que podía
+ * tocar. Nada de eso es asunto suyo.
+ */
+function Campo({
+  readOnly,
+  value,
+  onChange,
+  rows,
+  placeholder,
+  className = '',
+  vacio = 'Todavía sin cargar.',
+}: {
+  readOnly: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  rows: number;
+  placeholder: string;
+  className?: string;
+  vacio?: string;
+}) {
+  if (readOnly) {
+    return value.trim() ? (
+      <p className={`whitespace-pre-line text-sm leading-relaxed text-ink-700 ${className}`}>
+        {value}
+      </p>
+    ) : (
+      <p className="text-sm text-ink-400">{vacio}</p>
+    );
+  }
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      rows={rows}
+      placeholder={placeholder}
+      className={`input resize-y ${className}`}
+    />
+  );
+}
+
 /** Campos que se editan sobre un borrador antes de guardar. */
 type Borrador = Pick<
   Post,
@@ -104,7 +149,12 @@ export default function PostDetail({
 
   return (
     <>
-      <Modal open={!!postId} onClose={intentarCerrar} title="Contenido" wide>
+      <Modal
+        open={!!postId}
+        onClose={intentarCerrar}
+        title={readOnly ? 'Tu contenido' : 'Contenido'}
+        wide
+      >
         <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
           {/* ---- Columna izquierda ---- */}
           <div className="max-h-[68vh] space-y-5 overflow-y-auto p-5">
@@ -112,87 +162,113 @@ export default function PostDetail({
               <span className={`chip ${statusChip[post.status]}`}>
                 {statusLabel[post.status]}
               </span>
-              <select
-                disabled={readOnly}
-                value={draft.type}
-                onChange={(e) => set({ type: e.target.value as PostType })}
-                className="rounded-full border border-ink-200 bg-surface px-2.5 py-1 text-xs font-medium disabled:opacity-70"
-              >
-                {types.map((t) => (
-                  <option key={t} value={t}>
-                    {typeEmoji[t]} {typeLabel[t]}
-                  </option>
-                ))}
-              </select>
+              {readOnly ? (
+                <span className="chip bg-ink-100 text-ink-600">
+                  {typeEmoji[draft.type]} {typeLabel[draft.type]}
+                </span>
+              ) : (
+                <select
+                  value={draft.type}
+                  onChange={(e) => set({ type: e.target.value as PostType })}
+                  className="rounded-full border border-ink-200 bg-surface px-2.5 py-1 text-xs font-medium"
+                >
+                  {types.map((t) => (
+                    <option key={t} value={t}>
+                      {typeEmoji[t]} {typeLabel[t]}
+                    </option>
+                  ))}
+                </select>
+              )}
               <span className="text-xs text-ink-400">{fmtDateTime(post.date)}</span>
             </div>
 
-            <input
-              disabled={readOnly}
-              value={draft.title}
-              onChange={(e) => set({ title: e.target.value })}
-              className="w-full border-0 bg-transparent p-0 text-xl font-bold text-ink-900 outline-none placeholder:text-ink-300 disabled:opacity-100"
-              placeholder="Título del contenido"
-            />
-
-            {/* de dónde nace */}
-            <div className="rounded-xl border border-peach-200 bg-peach-50 p-3">
-              <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-peach-600">
-                <Sparkle size={15} />
-                Inspiración · de dónde nace
-              </div>
-              <textarea
-                disabled={readOnly}
-                value={draft.inspiracion}
-                onChange={(e) => set({ inspiracion: e.target.value })}
-                rows={2}
-                placeholder="¿Sale de una tendencia, un audio, una referencia, una pregunta que se repite?"
-                className="input resize-y"
+            {readOnly ? (
+              <h3 className="text-xl font-bold text-ink-900">{draft.title}</h3>
+            ) : (
+              <input
+                value={draft.title}
+                onChange={(e) => set({ title: e.target.value })}
+                className="w-full border-0 bg-transparent p-0 text-xl font-bold text-ink-900 outline-none placeholder:text-ink-300"
+                placeholder="Título del contenido"
               />
+            )}
 
-              <div className="mt-2 flex items-center gap-2">
-                <LinkIcon size={14} className="shrink-0 text-peach-600" />
-                <input
-                  disabled={readOnly}
-                  value={draft.inspiracionUrl}
-                  onChange={(e) => set({ inspiracionUrl: e.target.value })}
-                  placeholder="Link a la referencia (opcional)"
-                  className="input !py-1.5 text-xs"
+            {/* de dónde nace — al cliente no se le muestra vacío */}
+            {(!readOnly ||
+              draft.inspiracion?.trim() ||
+              draft.inspiracionUrl ||
+              (draft.inspiracionMedia ?? []).length > 0) && (
+              <div className="rounded-xl border border-peach-200 bg-peach-50 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-peach-600">
+                  <Sparkle size={15} />
+                  Inspiración · de dónde nace
+                </div>
+                <Campo
+                  readOnly={readOnly}
+                  value={draft.inspiracion ?? ''}
+                  onChange={(inspiracion) => set({ inspiracion })}
+                  rows={2}
+                  placeholder="¿Sale de una tendencia, un audio, una referencia, una pregunta que se repite?"
+                  vacio="Sin referencia cargada."
                 />
-                {draft.inspiracionUrl && (
-                  <a
-                    href={draft.inspiracionUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="btn-outline shrink-0 !py-1.5 text-xs"
-                  >
-                    Ver
-                  </a>
+
+                {readOnly ? (
+                  draft.inspiracionUrl && (
+                    <a
+                      href={draft.inspiracionUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-brand-800 underline underline-offset-2"
+                    >
+                      <LinkIcon size={13} /> Ver la referencia
+                    </a>
+                  )
+                ) : (
+                  <div className="mt-2 flex items-center gap-2">
+                    <LinkIcon size={14} className="shrink-0 text-peach-600" />
+                    <input
+                      value={draft.inspiracionUrl}
+                      onChange={(e) => set({ inspiracionUrl: e.target.value })}
+                      placeholder="Link a la referencia (opcional)"
+                      className="input !py-1.5 text-xs"
+                    />
+                    {draft.inspiracionUrl && (
+                      <a
+                        href={draft.inspiracionUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="btn-outline shrink-0 !py-1.5 text-xs"
+                      >
+                        Ver
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {(!readOnly || (draft.inspiracionMedia ?? []).length > 0) && (
+                  <div className="mt-3">
+                    {!readOnly && <p className="label mb-1.5">Imágenes de referencia</p>}
+                    <MediaUploader
+                      multiple
+                      disabled={readOnly}
+                      value={draft.inspiracionMedia ?? []}
+                      onChange={(m) => set({ inspiracionMedia: m })}
+                      label="Arrastrá imágenes o hacé clic para elegirlas"
+                      previewClassName="aspect-square"
+                    />
+                  </div>
                 )}
               </div>
-
-              <div className="mt-3">
-                <p className="label mb-1.5">Imágenes de referencia</p>
-                <MediaUploader
-                  multiple
-                  disabled={readOnly}
-                  value={draft.inspiracionMedia ?? []}
-                  onChange={(m) => set({ inspiracionMedia: m })}
-                  label="Arrastrá imágenes o hacé clic para elegirlas"
-                  previewClassName="aspect-square"
-                />
-              </div>
-            </div>
+            )}
 
             {/* 1) idea general */}
             <Part icon={<Lightbulb size={15} />} n={1} label="Idea general" color="text-butter-600 bg-butter-50">
-              <textarea
-                disabled={readOnly}
+              <Campo
+                readOnly={readOnly}
                 value={draft.ideaGeneral}
-                onChange={(e) => set({ ideaGeneral: e.target.value })}
+                onChange={(ideaGeneral) => set({ ideaGeneral })}
                 rows={3}
                 placeholder="¿De qué trata? El concepto y el objetivo del contenido."
-                className="input resize-y"
               />
             </Part>
 
@@ -203,25 +279,24 @@ export default function PostDetail({
               label={draft.type === 'reel' || draft.type === 'historia' ? 'Guion / Diálogo' : 'Contenido del post'}
               color="text-sky-600 bg-sky-50"
             >
-              <textarea
-                disabled={readOnly}
+              <Campo
+                readOnly={readOnly}
                 value={draft.contenido}
-                onChange={(e) => set({ contenido: e.target.value })}
+                onChange={(contenido) => set({ contenido })}
                 rows={5}
                 placeholder="El guion, los diálogos o el detalle de cada slide."
-                className="input resize-y font-mono text-[13px] leading-relaxed"
+                className="font-mono text-[13px] leading-relaxed"
               />
             </Part>
 
             {/* 3) copy */}
             <Part icon={<Type size={15} />} n={3} label="Copy / Caption" color="text-brand-700 bg-brand-50">
-              <textarea
-                disabled={readOnly}
+              <Campo
+                readOnly={readOnly}
                 value={draft.copy}
-                onChange={(e) => set({ copy: e.target.value })}
+                onChange={(copy) => set({ copy })}
                 rows={4}
                 placeholder="El texto que acompaña la publicación."
-                className="input resize-y"
               />
               <HashtagPicker
                 clientId={post.clientId}

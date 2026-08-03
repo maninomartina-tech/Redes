@@ -6,6 +6,7 @@ import { Avatar, MediaThumb, SectionTitle } from '@/components/ui';
 import SyncButton from '@/components/SyncButton';
 import { sincronizarPublicaciones } from '@/lib/sync';
 import PostDetail from '@/components/PostDetail';
+import { plural } from '@/lib/texto';
 
 export default function FeedPreview({ clientMode = false }: { clientMode?: boolean }) {
   const posts = useStore((s) => s.posts);
@@ -24,10 +25,10 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
   return (
     <div>
       <SectionTitle
-        title="Vista previa del feed"
+        title={clientMode ? 'Tu feed' : 'Vista previa del feed'}
         subtitle={
           clientMode
-            ? 'Así va a quedar tu feed con el contenido de este mes.'
+            ? 'Así va quedando tu perfil con el contenido de este mes.'
             : 'Cómo se va a ver la grilla con el contenido planificado del mes.'
         }
         action={
@@ -39,7 +40,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
                 onChange={(e) => setOnlyReady(e.target.checked)}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600"
               />
-              Solo aprobado/publicado
+              {clientMode ? 'Ocultar lo que falta aprobar' : 'Solo aprobado/publicado'}
             </label>
 
             {!clientMode && (
@@ -66,9 +67,13 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
                   return {
                     ok: true,
                     resumen:
-                      `${nuevas} publicación(es) nueva(s) en el feed` +
+                      `${plural(nuevas, 'publicación nueva', 'publicaciones nuevas')} en el feed` +
                       (actualizadas > 0
-                        ? ` y ${actualizadas} actualizada(s) con sus métricas.`
+                        ? ` y ${plural(
+                            actualizadas,
+                            'actualizada',
+                            'actualizadas'
+                          )} con sus métricas.`
                         : '.'),
                     avisos: r.avisos,
                   };
@@ -129,13 +134,17 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
               <span className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
             </button>
           ))}
-          {feed.length === 0 &&
-            Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="aspect-square rounded-sm bg-ink-100" />
-            ))}
+          {/* Se completa la última fila: media grilla vacía se ve rota. */}
+          {Array.from({ length: (3 - (feed.length % 3)) % 3 || (feed.length ? 0 : 9) }).map(
+            (_, i) => (
+              <div key={`hueco-${i}`} className="aspect-square rounded-sm bg-ink-100/60" />
+            )
+          )}
         </div>
         <p className="mt-3 text-center text-xs text-ink-400">
-          {feed.length} piezas en la grilla · el orden respeta la fecha de publicación
+          {feed.length === 0
+            ? 'Todavía no hay contenido cargado para este mes.'
+            : `${plural(feed.length, 'pieza', 'piezas')} en la grilla · el orden respeta la fecha de publicación`}
         </p>
       </div>
 

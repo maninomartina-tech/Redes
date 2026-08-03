@@ -87,8 +87,26 @@ export const clienteNav = (base: string): NavGroup[] => [
 
 export default function Sidebar() {
   const role = useStore((s) => s.role);
+  const portal = useStore((s) => s.portal);
   const base = useBaseCliente();
   const groups = role === 'creadora' ? creadoraNav : clienteNav(base);
+
+  // El cliente no está en un "modo": está en su espacio. Hablarle de modos es
+  // mostrarle la costura de la herramienta.
+  const pie = portal
+    ? {
+        titulo: 'Tu espacio',
+        texto: 'Mirás lo que se va a publicar, dejás comentarios y aprobás.',
+      }
+    : role === 'creadora'
+      ? {
+          titulo: 'Modo creadora',
+          texto: 'Planificás, producís y publicás. El cliente ve solo lo aprobado.',
+        }
+      : {
+          titulo: 'Vista previa del cliente',
+          texto: 'Así se ve lo que le llega. Los cambios que hagas acá son reales.',
+        };
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-200/70 bg-surface md:flex">
@@ -128,13 +146,9 @@ export default function Sidebar() {
 
       <div className="m-3 rounded-2xl bg-brand-50 p-4">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700">
-          {role === 'creadora' ? 'Modo creadora' : 'Modo cliente'}
+          {pie.titulo}
         </p>
-        <p className="mt-1 text-[13px] leading-snug text-ink-600">
-          {role === 'creadora'
-            ? 'Planificás, producís y publicás. El cliente ve solo lo aprobado.'
-            : 'Mirás tu contenido semana a semana y dejás comentarios.'}
-        </p>
+        <p className="mt-1 text-[13px] leading-snug text-ink-600">{pie.texto}</p>
       </div>
     </aside>
   );

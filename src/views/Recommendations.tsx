@@ -107,7 +107,7 @@ export default function Recommendations({ clientMode = false }: { clientMode?: b
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {/* recomendaciones */}
-          <div className="space-y-3">
+          <div className="min-w-0 space-y-3">
             {recs.map((r, i) => (
               <div key={i} className="card flex gap-3 p-4">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-600">
@@ -125,7 +125,7 @@ export default function Recommendations({ clientMode = false }: { clientMode?: b
           <BestTimes publicados={published} />
 
           {/* top contenido publicado */}
-          <div className="card p-4">
+          <div className="card min-w-0 p-4">
             <div className="mb-3 flex items-center gap-2">
               <Trophy size={18} className="text-butter-600" />
               <h3 className="font-bold text-ink-800">Tu mejor contenido</h3>

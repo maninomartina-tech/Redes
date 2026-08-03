@@ -42,6 +42,21 @@ const MESES = [
   'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
 ];
 
+const MESES_LARGOS = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+];
+
+/**
+ * "julio 2026", para los textos que lee el cliente. En los gráficos y los
+ * selectores sigue yendo el corto ("jul 26"), que ahí sobra.
+ */
+export function monthLabelLargo(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  if (!y || !m) return month;
+  return `${MESES_LARGOS[m - 1]} de ${y}`;
+}
+
 export function monthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number);
   if (!y || !m) return month;

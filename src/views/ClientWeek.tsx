@@ -10,11 +10,12 @@ import {
   Type,
   Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
+import { plural } from '@/lib/texto';
 import PostDetail from '@/components/PostDetail';
 import { MediaPreview } from '@/components/MediaUploader';
 import { EmptyState } from '@/components/ui';
@@ -37,6 +38,15 @@ export default function ClientWeek() {
   const deLaSemana = posts.filter(
     (p) => p.clientId === client.id && days.some((d) => isSameDay(new Date(p.date), d))
   );
+
+  /** La semana más cercana, hacia adelante, que sí tiene algo cargado. */
+  const proxima = useMemo(() => {
+    if (deLaSemana.length > 0) return null;
+    const futuros = posts
+      .filter((p) => p.clientId === client.id && new Date(p.date) > days[6])
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return futuros.length ? new Date(futuros[0].date) : null;
+  }, [posts, client.id, deLaSemana.length, days]);
 
   const posteos = deLaSemana
     .filter((p) => p.type !== 'historia')
@@ -73,7 +83,19 @@ export default function ClientWeek() {
       {deLaSemana.length === 0 && (
         <EmptyState
           title="No hay contenido para esta semana"
-          hint="Cuando tu creadora prepare el contenido de estos días, lo vas a ver acá."
+          hint={
+            proxima
+              ? 'Está planificado para más adelante.'
+              : 'Cuando esté listo el contenido de estos días, lo vas a ver acá con su idea, su texto y la pieza final.'
+          }
+          action={
+            proxima && (
+              <button className="btn-primary" onClick={() => setAnchor(proxima)}>
+                Ver la semana del {fmt(proxima.toISOString(), "d 'de' MMMM")}
+                <ChevronRight size={16} />
+              </button>
+            )
+          }
         />
       )}
 
@@ -196,17 +218,16 @@ function PosteoCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
           />
         </div>
       ) : (
-        <PanelInspiracion post={post} className="w-full justify-center md:w-56 md:shrink-0" />
+        <PanelInspiracion
+          post={post}
+          className="order-last w-full justify-center md:order-first md:w-56 md:shrink-0"
+        />
       )}
 
       <div className="flex-1 p-4">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className={`chip ${statusChip[post.status]}`}>{statusLabel[post.status]}</span>
-          {listo ? (
-            <span className="chip bg-mint-100 text-mint-600">Pieza lista</span>
-          ) : (
-            <span className="chip bg-peach-100 text-peach-600">En planificación</span>
-          )}
+          {listo && <span className="chip bg-mint-100 text-mint-600">Pieza lista</span>}
           <span className="text-xs text-ink-400">
             {typeEmoji[post.type]} {typeLabel[post.type]} · {fmt(post.date, 'EEE d')} ·{' '}
             {fmtTime(post.date)} h
@@ -230,10 +251,7 @@ function PosteoCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
           <Bloque icon={<Type size={13} />} color="text-brand-700" label="Copy" text={post.copy} />
         </div>
 
-        <button className="btn-soft mt-3 !py-1.5" onClick={onOpen}>
-          <MessageSquare size={15} />
-          {abiertos > 0 ? `${abiertos} comentario(s)` : 'Comentar / Aprobar'}
-        </button>
+        <AccionCliente post={post} abiertos={abiertos} onOpen={onOpen} className="mt-3" />
       </div>
     </div>
   );
@@ -294,12 +312,54 @@ function HistoriaCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
       )}
 
       <div className="px-3.5 pb-3.5">
-        <button className="btn-soft w-full !py-1.5" onClick={onOpen}>
-          <MessageSquare size={14} />
-          {abiertos > 0 ? `${abiertos} comentario(s)` : 'Comentar / Aprobar'}
-        </button>
+        <AccionCliente post={post} abiertos={abiertos} onOpen={onOpen} ancho />
       </div>
     </div>
+  );
+}
+
+/**
+ * El botón de cada pieza.
+ *
+ * Cuando está esperando su respuesta, se ve como la acción principal: era al
+ * revés, la pieza que había que aprobar mostraba el número de comentarios y
+ * quedaba más apagada que las que no requerían nada.
+ */
+function AccionCliente({
+  post,
+  abiertos,
+  onOpen,
+  ancho = false,
+  className = '',
+}: {
+  post: Post;
+  abiertos: number;
+  onOpen: () => void;
+  ancho?: boolean;
+  className?: string;
+}) {
+  const esperaRespuesta = post.status === 'revision';
+
+  return (
+    <button
+      onClick={onOpen}
+      className={`${esperaRespuesta ? 'btn-primary' : 'btn-soft'} !py-1.5 ${
+        ancho ? 'w-full' : ''
+      } ${className}`}
+    >
+      <MessageSquare size={15} />
+      {esperaRespuesta ? 'Revisar y aprobar' : 'Dejar un comentario'}
+      {abiertos > 0 && (
+        <span
+          className={`ml-0.5 rounded-full px-1.5 text-[11px] font-bold ${
+            esperaRespuesta ? 'bg-canvas/25' : 'bg-brand-200 text-brand-900'
+          }`}
+          title={plural(abiertos, 'comentario sin resolver', 'comentarios sin resolver')}
+        >
+          {abiertos}
+        </span>
+      )}
+    </button>
   );
 }
 

@@ -17,6 +17,7 @@ import { Avatar, MediaThumb, SectionTitle, Stat } from '@/components/ui';
 import ClientLinkButton from '@/components/ClientLinkButton';
 import PostDetail from '@/components/PostDetail';
 import { useState } from 'react';
+import { plural } from '@/lib/texto';
 
 export default function Dashboard() {
   const { posts, monthlyStats, leads } = useStore();
@@ -182,7 +183,7 @@ export default function Dashboard() {
               onClick={() => navigate('/planificacion')}
               className="btn-soft mt-3 w-full"
             >
-              Ver {needsReview.length} pieza(s) en revisión
+              Ver {plural(needsReview.length, 'pieza', 'piezas')} en revisión
             </button>
           )}
         </div>

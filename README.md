@@ -34,6 +34,12 @@ el servidor, en Render o similar).
   resumen del feed, lo que viene esta semana y lo que espera su aprobación.
   Desde ahí llega a su semana, su feed, sus resultados y las recomendaciones.
 
+Del lado del cliente todo se lee como un documento, no como un formulario: ve
+el texto, no campos deshabilitados, y lo único que puede tocar es comentar y
+aprobar. Si la semana que abre no tiene nada cargado, la app le ofrece saltar
+a la que sí. Está pensado para el teléfono, que es desde donde va a abrir el
+link que le mandaste.
+
 ### Módulos
 
 | Módulo | Qué hace |

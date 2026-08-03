@@ -2,12 +2,19 @@ import { Printer, TrendingUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
-import { computeGrowth, computeLeads, monthLabel, sourceLabel } from '@/lib/growth';
+import {
+  computeGrowth,
+  computeLeads,
+  monthLabel,
+  monthLabelLargo,
+  sourceLabel,
+} from '@/lib/growth';
 import { calcularHorarios, describirCelda } from '@/lib/horarios';
 import { fmt } from '@/lib/date';
 import { money, nfmt, typeLabel } from '@/lib/format';
 import { Avatar, EmptyState, MediaThumb, SectionTitle } from '@/components/ui';
 import Logo from '@/components/Logo';
+import { plural } from '@/lib/texto';
 
 // ---------------------------------------------------------------------------
 // Informe mensual.
@@ -141,7 +148,7 @@ export default function Report() {
             <div>
               <h1 className="text-lg font-bold text-ink-900">{client.name}</h1>
               <p className="text-sm text-ink-500">
-                {client.handle} · Informe de {monthLabel(mes)}
+                {client.handle} · Informe de {monthLabelLargo(mes)}
               </p>
             </div>
           </div>
@@ -264,9 +271,14 @@ export default function Report() {
         )}
 
         <footer className="border-t border-ink-200/70 pt-3 text-[11px] text-ink-400">
-          Informe de {monthLabel(mes)} · generado el {fmt(new Date().toISOString(), "d 'de' MMMM 'de' yyyy")}
+          Informe de {monthLabelLargo(mes)} · generado el{' '}
+          {fmt(new Date().toISOString(), "d 'de' MMMM 'de' yyyy")}
           {medidos.length < delMes.length && delMes.length > 0 && (
-            <> · {delMes.length - medidos.length} publicación(es) sin métricas cargadas</>
+            <>
+              {' '}
+              · {plural(delMes.length - medidos.length, 'publicación', 'publicaciones')}{' '}
+              sin métricas cargadas
+            </>
           )}
         </footer>
       </article>

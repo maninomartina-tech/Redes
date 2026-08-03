@@ -17,6 +17,7 @@ import { fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat, Toggle } from '@/components/ui';
 import SyncButton from '@/components/SyncButton';
 import { sincronizarCuenta } from '@/lib/sync';
+import { palabra, plural } from '@/lib/texto';
 
 const leadStatusChip: Record<LeadStatus, string> = {
   nuevo: 'bg-sky-100 text-sky-600',
@@ -81,7 +82,11 @@ export default function Growth() {
               r.datos.forEach((m) => upsertMonthlyStat(m));
               return {
                 ok: true,
-                resumen: `Se actualizaron ${r.datos.length} mes(es) con los datos de Meta.`,
+                resumen: `Se ${palabra(r.datos.length, 'actualizó', 'actualizaron')} ${plural(
+                  r.datos.length,
+                  'mes',
+                  'meses'
+                )} con los datos de Meta.`,
                 avisos: r.avisos,
               };
             }}

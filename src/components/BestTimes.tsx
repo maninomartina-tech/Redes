@@ -17,7 +17,7 @@ export default function BestTimes({ publicados }: { publicados: Post[] }) {
     h.celdas.find((c) => c.dia === dia && c.franja === franja);
 
   return (
-    <div className="card p-4">
+    <div className="card min-w-0 p-4">
       <div className="mb-1 flex items-center gap-2">
         <Clock size={18} className="text-brand-700" />
         <h3 className="font-bold text-ink-800">Mejores horarios</h3>

@@ -22,6 +22,7 @@ import PostDetail from '@/components/PostDetail';
 import Logo from '@/components/Logo';
 import { Avatar, MediaThumb } from '@/components/ui';
 import { useBaseCliente } from '@/lib/rutas';
+import { palabra, plural } from '@/lib/texto';
 
 export default function ClientHome() {
   const { posts, monthlyStats } = useStore();
@@ -71,7 +72,7 @@ export default function ClientHome() {
             logoId={client.logo?.id}
           />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-brand-700">Bienvenido</p>
+            <p className="text-sm font-medium text-brand-700">Hola,</p>
             <h2 className="truncate text-2xl font-bold tracking-tight text-ink-900">
               {client.handle}
             </h2>
@@ -123,8 +124,12 @@ export default function ClientHome() {
               </p>
               <p className="text-sm text-ink-600">
                 {comentariosAbiertos > 0
-                  ? `${comentariosAbiertos} comentario(s) abierto(s).`
-                  : 'Revisalas y aprobá o pedí cambios.'}
+                  ? `${palabra(comentariosAbiertos, 'Queda', 'Quedan')} ${plural(
+                      comentariosAbiertos,
+                      'comentario sin resolver',
+                      'comentarios sin resolver'
+                    )}.`
+                  : 'Revisalo y aprobá, o pedí los cambios que quieras.'}
               </p>
             </div>
             <button className="btn-primary" onClick={() => navigate(`${base}/semana`)}>
@@ -136,7 +141,7 @@ export default function ClientHome() {
 
       <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
         {/* ---------- Tu feed ---------- */}
-        <section className="card p-4">
+        <section className="card min-w-0 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="font-bold text-ink-900">Cómo va quedando tu feed</h3>
             <button
@@ -175,15 +180,16 @@ export default function ClientHome() {
                 )}
               </button>
             ))}
-            {feed.length === 0 &&
-              Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="aspect-square bg-ink-100" />
-              ))}
+            {Array.from({ length: (3 - (feed.length % 3)) % 3 || (feed.length ? 0 : 9) }).map(
+              (_, i) => (
+                <div key={`hueco-${i}`} className="aspect-square bg-ink-100/60" />
+              )
+            )}
           </div>
         </section>
 
         {/* ---------- Tu semana ---------- */}
-        <section className="card p-4">
+        <section className="card min-w-0 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="font-bold text-ink-900">Lo que viene esta semana</h3>
             <button

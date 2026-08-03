@@ -26,6 +26,7 @@ import { computeGrowth, computeLeads, sourceLabel } from '@/lib/growth';
 import { money, nfmt, pct } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, SectionTitle, Stat } from '@/components/ui';
+import { plural } from '@/lib/texto';
 
 export default function ClientResults() {
   const { posts, campaigns, monthlyStats, leads } = useStore();
@@ -259,7 +260,9 @@ export default function ClientResults() {
                         <span className="font-medium text-ink-700">{sourceLabel(f.source)}</span>
                         <span className="tabular-nums text-ink-500">
                           {f.total} {f.total === 1 ? 'consulta' : 'consultas'}
-                          {f.ganados > 0 && <> · {f.ganados} concretada(s)</>}
+                          {f.ganados > 0 && (
+                            <> · {plural(f.ganados, 'concretada', 'concretadas')}</>
+                          )}
                         </span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-ink-100">
