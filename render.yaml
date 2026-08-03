@@ -15,19 +15,18 @@ services:
     dockerfilePath: ./Dockerfile
     region: oregon
 
-    # El plan gratuito de Render NO admite disco, y acá abajo se declara uno,
-    # así que este archivo usa el plan pago más chico.
-    #
-    # Si querés arrancar gratis en modo solo lectura: cambiá esto a "free" y
-    # borrá el bloque "disk". Funciona, con una contra: al perder el disco, en
-    # cada despliegue hay que volver a vincular la cuenta de Instagram.
+    # Plan pago más chico, y no es un capricho: el gratuito de Render no
+    # admite disco, y sin disco la base de datos se borra en cada despliegue.
+    # Ahí adentro está toda la planificación —clientes, contenido, crecimiento,
+    # ventas y los links de cada cliente—, así que un cambio menor en la app
+    # dejaría el panel en blanco.
     plan: starter
 
     # Render reinicia el servicio si esta ruta deja de responder.
     healthCheckPath: /api/salud
 
-    # Acá viven la base de datos y las piezas subidas. Sin disco se borrarían
-    # en cada despliegue.
+    # Acá viven la base de datos y las piezas subidas. Es lo que hace que la
+    # planificación sobreviva a los despliegues.
     disk:
       name: datos
       mountPath: /datos
