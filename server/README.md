@@ -17,7 +17,7 @@ cd server
 npm install
 cp .env.example .env     # completá los valores
 npm start                # queda escuchando en el puerto 4000
-npm test                 # 46 pruebas
+npm test                 # 57 pruebas
 ```
 
 Después, en la app (carpeta de arriba), apuntá al servidor:
@@ -43,7 +43,7 @@ Todo va en `server/.env` (ver `.env.example`):
 | `PUBLIC_URL` | La dirección pública del servidor: Meta descarga las piezas desde acá. **En Render y Railway se detecta sola**; solo hace falta cargarla en otros hostings. No sirve `localhost`. |
 | `META_APP_ID` / `META_APP_SECRET` | De tu app en [developers.facebook.com](https://developers.facebook.com). |
 | `APP_ORIGIN` | Desde dónde se abre la app, para permitir las llamadas del navegador. |
-| `ANTHROPIC_API_KEY` | Opcional: informes con IA en lenguaje natural. |
+| `ANTHROPIC_API_KEY` | Opcional: el botón "Generar con IA" dentro del contenido y los informes de campaña. Se paga por uso. |
 
 ### Cómo conseguir la dirección pública
 
@@ -131,7 +131,8 @@ Formatos soportados: post, reel, carrusel (hasta 10 piezas) e historia.
 | `POST` | `/api/publicaciones/procesar-ahora` | Fuerza el procesamiento, para probar. |
 | `GET` | `/api/auth/meta/login` | Arranca la vinculación de una cuenta. |
 | `GET` | `/api/cuentas` | Cuentas vinculadas. |
-| `POST` | `/api/ai/analyze` | Informe de campaña con Claude. |
+| `POST` | `/api/ai/analyze` | Informe de campaña con Claude. Pide sesión. |
+| `POST` | `/api/ai/redactar` | Opciones para una parte del contenido. Pide sesión. |
 | `GET` | `/api/insights/cuenta/:id` | Seguidores, alcance e interacción, por mes. |
 | `GET` | `/api/insights/publicaciones/:id` | Métricas de cada publicación reciente. |
 | `GET` | `/api/ads/:cuentaId` | Campañas de Meta Ads con gasto y resultados. |
@@ -199,7 +200,7 @@ volumen es chico, así que no compensa la complejidad de un esquema relacional.
 
 ## Estado de las pruebas
 
-`npm test` corre **46 pruebas** con Meta reemplazada por un doble:
+`npm test` corre **57 pruebas** con Meta reemplazada por un doble:
 
 - **Cola (15):** alta, vencimiento, publicación, detección de video, reintentos,
   cancelación, reprogramación, el aviso por falta de `PUBLIC_URL`, el servido de
@@ -212,6 +213,11 @@ volumen es chico, así que no compensa la complejidad de un esquema relacional.
 - **Solo lectura (6):** que no se pida el permiso de publicar, que sí se pidan
   los de métricas y ADS, que se rechace programar con una explicación, y que el
   feed llegue con la portada correcta (en los videos, la miniatura).
+- **IA (11):** que ninguna de las dos rutas quede abierta —cada llamada cuesta
+  plata—, que sin clave se explique dónde cargarla, que las opciones lleguen
+  separadas y sin la numeración que agrega igual, que a la IA le llegue como
+  contexto lo que ya está cargado del contenido, y que un error de la API se
+  informe en vez de devolver vacío.
 - **Espacio y portales (19):** que sin usuario y contraseña correctos no se
   entre —y que el error no diga cuál de los dos está mal—, que sin sesión no se
   lea ni se escriba nada,

@@ -20,7 +20,8 @@ import { statusChip, statusLabel, statusOrder, typeEmoji, typeLabel } from '@/li
 import { Avatar, Modal } from '@/components/ui';
 import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
-import HashtagPicker from '@/components/HashtagPicker';
+import HashtagPicker, { parsearTags } from '@/components/HashtagPicker';
+import GenerarConIA from '@/components/GenerarConIA';
 
 const types: PostType[] = ['reel', 'post', 'carrusel', 'historia'];
 
@@ -270,6 +271,15 @@ export default function PostDetail({
                 rows={3}
                 placeholder="¿De qué trata? El concepto y el objetivo del contenido."
               />
+              {!readOnly && (
+                <GenerarConIA
+                  parte="idea"
+                  post={{ ...post, ...draft }}
+                  cliente={client}
+                  valor={draft.ideaGeneral}
+                  onUsar={(ideaGeneral) => set({ ideaGeneral })}
+                />
+              )}
             </Part>
 
             {/* 2) contenido / diálogo */}
@@ -287,6 +297,15 @@ export default function PostDetail({
                 placeholder="El guion, los diálogos o el detalle de cada slide."
                 className="font-mono text-[13px] leading-relaxed"
               />
+              {!readOnly && (
+                <GenerarConIA
+                  parte="contenido"
+                  post={{ ...post, ...draft }}
+                  cliente={client}
+                  valor={draft.contenido}
+                  onUsar={(contenido) => set({ contenido })}
+                />
+              )}
             </Part>
 
             {/* 3) copy */}
@@ -298,6 +317,26 @@ export default function PostDetail({
                 rows={4}
                 placeholder="El texto que acompaña la publicación."
               />
+              {!readOnly && (
+                <>
+                  <GenerarConIA
+                    parte="copy"
+                    post={{ ...post, ...draft }}
+                    cliente={client}
+                    valor={draft.copy}
+                    onUsar={(copy) => set({ copy })}
+                  />
+                  <GenerarConIA
+                    parte="hashtags"
+                    post={{ ...post, ...draft }}
+                    cliente={client}
+                    valor=""
+                    onUsar={(texto) =>
+                      set({ hashtags: [...new Set([...draft.hashtags, ...parsearTags(texto)])] })
+                    }
+                  />
+                </>
+              )}
               <HashtagPicker
                 clientId={post.clientId}
                 value={draft.hashtags}

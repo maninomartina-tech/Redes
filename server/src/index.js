@@ -10,6 +10,7 @@ import { permisos, publicUrl, soloLectura } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
+import { hayIA, redactar } from './ia.js';
 import {
   borrarPortal,
   cerrarSesion,
@@ -404,7 +405,7 @@ app.get('/api/ads/:cuentaId', async (req, res) => {
 
 /* ----------------------------- análisis con IA --------------------------- */
 
-app.post('/api/ai/analyze', async (req, res) => {
+app.post('/api/ai/analyze', soloCreadora, async (req, res) => {
   const clave = process.env.ANTHROPIC_API_KEY;
   if (!clave) {
     return res.status(501).json({ error: 'Falta configurar ANTHROPIC_API_KEY.' });
@@ -441,6 +442,23 @@ app.post('/api/ai/analyze', async (req, res) => {
   }
 });
 
+/** Opciones para una parte del contenido: idea, guion, copy o hashtags. */
+app.post('/api/ai/redactar', soloCreadora, async (req, res) => {
+  if (!hayIA()) {
+    return res.status(501).json({
+      error:
+        'Falta la clave de IA. Se carga en ANTHROPIC_API_KEY: en Render está en ' +
+        'Environment, dentro del servicio.',
+    });
+  }
+  try {
+    const { parte, cliente, post, instruccion } = req.body ?? {};
+    res.json({ opciones: await redactar({ parte, cliente, post, instruccion }) });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 /* ---------------------------------- salud -------------------------------- */
 
 app.get('/api/salud', (_req, res) => {
@@ -448,10 +466,10 @@ app.get('/api/salud', (_req, res) => {
     ok: true,
     metaConfigurado: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
     urlPublica: publicUrl() || null,
-    iaConfigurada: Boolean(process.env.ANTHROPIC_API_KEY),
     adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
     soloLectura: soloLectura(),
     claveDefinida: hayClave(),
+    iaConfigurada: hayIA(),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });

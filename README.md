@@ -47,6 +47,7 @@ link que le mandaste.
 | **Panel general** | Resumen del cliente: qué falta revisar, próximas publicaciones y correcciones abiertas. |
 | **Calendario** | Todo el contenido del mes por día, con estado y formato. |
 | **Planificación** | Tablero por etapas (idea → producción → revisión → aprobado → programado → publicado). |
+| **Generar con IA** | Debajo de cada parte del contenido: propone opciones para la idea, el guion, el copy y los hashtags, tomando como contexto lo que ya cargaste. Devuelve varias, no pisa nada sola y se edita antes de guardar. Necesita `ANTHROPIC_API_KEY`. |
 | **Detalle del contenido** | **Inspiración** (de dónde nace: tendencia, link y imágenes de referencia), las **3 partes** —1) idea general, 2) guion/diálogo o contenido, 3) copy—, el **resultado final** que se sube desde el dispositivo o arrastrando, y los comentarios. Se guarda con *Guardar cambios*; si intentás cerrar con cambios pendientes, avisa. |
 | **Vista del feed** | Mockup de la grilla de Instagram para ver cómo queda el feed del mes. |
 | **Historias** | Planificador semanal de historias, día por día. |
