@@ -45,16 +45,15 @@ Domain management* podés ponerle tu propio dominio.
 
 ### Cuando tengas el servidor
 
-Volvé a Netlify, entrá a **Site settings → Environment variables** y agregá:
+La dirección del servidor está en **`netlify.toml`**, en `VITE_API_URL`. Se
+cambia ahí y se sube: Netlify vuelve a desplegar solo.
 
-```
-VITE_API_URL = https://tu-servidor.onrender.com
-```
+Está en el archivo y no en el panel de Netlify a propósito: queda a la vista,
+viaja con el proyecto y no depende de encontrar un menú. No es un secreto —es
+una dirección pública y el servidor pide usuario y contraseña igual—.
 
-Después **Deploys → Trigger deploy → Deploy site**.
-
-> Ojo: `VITE_API_URL` se lee **al compilar**, no cuando alguien abre la página.
-> Si la cambiás, hay que volver a desplegar para que tome efecto.
+> Ojo: se lee **al compilar**, no cuando alguien abre la página. Si la cambiás,
+> hay que volver a desplegar para que tome efecto. Con subir el cambio alcanza.
 
 ---
 

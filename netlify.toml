@@ -11,6 +11,17 @@
 [build.environment]
   NODE_VERSION = "22"
 
+  # Dirección del servidor propio.
+  #
+  # Va acá y no en el panel de Netlify a propósito: así queda a la vista, viaja
+  # con el proyecto y no depende de encontrar un menú. No es un secreto —es una
+  # dirección pública, y el servidor pide usuario y contraseña igual—, así que
+  # no hay nada que esconder.
+  #
+  # Se lee al compilar, no al abrir la página: si cambia, hay que volver a
+  # desplegar para que tenga efecto.
+  VITE_API_URL = "https://demm-server.onrender.com"
+
 # La app usa rutas con # así que no hace falta reescribir nada, pero esto deja
 # cubierto cualquier acceso directo a una ruta.
 [[redirects]]
