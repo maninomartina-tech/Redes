@@ -12,7 +12,7 @@ import {
   startOfMonth,
   weekdayNames,
 } from '@/lib/date';
-import { llevaCartelito, statusChip, statusCorto, typeEmoji } from '@/lib/format';
+import { esHistoria, llevaCartelito, statusChip, statusCorto, typeEmoji } from '@/lib/format';
 
 // ---------------------------------------------------------------------------
 // El calendario del mes, con cada publicación en su día.
@@ -33,6 +33,7 @@ function Pieza({
   onDragEnd,
   arrastrable,
   arrastrando,
+  destacar,
 }: {
   post: Post;
   onOpen: () => void;
@@ -40,8 +41,20 @@ function Pieza({
   onDragEnd?: () => void;
   arrastrable: boolean;
   arrastrando: boolean;
+  /** Diferenciar posteos de historias, porque se están viendo mezclados. */
+  destacar: boolean;
 }) {
   const pendientes = post.comments.filter((c) => !c.resolved).length;
+
+  // Un posteo queda en el perfil; una historia dura un día. Mezclados en la
+  // misma celda, el posteo tiene que saltar primero a la vista: lleva un filo
+  // de color y el fondo del papel, y la historia queda en segundo plano.
+  const historia = esHistoria(post.type);
+  const peso = !destacar
+    ? 'border-ink-200/70 bg-surface'
+    : historia
+      ? 'border-ink-200/60 border-dashed bg-canvas'
+      : 'border-ink-200/70 border-l-[3px] border-l-brand-500 bg-surface shadow-soft';
 
   return (
     <div
@@ -63,7 +76,7 @@ function Pieza({
       role="button"
       tabIndex={0}
       title={post.title}
-      className={`group/pieza w-full min-w-0 rounded-lg border border-ink-200/70 bg-surface px-1.5 py-1 text-left transition hover:border-brand-300 hover:bg-brand-50 ${
+      className={`group/pieza w-full min-w-0 rounded-lg border px-1.5 py-1 text-left transition hover:border-brand-300 hover:bg-brand-50 ${peso} ${
         arrastrable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
       } ${arrastrando ? 'opacity-40' : ''}`}
     >
@@ -95,7 +108,11 @@ function Pieza({
       </div>
       <div className="mt-0.5 flex min-w-0 items-baseline gap-1">
         <span className="shrink-0 text-[11px]">{typeEmoji[post.type]}</span>
-        <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-ink-800">
+        <span
+          className={`min-w-0 flex-1 truncate text-[11px] ${
+            destacar && historia ? 'font-medium text-ink-500' : 'font-semibold text-ink-800'
+          }`}
+        >
           {post.title}
         </span>
       </div>
@@ -109,6 +126,7 @@ export default function PlanCalendar({
   onCreate,
   onMove,
   soloLectura = false,
+  destacarPosteos = false,
 }: {
   posts: Post[];
   onOpen: (id: string) => void;
@@ -116,6 +134,8 @@ export default function PlanCalendar({
   onCreate?: (iso: string) => void;
   onMove?: (id: string, iso: string) => void;
   soloLectura?: boolean;
+  /** Con posteos e historias mezclados, distinguirlos a simple vista. */
+  destacarPosteos?: boolean;
 }) {
   const [ancla, setAncla] = useState(() => startOfMonth(new Date()));
   const [arrastrando, setArrastrando] = useState<string | null>(null);
@@ -262,6 +282,7 @@ export default function PlanCalendar({
                       key={p.id}
                       post={p}
                       onOpen={() => onOpen(p.id)}
+                      destacar={destacarPosteos}
                       arrastrable={arrastrable}
                       arrastrando={arrastrando === p.id}
                       onDragStart={() => setArrastrando(p.id)}
@@ -313,6 +334,7 @@ export default function PlanCalendar({
                   key={p.id}
                   post={p}
                   onOpen={() => onOpen(p.id)}
+                  destacar={destacarPosteos}
                   arrastrable={false}
                   arrastrando={false}
                 />

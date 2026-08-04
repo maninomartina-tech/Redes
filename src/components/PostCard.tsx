@@ -1,21 +1,33 @@
 import { MessageSquare } from 'lucide-react';
 import type { Post } from '@/types';
 import { fmtDateTime } from '@/lib/date';
-import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
+import { esHistoria, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { MediaThumb } from '@/components/ui';
 
 export default function PostCard({
   post,
   onClick,
+  destacar = false,
 }: {
   post: Post;
   onClick: () => void;
+  /** Con posteos e historias mezclados, distinguirlos a simple vista. */
+  destacar?: boolean;
 }) {
   const open = post.comments.filter((c) => !c.resolved).length;
+
+  // El posteo lleva un filo de color; la historia queda en segundo plano.
+  const historia = esHistoria(post.type);
+  const peso = !destacar
+    ? ''
+    : historia
+      ? 'opacity-80'
+      : 'border-l-[3px] border-l-brand-500';
+
   return (
     <button
       onClick={onClick}
-      className="card group w-full overflow-hidden text-left transition hover:-translate-y-0.5 hover:shadow-soft"
+      className={`card group w-full overflow-hidden text-left transition hover:-translate-y-0.5 hover:shadow-soft ${peso}`}
     >
       <MediaThumb
         src={post.mediaUrl}

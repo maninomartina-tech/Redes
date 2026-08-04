@@ -57,6 +57,15 @@ export const ESTADOS_VIEJOS: Record<string, PostStatus> = {
   produccion: 'edicion',
 };
 
+/**
+ * Las dos familias de contenido, que en la práctica son dos trabajos distintos.
+ *
+ * Un posteo queda en el perfil y se piensa con tiempo; una historia dura un día
+ * y se resuelve al momento. Por eso el calendario se puede filtrar por una o por
+ * otra, y por eso, cuando se ven las dos juntas, los posteos pesan más.
+ */
+export const esHistoria = (t: PostType): boolean => t === 'historia';
+
 export const typeLabel: Record<PostType, string> = {
   reel: 'Reel',
   post: 'Post',
