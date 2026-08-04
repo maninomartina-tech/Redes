@@ -31,6 +31,15 @@ const DATOS = {
   posts: [
     { id: 'p_a1', clientId: 'cli_a', title: 'Reel de Aurora', status: 'revision', comments: [] },
     { id: 'p_a2', clientId: 'cli_a', title: 'Post de Aurora', status: 'idea', comments: [] },
+    // Este ya tiene la pieza cargada: aprobarlo lo deja listo para publicar.
+    {
+      id: 'p_a3',
+      clientId: 'cli_a',
+      title: 'Carrusel de Aurora',
+      status: 'revision',
+      comments: [],
+      resultado: { id: 'm1', name: 'carrusel.jpg', kind: 'image', size: 10 },
+    },
     { id: 'p_b1', clientId: 'cli_b', title: 'Post de Flora', status: 'revision', comments: [] },
   ],
   campaigns: [{ id: 'ca_a', clientId: 'cli_a', name: 'Agosto' }],
@@ -119,7 +128,7 @@ describe('ingreso de la creadora', () => {
     const r = await fetch(`${base}/api/espacio`, { headers: conClave() });
     const { datos } = await r.json();
     assert.equal(datos.clients.length, 2);
-    assert.equal(datos.posts.length, 3);
+    assert.equal(datos.posts.length, 4);
   });
 
   it('al cerrar sesión el token deja de servir', async () => {
@@ -163,7 +172,7 @@ describe('portal del cliente', () => {
     const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
 
     assert.equal(d.cliente.id, 'cli_a');
-    assert.equal(d.posts.length, 2, 'solo sus dos contenidos');
+    assert.equal(d.posts.length, 3, 'solo sus tres contenidos');
     assert.ok(
       d.posts.every((p) => p.clientId === 'cli_a'),
       'no puede colarse nada del otro cliente'
@@ -213,15 +222,32 @@ describe('portal del cliente', () => {
     assert.equal(r.status, 400);
   });
 
-  it('puede aprobar y pedir cambios en lo suyo', async () => {
-    await fetch(`${base}/api/portal/${linkA}/decision`, {
+  const decidir = (postId, decision) =>
+    fetch(`${base}/api/portal/${linkA}/decision`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ postId: 'p_a1', decision: 'aprobado' }),
+      body: JSON.stringify({ postId, decision }),
     });
 
+  const estadoDe = async (postId) => {
     const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
-    assert.equal(d.posts.find((p) => p.id === 'p_a1').status, 'aprobado');
+    return d.posts.find((p) => p.id === postId).status;
+  };
+
+  it('aprobar la idea manda la pieza a edición, no a publicar', async () => {
+    // p_a1 todavía no tiene pieza cargada: lo que aprobó es la idea.
+    await decidir('p_a1', 'aprobado');
+    assert.equal(await estadoDe('p_a1'), 'edicion');
+  });
+
+  it('aprobar con la pieza ya cargada la deja lista', async () => {
+    await decidir('p_a3', 'aprobado');
+    assert.equal(await estadoDe('p_a3'), 'aprobado');
+  });
+
+  it('pedir cambios la devuelve a revisión', async () => {
+    await decidir('p_a3', 'revision');
+    assert.equal(await estadoDe('p_a3'), 'revision');
   });
 
   it('no puede cambiar el estado de otro cliente', async () => {
@@ -261,6 +287,6 @@ describe('portal del cliente', () => {
     const { datos } = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
     const post = datos.posts.find((p) => p.id === 'p_a1');
     assert.equal(post.comments.length, 1);
-    assert.equal(post.status, 'aprobado', 'la aprobación también quedó guardada');
+    assert.equal(post.status, 'edicion', 'la decisión del cliente también quedó guardada');
   });
 });

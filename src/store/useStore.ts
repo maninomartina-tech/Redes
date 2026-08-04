@@ -24,6 +24,7 @@ import {
   seedMonthlyStats,
   seedPosts,
 } from '@/data/seed';
+import { ESTADOS_VIEJOS } from '@/lib/format';
 import { DEFAULT_BRANDING, applyBranding, type Branding } from '@/lib/theme';
 import type { PublicacionSincronizada } from '@/lib/sync';
 import {
@@ -192,6 +193,17 @@ interface State {
   resetDemo: () => void;
 }
 
+/**
+ * Qué estado le corresponde a una pieza cuando alguien la aprueba.
+ *
+ * Aprobar la idea y aprobar la pieza final son el mismo gesto para el cliente,
+ * pero significan cosas distintas: si todavía no hay pieza, lo que sigue es
+ * producirla; si ya está, queda lista para salir.
+ */
+export function trasAprobar(post: Post): PostStatus {
+  return post.resultado ? 'aprobado' : 'edicion';
+}
+
 /** Lo que se guarda en el servidor: los datos, no la navegación ni la sesión. */
 function datosDelEspacio(s: State): DatosEspacio {
   return {
@@ -297,7 +309,10 @@ export const useStore = create<State>()(
             applyBranding(branding);
             set({
               clients: datos.clients,
-              posts: datos.posts ?? [],
+              posts: (datos.posts ?? []).map((p) => ({
+                ...p,
+                status: ESTADOS_VIEJOS[p.status as string] ?? p.status,
+              })),
               campaigns: datos.campaigns ?? [],
               ads: datos.ads ?? [],
               monthlyStats: datos.monthlyStats ?? [],
@@ -366,7 +381,7 @@ export const useStore = create<State>()(
           type: p.type ?? 'post',
           title: p.title ?? 'Nuevo contenido',
           date: p.date ?? new Date().toISOString(),
-          status: p.status ?? 'idea',
+          status: p.status ?? 'revision',
           inspiracion: p.inspiracion ?? '',
           inspiracionUrl: p.inspiracionUrl,
           inspiracionMedia: p.inspiracionMedia ?? [],
@@ -385,13 +400,26 @@ export const useStore = create<State>()(
       },
 
       updatePost: (id, patch) => {
+        const antes = get().posts.find((p) => p.id === id);
+
         set((s) => ({
           posts: s.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)),
         }));
-        // Si se sube la pieza final de algo ya aprobado, se programa sola.
-        if (patch.resultado) {
-          const p = get().posts.find((x) => x.id === id);
-          if (p?.status === 'aprobado') void get().autoSchedule(id);
+
+        if (!patch.resultado) return;
+
+        // La pieza recién subida vuelve al cliente: es lo que tiene que mirar
+        // ahora, ya no la idea.
+        if (antes?.status === 'edicion' && !antes.resultado) {
+          set((s) => ({
+            posts: s.posts.map((p) => (p.id === id ? { ...p, status: 'revision' } : p)),
+          }));
+          return;
+        }
+
+        // Si ya estaba aprobada y solo faltaba la pieza, se programa sola.
+        if (get().posts.find((x) => x.id === id)?.status === 'aprobado') {
+          void get().autoSchedule(id);
         }
       },
 
@@ -484,8 +512,12 @@ export const useStore = create<State>()(
        * pieza, se programa sola en cuanto se suba (ver updatePost).
        */
       setPostStatus: (id, status) => {
+        const post = get().posts.find((p) => p.id === id);
+        // Aprobar la idea manda a producción; aprobar la pieza la deja lista.
+        const real = post && status === 'aprobado' ? trasAprobar(post) : status;
+
         set((s) => ({
-          posts: s.posts.map((p) => (p.id === id ? { ...p, status } : p)),
+          posts: s.posts.map((p) => (p.id === id ? { ...p, status: real } : p)),
         }));
 
         // Desde el link del cliente la decisión la registra el servidor, que
@@ -493,6 +525,8 @@ export const useStore = create<State>()(
         const { portal } = get();
         if (portal) {
           if (status === 'aprobado' || status === 'revision') {
+            // Al servidor se le manda la decisión del cliente, no el estado
+            // resultante: la regla vive en un solo lado.
             void decidirEnPortal(portal, id, status).catch(() => {
               set({
                 sincro: {
@@ -505,7 +539,7 @@ export const useStore = create<State>()(
           return;
         }
 
-        if (status === 'aprobado') void get().autoSchedule(id);
+        if (real === 'aprobado') void get().autoSchedule(id);
       },
 
       autoSchedule: async (id) => {
@@ -865,7 +899,7 @@ export const useStore = create<State>()(
     {
       name: 'demm-redes-v1',
       storage: createJSONStorage(safeStorage),
-      version: 2,
+      version: 3,
       /** El estado de la sincronización se recalcula al arrancar. */
       partialize: ({ sincro: _sincro, portal: _portal, ...resto }) => resto,
       /**
@@ -875,6 +909,15 @@ export const useStore = create<State>()(
       migrate: (persisted, from) => {
         const s = persisted as Partial<State>;
         s.hashtagSets ??= [];
+
+        // El flujo pasó a tener tres etapas: "idea" y "producción" ya no
+        // existen. Se traduce lo que haya cargado en vez de perderlo.
+        if (from < 3) {
+          s.posts = (s.posts ?? []).map((p) => ({
+            ...p,
+            status: ESTADOS_VIEJOS[p.status as string] ?? p.status,
+          }));
+        }
         if (from < 2) {
           s.monthlyStats ??= seedMonthlyStats;
           s.leads ??= seedLeads;

@@ -26,6 +26,33 @@ export function fmtTime(iso: string): string {
   return format(new Date(iso), 'HH:mm', { locale: es });
 }
 
+/**
+ * Lo que espera `<input type="datetime-local">`: 'YYYY-MM-DDTHH:mm' en hora
+ * local. No sirve el ISO tal cual, que viene en UTC y le correría la hora.
+ */
+export function paraInput(iso: string): string {
+  return format(new Date(iso), "yyyy-MM-dd'T'HH:mm");
+}
+
+/** El camino de vuelta: lo que escribió en el campo, guardado como ISO. */
+export function desdeInput(valor: string): string {
+  const d = new Date(valor);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
+/**
+ * Mueve una publicación a otro día conservándole la hora.
+ *
+ * Es lo que pasa al arrastrarla en el calendario: cambia el día, pero el
+ * horario que ya se había pensado para esa pieza se respeta.
+ */
+export function moverADia(iso: string, dia: Date): string {
+  const anterior = new Date(iso);
+  const nueva = new Date(dia);
+  nueva.setHours(anterior.getHours(), anterior.getMinutes(), 0, 0);
+  return nueva.toISOString();
+}
+
 /** Devuelve la grilla de días del mes (semanas completas, lunes a domingo). */
 export function monthGrid(anchor: Date): Date[] {
   const start = startOfWeek(startOfMonth(anchor), { weekStartsOn: 1 });

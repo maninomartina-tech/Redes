@@ -140,27 +140,32 @@ export default function Topbar() {
           <RotateCcw size={16} />
         </button>
 
-        {/* toggle de rol */}
+        {/* Toggle de rol. En el teléfono van solo los íconos: con las dos
+            palabras enteras, la barra no entraba y empujaba la pantalla. */}
         <div className="flex items-center rounded-xl border border-ink-200 bg-ink-50 p-0.5 text-sm">
           <button
             onClick={() => setRole('creadora')}
-            className={`flex items-center gap-1.5 rounded-[0.6rem] px-3 py-1.5 font-medium transition ${
+            aria-label="Modo creadora"
+            className={`flex items-center gap-1.5 rounded-[0.6rem] px-2.5 py-1.5 font-medium transition sm:px-3 ${
               role === 'creadora'
                 ? 'bg-surface text-brand-700 shadow-soft'
                 : 'text-ink-500 hover:text-ink-700'
             }`}
           >
-            <PenTool size={15} /> Creadora
+            <PenTool size={15} />
+            <span className="hidden sm:inline">Creadora</span>
           </button>
           <button
             onClick={() => setRole('cliente')}
-            className={`flex items-center gap-1.5 rounded-[0.6rem] px-3 py-1.5 font-medium transition ${
+            aria-label="Vista previa del cliente"
+            className={`flex items-center gap-1.5 rounded-[0.6rem] px-2.5 py-1.5 font-medium transition sm:px-3 ${
               role === 'cliente'
                 ? 'bg-surface text-brand-700 shadow-soft'
                 : 'text-ink-500 hover:text-ink-700'
             }`}
           >
-            <Eye size={15} /> Cliente
+            <Eye size={15} />
+            <span className="hidden sm:inline">Cliente</span>
           </button>
         </div>
 

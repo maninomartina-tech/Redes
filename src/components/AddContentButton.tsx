@@ -48,7 +48,8 @@ export function NewContentModal({
       title: title.trim() || 'Nuevo contenido',
       type,
       date: new Date(date).toISOString(),
-      status: 'idea',
+      // Toda pieza nace esperando el visto bueno del cliente.
+      status: 'revision',
       mediaUrl: gradients[Math.floor(Math.random() * gradients.length)],
       mediaKind: type === 'reel' ? 'video' : 'image',
     });
@@ -60,8 +61,11 @@ export function NewContentModal({
     <Modal open={open} onClose={onClose} title="Nuevo contenido">
       <div className="space-y-4 p-5">
         <div>
-          <label className="label">Título</label>
+          <label className="label" htmlFor="nc-titulo">
+            Título
+          </label>
           <input
+            id="nc-titulo"
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -71,7 +75,7 @@ export function NewContentModal({
           />
         </div>
         <div>
-          <label className="label">Formato</label>
+          <span className="label">Formato</span>
           <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
             {types.map((t) => (
               <button
@@ -90,8 +94,11 @@ export function NewContentModal({
           </div>
         </div>
         <div>
-          <label className="label">Fecha y hora de publicación</label>
+          <label className="label" htmlFor="nc-fecha">
+            Fecha y hora de publicación
+          </label>
           <input
+            id="nc-fecha"
             type="datetime-local"
             value={date}
             onChange={(e) => setDate(e.target.value)}

@@ -3,7 +3,7 @@ import {
   Grid3x3,
   Home,
   MoreHorizontal,
-  Sparkles,
+  Send,
   TrendingUp,
   X,
 } from 'lucide-react';
@@ -15,8 +15,8 @@ import { clienteNav, creadoraNav, type NavItem } from '@/components/layout/Sideb
 
 /** Accesos directos de la barra inferior. El resto vive en "Más". */
 const atajosCreadora: NavItem[] = [
-  { to: '/calendario', label: 'Calendario', icon: CalendarDays },
-  { to: '/planificacion', label: 'Plan', icon: Sparkles },
+  { to: '/planificacion', label: 'Plan', icon: CalendarDays },
+  { to: '/publicar', label: 'Publicar', icon: Send },
   { to: '/feed', label: 'Feed', icon: Grid3x3 },
   { to: '/crecimiento', label: 'Crecim.', icon: TrendingUp },
 ];

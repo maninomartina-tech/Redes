@@ -188,7 +188,7 @@ export const seedPosts: Post[] = [
     inspiracion:
       'Llegó el lote de temporada. Aprovechamos la estética de foto cálida que está muy fuerte en cuentas de cafeterías.',
     date: d(3, 9, 30),
-    status: 'produccion',
+    status: 'edicion',
     ideaGeneral: 'Presentar el nuevo grano de temporada con foto cálida del pour over.',
     contenido: 'Foto flat lay del café + textura. Nota de cata en el diseño.',
     copy: 'Llegó el nuevo lote de temporada ☕️ Notas a chocolate y naranja. Te esperamos.',
@@ -209,7 +209,7 @@ export const seedPosts: Post[] = [
       'Audio en tendencia + video satisfactorio en cámara lenta. Formato probado para alcance en gastronomía.',
     inspiracionUrl: 'https://www.instagram.com/reel/ejemplo-latteart',
     date: d(6, 10, 0),
-    status: 'idea',
+    status: 'revision',
     ideaGeneral: 'Reel satisfactorio de latte art en slow motion para alcance.',
     contenido: 'Plano cenital, cámara lenta, música calma. Sin locución.',
     copy: 'Un arte en cada taza 🎨☕️ #latteart #coffee',

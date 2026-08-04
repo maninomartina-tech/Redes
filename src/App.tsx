@@ -8,7 +8,6 @@ import { applyBranding } from '@/lib/theme';
 import { estadoAcceso } from '@/lib/espacio';
 
 import Dashboard from '@/views/Dashboard';
-import CalendarView from '@/views/CalendarView';
 import PlanningBoard from '@/views/PlanningBoard';
 import FeedPreview from '@/views/FeedPreview';
 import StoriesPlanner from '@/views/StoriesPlanner';
@@ -76,8 +75,10 @@ function Panel() {
         <Route path="/" element={<Navigate to="/panel" replace />} />
         {/* Creadora */}
         <Route path="/panel" element={<Dashboard />} />
-        <Route path="/calendario" element={<CalendarView />} />
         <Route path="/planificacion" element={<PlanningBoard />} />
+        {/* Había dos calendarios distintos: ahora el de Planificación es el
+            único, y los links viejos van a parar ahí. */}
+        <Route path="/calendario" element={<Navigate to="/planificacion" replace />} />
         <Route path="/feed" element={<FeedPreview />} />
         <Route path="/historias" element={<StoriesPlanner />} />
         <Route path="/publicar" element={<ToPublish />} />

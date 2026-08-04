@@ -11,7 +11,6 @@ import {
   FileText,
   Send,
   Settings,
-  Sparkles,
   TrendingUp,
   Zap,
 } from 'lucide-react';
@@ -38,8 +37,7 @@ export const creadoraNav: NavGroup[] = [
   {
     title: 'Contenido',
     items: [
-      { to: '/calendario', label: 'Calendario', icon: CalendarDays },
-      { to: '/planificacion', label: 'Planificación', icon: Sparkles },
+      { to: '/planificacion', label: 'Planificación', icon: CalendarDays },
       { to: '/historias', label: 'Historias', icon: Zap },
       { to: '/publicar', label: 'Para publicar', icon: Send },
       { to: '/feed', label: 'Vista del feed', icon: Grid3x3 },

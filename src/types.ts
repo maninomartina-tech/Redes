@@ -4,13 +4,23 @@ export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
 export type PostType = 'reel' | 'post' | 'carrusel' | 'historia';
 
+/**
+ * El recorrido de una pieza, con los nombres que usa ella:
+ *
+ *   se crea la idea  →  revisión   (el cliente la mira)
+ *   la aprueba       →  edición    (se produce la pieza)
+ *   la pieza está    →  revisión   (el cliente la mira de nuevo)
+ *   la aprueba       →  aprobado   (lista para salir)
+ *
+ * `programado` y `publicado` ya no son etapas de planificación: son lo que
+ * pasa después, y por eso en el calendario no llevan cartelito.
+ */
 export type PostStatus =
-  | 'idea' // idea general cargada
-  | 'produccion' // en producción / grabación / diseño
-  | 'revision' // enviado al cliente para aprobación
-  | 'aprobado' // aprobado por el cliente
-  | 'programado' // agendado para publicarse
-  | 'publicado'; // ya publicado
+  | 'revision' // esperando al cliente: la idea o la pieza final
+  | 'edicion' // aprobada la idea, se está produciendo
+  | 'aprobado' // el cliente aprobó la pieza: lista para publicar
+  | 'programado' // agendada para publicarse sola
+  | 'publicado'; // ya salió
 
 export interface SocialAccount {
   id: string;

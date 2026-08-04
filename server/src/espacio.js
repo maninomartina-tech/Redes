@@ -196,7 +196,14 @@ export function comentarDesdePortal(token, postId, texto) {
   });
 }
 
-/** El cliente aprueba una pieza o pide cambios. */
+/**
+ * El cliente aprueba una pieza o pide cambios.
+ *
+ * Aprobar tiene dos sentidos según el momento: si todavía no hay pieza final,
+ * lo que aprobó es la idea y lo que sigue es producirla ("edición"); si la
+ * pieza ya está, queda lista para publicarse. La regla vive acá, del lado del
+ * servidor, para que la app y el portal no puedan discrepar.
+ */
 export function decidirDesdePortal(token, postId, decision) {
   const portal = portalPorToken(token);
   if (!portal) return { ok: false, error: 'Link inválido.' };
@@ -209,7 +216,9 @@ export function decidirDesdePortal(token, postId, decision) {
       (p) => p.id === postId && p.clientId === portal.cliente_id
     );
     if (!post) return { ok: false, error: 'Ese contenido no es de este cliente.' };
-    post.status = decision;
-    return { ok: true, status: decision };
+
+    post.status =
+      decision === 'aprobado' ? (post.resultado ? 'aprobado' : 'edicion') : 'revision';
+    return { ok: true, status: post.status };
   });
 }

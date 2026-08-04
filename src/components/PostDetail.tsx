@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   Check,
   CheckCircle2,
   Clapperboard,
@@ -15,8 +16,8 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import type { Post, PostStatus, PostType } from '@/types';
-import { fmtDateTime } from '@/lib/date';
-import { statusChip, statusLabel, statusOrder, typeEmoji, typeLabel } from '@/lib/format';
+import { desdeInput, fmtDateTime, paraInput } from '@/lib/date';
+import { etapasDePlan, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { Avatar, Modal } from '@/components/ui';
 import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
@@ -83,12 +84,14 @@ type Borrador = Pick<
   | 'copy'
   | 'hashtags'
   | 'resultado'
+  | 'date'
 >;
 
 function tomarBorrador(p: Post): Borrador {
   return {
     title: p.title,
     type: p.type,
+    date: p.date,
     inspiracion: p.inspiracion ?? '',
     inspiracionUrl: p.inspiracionUrl ?? '',
     inspiracionMedia: p.inspiracionMedia ?? [],
@@ -180,7 +183,22 @@ export default function PostDetail({
                   ))}
                 </select>
               )}
-              <span className="text-xs text-ink-400">{fmtDateTime(post.date)}</span>
+              {/* La fecha se edita acá además de arrastrando en el calendario:
+                  en el celular no hay arrastre. */}
+              {readOnly ? (
+                <span className="text-xs text-ink-400">{fmtDateTime(draft.date)}</span>
+              ) : (
+                <label className="flex items-center gap-1.5 text-xs text-ink-400">
+                  <CalendarClock size={14} />
+                  <span className="sr-only">Fecha y hora de publicación</span>
+                  <input
+                    type="datetime-local"
+                    value={paraInput(draft.date)}
+                    onChange={(e) => set({ date: desdeInput(e.target.value) })}
+                    className="rounded-lg border border-ink-200 bg-surface px-2 py-1 text-xs font-medium text-ink-700"
+                  />
+                </label>
+              )}
             </div>
 
             {readOnly ? (
@@ -375,22 +393,33 @@ export default function PostDetail({
           <div className="flex max-h-[68vh] flex-col border-t border-ink-200/70 md:border-l md:border-t-0">
             {!readOnly && (
               <div className="border-b border-ink-200/70 p-4">
-                <p className="label mb-2">Estado / Flujo</p>
+                <p className="label mb-2">Etapa</p>
+                {/* Solo las tres etapas del circuito. Programado y publicado no
+                    se eligen a mano: pasan cuando la pieza sale. */}
                 <div className="flex flex-wrap gap-1.5">
-                  {statusOrder.map((st) => (
+                  {etapasDePlan.map((st) => (
                     <button
                       key={st}
-                      onClick={() => setPostStatus(post.id, st as PostStatus)}
+                      onClick={() => setPostStatus(post.id, st)}
                       className={`chip transition ${
                         post.status === st
-                          ? statusChip[st as PostStatus]
+                          ? statusChip[st]
                           : 'border border-ink-200 bg-surface text-ink-500 hover:bg-ink-50'
                       }`}
                     >
-                      {statusLabel[st as PostStatus]}
+                      {statusLabel[st]}
                     </button>
                   ))}
                 </div>
+                {!etapasDePlan.includes(post.status) && (
+                  <p className="mt-2 text-xs text-ink-500">
+                    Esta pieza ya salió del circuito: figura como{' '}
+                    <strong className="font-semibold text-ink-700">
+                      {statusLabel[post.status].toLowerCase()}
+                    </strong>
+                    . Si te equivocaste, elegí una etapa para volver a traerla.
+                  </p>
+                )}
                 <EstadoPublicacion post={post} onCancel={() => cancelSchedule(post.id)} />
               </div>
             )}
