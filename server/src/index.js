@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
-import { createReadStream, existsSync, mkdirSync } from 'node:fs';
+import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -67,12 +67,46 @@ app.post('/api/media', subida.single('archivo'), (req, res) => {
 });
 
 // Meta descarga las piezas desde acá, por eso es público y sin autenticación.
+/**
+ * Servir un archivo subido.
+ *
+ * Los videos se piden por pedazos, no enteros: el navegador manda un `Range`
+ * y espera un 206 con solo ese tramo. Safari —o sea todo iPhone— directamente
+ * se niega a reproducir un video de un servidor que ignora eso: le aparece el
+ * reproductor vacío, como si el archivo estuviera roto. Y sin esto tampoco se
+ * puede adelantar un video en ningún navegador.
+ */
 app.get('/archivos/:id', (req, res) => {
   const archivo = db.prepare('SELECT * FROM archivos WHERE id = ?').get(req.params.id);
   if (!archivo || !existsSync(archivo.ruta)) return res.sendStatus(404);
+
+  const total = statSync(archivo.ruta).size;
+
   res.setHeader('Content-Type', archivo.tipo);
   res.setHeader('Cache-Control', 'public, max-age=31536000');
-  createReadStream(archivo.ruta).pipe(res);
+  // Sin este encabezado, el navegador ni se molesta en pedir por pedazos.
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  const pedido = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+  if (!pedido) {
+    res.setHeader('Content-Length', total);
+    return createReadStream(archivo.ruta).pipe(res);
+  }
+
+  // "bytes=-500" son los últimos 500; "bytes=500-" es de ahí hasta el final.
+  const [, desdeCrudo, hastaCrudo] = pedido;
+  const desde = desdeCrudo ? Number(desdeCrudo) : Math.max(total - Number(hastaCrudo), 0);
+  const hasta = desdeCrudo && hastaCrudo ? Math.min(Number(hastaCrudo), total - 1) : total - 1;
+
+  if (desde >= total || desde > hasta) {
+    res.setHeader('Content-Range', `bytes */${total}`);
+    return res.sendStatus(416);
+  }
+
+  res.status(206);
+  res.setHeader('Content-Range', `bytes ${desde}-${hasta}/${total}`);
+  res.setHeader('Content-Length', hasta - desde + 1);
+  createReadStream(archivo.ruta, { start: desde, end: hasta }).pipe(res);
 });
 
 /* ------------------------------ publicaciones ---------------------------- */

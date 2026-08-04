@@ -72,21 +72,43 @@ export function MediaThumb({
 }) {
   const subida = useMediaUrl(media?.id, media?.url);
 
-  const imagen = imageUrl ?? subida;
+  /**
+   * Un video no se puede dibujar como fondo.
+   *
+   * Toda la miniatura se apoyaba en `background-image`, que sirve para una
+   * imagen y para un video no muestra absolutamente nada: quedaba el recuadro
+   * gris con la flechita encima, igual que si el archivo estuviera roto. Para
+   * un video hace falta un reproductor de verdad.
+   */
+  const esVideo = media?.kind === 'video' && Boolean(subida);
+
+  const imagen = imageUrl ?? (esVideo ? undefined : subida);
   const fondo = imagen
     ? { backgroundImage: `url("${imagen}")`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : src
+    : !esVideo && src
     ? { background: src }
     : undefined;
 
   return (
     <div className={`relative overflow-hidden bg-ink-100 ${className}`} style={fondo}>
+      {esVideo && (
+        <video
+          src={subida}
+          // `metadata` alcanza para dibujar el primer cuadro sin bajar el video
+          // entero: en una grilla de nueve, bajarlos todos es una barbaridad.
+          preload="metadata"
+          muted
+          playsInline
+          controls
+          className="h-full w-full object-cover"
+        />
+      )}
       {label && (
         <span className="absolute left-2 top-2 rounded-md bg-ink-900/45 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
           {label}
         </span>
       )}
-      {kind === 'video' && (
+      {!esVideo && kind === 'video' && (
         <span className="absolute inset-0 grid place-items-center text-white/90">
           <span className="grid h-9 w-9 place-items-center rounded-full bg-ink-900/35 backdrop-blur-sm">
             ▶
