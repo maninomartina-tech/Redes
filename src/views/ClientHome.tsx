@@ -188,7 +188,7 @@ export default function ClientHome() {
           </div>
         </section>
 
-        {/* ---------- Tu semana ---------- */}
+        {/* ---------- Lo que viene ---------- */}
         <section className="card min-w-0 p-4">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="font-bold text-ink-900">Lo que viene esta semana</h3>
@@ -220,8 +220,8 @@ export default function ClientHome() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Acceso
             icono={<CalendarDays size={18} />}
-            titulo="Mi semana"
-            detalle="Posteos, reels e historias día por día."
+            titulo="Mi contenido"
+            detalle="El mes en calendario, o la semana día por día."
             onClick={() => navigate(`${base}/semana`)}
           />
           <Acceso

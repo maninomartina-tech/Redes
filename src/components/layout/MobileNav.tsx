@@ -23,7 +23,7 @@ const atajosCreadora: NavItem[] = [
 
 const atajosCliente = (base: string): NavItem[] => [
   { to: `${base}/inicio`, label: 'Inicio', icon: Home },
-  { to: `${base}/semana`, label: 'Semana', icon: CalendarDays },
+  { to: `${base}/semana`, label: 'Contenido', icon: CalendarDays },
   { to: `${base}/feed`, label: 'Feed', icon: Grid3x3 },
   { to: `${base}/metricas`, label: 'Resultados', icon: TrendingUp },
 ];

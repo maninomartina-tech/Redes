@@ -1,4 +1,6 @@
 import {
+  CalendarDays,
+  CalendarRange,
   ChevronLeft,
   ChevronRight,
   Clapperboard,
@@ -16,7 +18,15 @@ import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { plural } from '@/lib/texto';
+import PlanCalendar from '@/components/PlanCalendar';
 import PostDetail from '@/components/PostDetail';
+import {
+  FiltroDeTipo,
+  GrupoDeSolapas,
+  Solapa,
+  filtrarPorTipo,
+  type FiltroTipo,
+} from '@/components/Solapas';
 import { MediaPreview } from '@/components/MediaUploader';
 import { EmptyState } from '@/components/ui';
 
@@ -28,25 +38,40 @@ function tieneResultado(post: Post): boolean {
   return !!post.resultado;
 }
 
+/** Las dos formas de mirarlo, las mismas que del lado de la creadora. */
+type Vista = 'calendario' | 'semana';
+
 export default function ClientWeek() {
   const posts = useStore((s) => s.posts);
   const client = useCurrentClient();
   const [anchor, setAnchor] = useState(new Date());
   const [selected, setSelected] = useState<string | null>(null);
+  const [vista, setVista] = useState<Vista>('calendario');
+  const [filtro, setFiltro] = useState<FiltroTipo>('todo');
+
+  const suyos = useMemo(
+    () =>
+      posts
+        .filter((p) => p.clientId === client.id)
+        .sort((a, b) => a.date.localeCompare(b.date)),
+    [posts, client.id]
+  );
+  const visibles = useMemo(() => filtrarPorTipo(suyos, filtro), [suyos, filtro]);
+
+  // Los posteos se destacan solo mezclados con las historias.
+  const destacarPosteos = filtro === 'todo';
 
   const days = weekDays(anchor);
-  const deLaSemana = posts.filter(
-    (p) => p.clientId === client.id && days.some((d) => isSameDay(new Date(p.date), d))
+  const deLaSemana = visibles.filter((p) =>
+    days.some((d) => isSameDay(new Date(p.date), d))
   );
 
   /** La semana más cercana, hacia adelante, que sí tiene algo cargado. */
   const proxima = useMemo(() => {
     if (deLaSemana.length > 0) return null;
-    const futuros = posts
-      .filter((p) => p.clientId === client.id && new Date(p.date) > days[6])
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const futuros = visibles.filter((p) => new Date(p.date) > days[6]);
     return futuros.length ? new Date(futuros[0].date) : null;
-  }, [posts, client.id, deLaSemana.length, days]);
+  }, [visibles, deLaSemana.length, days]);
 
   const posteos = deLaSemana
     .filter((p) => p.type !== 'historia')
@@ -59,28 +84,62 @@ export default function ClientWeek() {
     <div className="space-y-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-ink-900">Tu semana de contenido</h2>
+          <h2 className="text-lg font-bold text-ink-900">Tu contenido</h2>
           <p className="text-sm text-ink-500">
             Esto es lo que se va a publicar. Revisalo y dejanos tus comentarios.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="btn-ghost px-2" onClick={() => setAnchor((a) => addDays(a, -7))}>
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-sm font-semibold capitalize text-ink-700">
-            {fmt(days[0].toISOString(), 'd MMM')} – {fmt(days[6].toISOString(), 'd MMM')}
-          </span>
-          <button className="btn-ghost px-2" onClick={() => setAnchor((a) => addDays(a, 7))}>
-            <ChevronRight size={18} />
-          </button>
-          <button className="btn-outline !py-1.5" onClick={() => setAnchor(new Date())}>
-            Hoy
-          </button>
-        </div>
+        {vista === 'semana' && (
+          <div className="flex items-center gap-2">
+            <button
+              className="btn-ghost px-2"
+              aria-label="Semana anterior"
+              onClick={() => setAnchor((a) => addDays(a, -7))}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span className="text-sm font-semibold capitalize text-ink-700">
+              {fmt(days[0].toISOString(), 'd MMM')} – {fmt(days[6].toISOString(), 'd MMM')}
+            </span>
+            <button
+              className="btn-ghost px-2"
+              aria-label="Semana siguiente"
+              onClick={() => setAnchor((a) => addDays(a, 7))}
+            >
+              <ChevronRight size={18} />
+            </button>
+            <button className="btn-outline !py-1.5" onClick={() => setAnchor(new Date())}>
+              Hoy
+            </button>
+          </div>
+        )}
       </div>
 
-      {deLaSemana.length === 0 && (
+      {/* Las mismas solapas que ve la creadora. Lo que cambia es la segunda:
+          a ella le sirve el estado de producción, al cliente su semana. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <GrupoDeSolapas>
+          <Solapa activa={vista === 'calendario'} onClick={() => setVista('calendario')}>
+            <CalendarDays size={15} /> Calendario
+          </Solapa>
+          <Solapa activa={vista === 'semana'} onClick={() => setVista('semana')}>
+            <CalendarRange size={15} /> Semana
+          </Solapa>
+        </GrupoDeSolapas>
+
+        <FiltroDeTipo valor={filtro} onChange={setFiltro} posts={suyos} />
+      </div>
+
+      {vista === 'calendario' && (
+        <PlanCalendar
+          posts={visibles}
+          destacarPosteos={destacarPosteos}
+          onOpen={setSelected}
+          soloLectura
+        />
+      )}
+
+      {vista === 'semana' && deLaSemana.length === 0 && (
         <EmptyState
           title="No hay contenido para esta semana"
           hint={
@@ -99,7 +158,7 @@ export default function ClientWeek() {
         />
       )}
 
-      {posteos.length > 0 && (
+      {vista === 'semana' && posteos.length > 0 && (
         <section>
           <SeccionHeader
             icon={<Images size={17} />}
@@ -115,7 +174,7 @@ export default function ClientWeek() {
         </section>
       )}
 
-      {historias.length > 0 && (
+      {vista === 'semana' && historias.length > 0 && (
         <section>
           <SeccionHeader
             icon={<Zap size={17} />}

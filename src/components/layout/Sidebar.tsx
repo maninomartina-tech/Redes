@@ -70,7 +70,7 @@ export const clienteNav = (base: string): NavGroup[] => [
   {
     title: 'Mi contenido',
     items: [
-      { to: `${base}/semana`, label: 'Mi semana', icon: CalendarDays },
+      { to: `${base}/semana`, label: 'Planificación', icon: CalendarDays },
       { to: `${base}/feed`, label: 'Mi feed', icon: Grid3x3 },
     ],
   },

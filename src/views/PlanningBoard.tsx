@@ -1,13 +1,20 @@
-import { CalendarDays, Columns3, Images, Zap } from 'lucide-react';
+import { CalendarDays, Columns3 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import type { Post } from '@/types';
-import { esHistoria, etapasDePlan, statusDot, statusLabel } from '@/lib/format';
+import { etapasDePlan, statusDot, statusLabel } from '@/lib/format';
 import AddContentButton, { NewContentModal } from '@/components/AddContentButton';
 import PlanCalendar from '@/components/PlanCalendar';
 import PostCard from '@/components/PostCard';
 import PostDetail from '@/components/PostDetail';
 import { SectionTitle } from '@/components/ui';
+import {
+  FiltroDeTipo,
+  GrupoDeSolapas,
+  Solapa,
+  filtrarPorTipo,
+  type FiltroTipo,
+} from '@/components/Solapas';
 
 // ---------------------------------------------------------------------------
 // Planificación: el mes entero de un cliente.
@@ -19,22 +26,13 @@ import { SectionTitle } from '@/components/ui';
 
 type Vista = 'calendario' | 'etapas';
 
-/**
- * Qué se está mirando.
- *
- * Un posteo y una historia son dos trabajos distintos —uno queda en el perfil,
- * la otra dura un día— y casi nunca se resuelven juntos. Poder aislar uno de
- * los dos es la diferencia entre revisar el mes y buscar entre el ruido.
- */
-type Filtro = 'todo' | 'posteos' | 'historias';
-
 export default function PlanningBoard() {
   const posts = useStore((s) => s.posts);
   const currentClientId = useStore((s) => s.currentClientId);
   const updatePost = useStore((s) => s.updatePost);
 
   const [vista, setVista] = useState<Vista>('calendario');
-  const [filtro, setFiltro] = useState<Filtro>('todo');
+  const [filtro, setFiltro] = useState<FiltroTipo>('todo');
   const [selected, setSelected] = useState<string | null>(null);
   const [fechaNueva, setFechaNueva] = useState<string | undefined>();
   const [creando, setCreando] = useState(false);
@@ -47,16 +45,7 @@ export default function PlanningBoard() {
     [posts, currentClientId]
   );
 
-  const cuantas = useMemo(() => {
-    const historias = clientPosts.filter((p) => esHistoria(p.type)).length;
-    return { todo: clientPosts.length, historias, posteos: clientPosts.length - historias };
-  }, [clientPosts]);
-
-  const visibles = useMemo(() => {
-    if (filtro === 'todo') return clientPosts;
-    const quiereHistorias = filtro === 'historias';
-    return clientPosts.filter((p) => esHistoria(p.type) === quiereHistorias);
-  }, [clientPosts, filtro]);
+  const visibles = useMemo(() => filtrarPorTipo(clientPosts, filtro), [clientPosts, filtro]);
 
   // Los posteos se destacan solo cuando están mezclados con las historias:
   // atenuar historias en una pantalla que solo tiene historias no dice nada.
@@ -72,31 +61,16 @@ export default function PlanningBoard() {
 
       {/* Cómo mirarlo, y qué mirar */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex rounded-xl border border-ink-200 bg-surface p-1">
+        <GrupoDeSolapas>
           <Solapa activa={vista === 'calendario'} onClick={() => setVista('calendario')}>
             <CalendarDays size={15} /> Calendario
           </Solapa>
           <Solapa activa={vista === 'etapas'} onClick={() => setVista('etapas')}>
             <Columns3 size={15} /> Etapas
           </Solapa>
-        </div>
+        </GrupoDeSolapas>
 
-        <div
-          role="group"
-          aria-label="Qué contenido mostrar"
-          className="inline-flex rounded-xl border border-ink-200 bg-surface p-1"
-        >
-          <Solapa activa={filtro === 'todo'} onClick={() => setFiltro('todo')}>
-            Todo <Cuenta n={cuantas.todo} activa={filtro === 'todo'} />
-          </Solapa>
-          <Solapa activa={filtro === 'posteos'} onClick={() => setFiltro('posteos')}>
-            <Images size={15} /> Posteos <Cuenta n={cuantas.posteos} activa={filtro === 'posteos'} />
-          </Solapa>
-          <Solapa activa={filtro === 'historias'} onClick={() => setFiltro('historias')}>
-            <Zap size={15} /> Historias{' '}
-            <Cuenta n={cuantas.historias} activa={filtro === 'historias'} />
-          </Solapa>
-        </div>
+        <FiltroDeTipo valor={filtro} onChange={setFiltro} posts={clientPosts} />
       </div>
 
       {vista === 'calendario' ? (
@@ -122,40 +96,6 @@ export default function PlanningBoard() {
       />
       <PostDetail postId={selected} onClose={() => setSelected(null)} />
     </div>
-  );
-}
-
-/** El número al lado de cada solapa: cuánto hay de eso. */
-function Cuenta({ n, activa }: { n: number; activa: boolean }) {
-  return (
-    <span
-      className={`rounded-full px-1.5 text-[11px] font-semibold tabular-nums ${
-        activa ? 'bg-brand-200/70 text-brand-800' : 'bg-ink-100 text-ink-500'
-      }`}
-    >
-      {n}
-    </span>
-  );
-}
-
-function Solapa({
-  activa,
-  onClick,
-  children,
-}: {
-  activa: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-        activa ? 'bg-brand-100 text-brand-800' : 'text-ink-500 hover:text-ink-800'
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 
