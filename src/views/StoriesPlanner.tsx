@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { addDays, fmt, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel } from '@/lib/format';
-import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileUp, Zap } from 'lucide-react';
 import AddContentButton from '@/components/AddContentButton';
+import ImportarHistorias from '@/components/ImportarHistorias';
 import PostDetail from '@/components/PostDetail';
 import { MediaThumb, SectionTitle } from '@/components/ui';
 
@@ -12,6 +13,7 @@ export default function StoriesPlanner() {
   const currentClientId = useStore((s) => s.currentClientId);
   const [anchor, setAnchor] = useState(new Date());
   const [selected, setSelected] = useState<string | null>(null);
+  const [importando, setImportando] = useState(false);
 
   const days = weekDays(anchor);
   const stories = posts.filter(
@@ -23,7 +25,18 @@ export default function StoriesPlanner() {
       <SectionTitle
         title="Planificación de historias"
         subtitle="Organizá las historias día por día. Cada columna es un día de la semana."
-        action={<AddContentButton onCreated={setSelected} defaultType="historia" label="Nueva historia" />}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-outline" onClick={() => setImportando(true)}>
+              <FileUp size={16} /> Cargar varias
+            </button>
+            <AddContentButton
+              onCreated={setSelected}
+              defaultType="historia"
+              label="Nueva historia"
+            />
+          </div>
+        }
       />
 
       <div className="mb-3 flex items-center gap-2">
@@ -88,6 +101,11 @@ export default function StoriesPlanner() {
         })}
       </div>
 
+      <ImportarHistorias
+        open={importando}
+        onClose={() => setImportando(false)}
+        semana={days[0]}
+      />
       <PostDetail postId={selected} onClose={() => setSelected(null)} />
     </div>
   );
