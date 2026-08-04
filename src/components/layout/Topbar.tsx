@@ -8,7 +8,6 @@ import {
   LogOut,
   PenTool,
   Plus,
-  RotateCcw,
   TriangleAlert,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -44,7 +43,7 @@ function EstadoSincro() {
 }
 
 export default function Topbar() {
-  const { role, setRole, clients, currentClientId, setClient, resetDemo } = useStore();
+  const { role, setRole, clients, currentClientId, setClient } = useStore();
   const portal = useStore((s) => s.portal);
   const sesion = useStore((s) => s.sesion);
   const cerrarSesionCreadora = useStore((s) => s.cerrarSesionCreadora);
@@ -131,14 +130,6 @@ export default function Topbar() {
 
       <div className="flex items-center gap-2">
         <EstadoSincro />
-
-        <button
-          className="btn-ghost hidden sm:inline-flex"
-          onClick={resetDemo}
-          title="Restaurar datos de ejemplo"
-        >
-          <RotateCcw size={16} />
-        </button>
 
         {/* Toggle de rol. En el teléfono van solo los íconos: con las dos
             palabras enteras, la barra no entraba y empujaba la pantalla. */}

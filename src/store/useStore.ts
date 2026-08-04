@@ -256,7 +256,6 @@ interface State {
   // campañas
   addCampaign: (c: Partial<Campaign> & { clientId: string }) => void;
 
-  resetDemo: () => void;
 }
 
 /**
@@ -1045,21 +1044,6 @@ export const useStore = create<State>()(
           ],
         })),
 
-      resetDemo: () => {
-        set({
-          clients: seedClients,
-          posts: seedPosts,
-          campaigns: seedCampaigns,
-          ads: seedAds,
-          monthlyStats: seedMonthlyStats,
-          leads: seedLeads,
-          hashtagSets: [],
-          branding: DEFAULT_BRANDING,
-          brandLogo: undefined,
-          currentClientId: seedClients[0].id,
-        });
-        applyBranding(DEFAULT_BRANDING);
-      },
     }),
     {
       name: 'demm-redes-v1',
