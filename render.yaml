@@ -33,6 +33,15 @@ services:
       sizeGB: 1
 
     envVars:
+      # Dónde escribe el servidor. Tiene que apuntar adentro del disco de
+      # arriba: si no, escribe en el disco de la aplicación —que Render rehace
+      # entero en cada despliegue y en cada reinicio— y todo lo cargado
+      # desaparece sin aviso, incluidos los links de los clientes.
+      - key: DB_PATH
+        value: /datos/demm.db
+      - key: FILES_PATH
+        value: /datos/archivos
+
       # Los que Render va a pedir al crear el servicio.
       #
       # El usuario y la contraseña con los que entrás al panel. Sin la

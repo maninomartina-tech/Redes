@@ -6,7 +6,7 @@ import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ahora, db, uid } from './db.js';
-import { permisos, publicUrl, soloLectura } from './config.js';
+import { datosPersistentes, permisos, publicUrl, soloLectura } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
@@ -470,6 +470,8 @@ app.get('/api/salud', (_req, res) => {
     soloLectura: soloLectura(),
     claveDefinida: hayClave(),
     iaConfigurada: hayIA(),
+    // Si esto viene en false, todo lo cargado se borra en el próximo reinicio.
+    datosPersistentes: datosPersistentes(),
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });
@@ -486,6 +488,16 @@ if (process.env.NODE_ENV !== 'test') {
       console.warn(
         '⚠ Falta la dirección pública. Meta necesita desde dónde descargar los archivos.\n' +
           '  Definí PUBLIC_URL, o usá `npm run tunel` para probar en tu máquina.'
+      );
+    }
+    if (!datosPersistentes()) {
+      console.warn(
+        '⚠ LOS DATOS SE VAN A BORRAR.\n' +
+          '  Esta plataforma rehace el disco de la aplicación en cada despliegue y en\n' +
+          '  cada reinicio. La base está adentro de ese disco, así que la planificación,\n' +
+          '  las piezas subidas y los links de tus clientes desaparecen sin aviso.\n' +
+          '  Solución: montá un disco y definí DB_PATH y FILES_PATH apuntando adentro\n' +
+          '  (por ejemplo /datos/demm.db y /datos/archivos). Ver render.yaml.'
       );
     }
     if (!hayClave()) {

@@ -131,11 +131,20 @@ export async function traerEspacio(
   return pedir('/api/espacio', { headers: conSesion(token) });
 }
 
-export async function subirEspacio(token: string, datos: DatosEspacio): Promise<number> {
+/**
+ * `alSalir` marca el pedido para que el navegador lo termine aunque la página
+ * ya se esté cerrando: es el último intento antes de una actualización.
+ */
+export async function subirEspacio(
+  token: string,
+  datos: DatosEspacio,
+  alSalir = false
+): Promise<number> {
   const d = await pedir<{ version: number }>('/api/espacio', {
     method: 'PUT',
     headers: conSesion(token, { 'Content-Type': 'application/json' }),
     body: JSON.stringify({ datos }),
+    keepalive: alSalir,
   });
   return d.version;
 }

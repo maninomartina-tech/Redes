@@ -44,6 +44,13 @@ import {
   traerPortal,
   type DatosEspacio,
 } from '@/lib/espacio';
+import {
+  borrarRescate,
+  guardarRescate,
+  leerRescate,
+  seEstaPerdiendoAlgo,
+  type Rescate,
+} from '@/lib/rescate';
 
 const uid = (p: string) =>
   `${p}_${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-3)}`;
@@ -68,24 +75,64 @@ function almacenamientoEnMemoria(): Storage {
   } as Storage;
 }
 
+/** Si el navegador está guardando en memoria y no en el disco. */
+let guardandoEnMemoria = false;
+
+/**
+ * Hay un link de cliente abierto y lo que está en memoria es lo de ese cliente.
+ *
+ * Vive acá afuera, y no en el estado, porque lo necesita el guardado —que corre
+ * antes de que el estado exista— y porque tiene que seguir en pie un instante
+ * más que la ruta: al volver al panel, el `#` ya cambió pero en memoria todavía
+ * está el recorte del cliente, y ese instante alcanzaba para escribirlo encima.
+ */
+let mirandoUnLink = false;
+
 /**
  * localStorage puede no estar disponible (modo incógnito, iframe restringido).
  * En ese caso guardamos en memoria para que la app siga funcionando.
  *
- * Y si se entró por un link de cliente, tampoco se guarda: si la creadora abre
- * el link de un cliente para revisarlo, no queremos que eso le pise su propia
- * copia local.
+ * Y con el link de un cliente abierto no se guarda nada, porque lo que hay en
+ * memoria en ese momento es el recorte de ese cliente: un solo cliente, sus
+ * publicaciones y nada más.
+ *
+ * Esto último se pregunta **en cada escritura**, y no una sola vez al arrancar,
+ * y ese es todo el punto: las rutas de la app son con `#`, así que pasar del
+ * panel al link de un cliente no recarga la página. Decidido al arrancar, la
+ * creadora que pegaba el link en su misma pestaña —lo más natural del mundo
+ * para probarlo— se guardaba encima su propio espacio de trabajo y volvía al
+ * panel con todo borrado.
  */
 function safeStorage(): Storage {
-  if (tokenDelPortalEnLaUrl()) return almacenamientoEnMemoria();
-  try {
-    const probe = '__demm_probe__';
-    window.localStorage.setItem(probe, '1');
-    window.localStorage.removeItem(probe);
-    return window.localStorage;
-  } catch {
-    return almacenamientoEnMemoria();
-  }
+  const base = ((): Storage => {
+    if (tokenDelPortalEnLaUrl()) {
+      guardandoEnMemoria = true;
+      return almacenamientoEnMemoria();
+    }
+    try {
+      const probe = '__demm_probe__';
+      window.localStorage.setItem(probe, '1');
+      window.localStorage.removeItem(probe);
+      return window.localStorage;
+    } catch {
+      guardandoEnMemoria = true;
+      return almacenamientoEnMemoria();
+    }
+  })();
+
+  return {
+    get length() {
+      return base.length;
+    },
+    clear: () => base.clear(),
+    getItem: (k) => base.getItem(k),
+    key: (i) => base.key(i),
+    removeItem: (k) => base.removeItem(k),
+    setItem: (k, v) => {
+      if (tokenDelPortalEnLaUrl() || mirandoUnLink) return;
+      base.setItem(k, v);
+    },
+  } as Storage;
 }
 
 /** Cómo está la app respecto del servidor. */
@@ -122,12 +169,31 @@ interface State {
   /** Token del link, cuando la app se abrió como cliente. */
   portal: string | null;
   sincro: Sincro;
+  /**
+   * Hay cambios hechos acá que todavía no llegaron al servidor.
+   *
+   * Se guarda en el dispositivo junto con los datos, a propósito: si se
+   * actualiza la página con algo sin mandar, al volver hay que subirlo, no
+   * bajar la copia vieja del servidor encima.
+   */
+  pendiente: boolean;
   entrarComoCreadora: (usuario: string, clave: string) => Promise<string | null>;
   cerrarSesionCreadora: () => Promise<void>;
   /** Trae del servidor todo el espacio de trabajo. */
   cargarDelServidor: () => Promise<void>;
   /** Abre la app en modo cliente con el contenido de ese link. */
   abrirPortal: (token: string) => Promise<string | null>;
+  /** Vuelve al espacio de la creadora después de haber mirado el link de un cliente. */
+  salirDelPortal: () => Promise<void>;
+
+  /**
+   * Copia de lo que había en este dispositivo cuando el servidor trajo menos.
+   * Mientras esté, la app ofrece recuperarlo.
+   */
+  rescate: Rescate | null;
+  /** Vuelve a poner lo de la copia, y lo sube al servidor para que quede. */
+  recuperarRescate: () => Promise<void>;
+  descartarRescate: () => void;
 
   // posts
   addPost: (p: Partial<Post> & { clientId: string }) => Post;
@@ -265,6 +331,7 @@ export const useStore = create<State>()(
       sesion: null,
       portal: null,
       sincro: { estado: 'local' },
+      pendiente: false,
 
       entrarComoCreadora: async (usuario, clave) => {
         set({ sincro: { estado: 'entrando' } });
@@ -298,10 +365,35 @@ export const useStore = create<State>()(
         try {
           const { datos, version } = await traerEspacio(sesion);
 
+          // Lo de acá es más nuevo: se sube, no se pisa.
+          //
+          // El guardado espera un momento antes de mandar, para no disparar una
+          // llamada por cada tecla. Si en ese rato se actualizaba la página
+          // —o se cerraba sesión, o el servidor tardaba en despertar— al volver
+          // se bajaba la copia vieja encima de lo recién hecho, y el trabajo
+          // desaparecía sin que nada lo dijera.
+          if (get().pendiente) {
+            await subirEspacio(sesion, datosDelEspacio(get()));
+            set({
+              pendiente: false,
+              sincro: { estado: 'listo', guardadoEn: new Date().toISOString() },
+            });
+            return;
+          }
+
           if (version === 0 || (datos.clients ?? []).length === 0) {
             await subirEspacio(sesion, datosDelEspacio(get()));
             set({ sincro: { estado: 'listo', guardadoEn: new Date().toISOString() } });
             return;
+          }
+
+          // Antes de reemplazar nada: si lo que llegó tiene menos que lo que
+          // hay en este dispositivo, se guarda una copia y se avisa. Sin esto,
+          // un documento malo en el servidor borra el trabajo de acá en
+          // silencio, y lo vuelve a borrar en cada actualización.
+          const aca = datosDelEspacio(get());
+          if (seEstaPerdiendoAlgo(aca, datos)) {
+            set({ rescate: guardarRescate(aca) });
           }
 
           aplicarDelServidor(() => {
@@ -340,7 +432,80 @@ export const useStore = create<State>()(
         }
       },
 
+      rescate: null,
+
+      recuperarRescate: async () => {
+        const r = get().rescate ?? leerRescate();
+        if (!r) return;
+
+        aplicarDelServidor(() => {
+          const branding = r.datos.branding ?? DEFAULT_BRANDING;
+          applyBranding(branding);
+          set({
+            clients: r.datos.clients,
+            posts: r.datos.posts,
+            campaigns: r.datos.campaigns ?? [],
+            ads: r.datos.ads ?? [],
+            monthlyStats: r.datos.monthlyStats ?? [],
+            leads: r.datos.leads ?? [],
+            hashtagSets: r.datos.hashtagSets ?? [],
+            branding,
+            brandLogo: r.datos.brandLogo,
+            currentClientId: r.datos.clients[0]?.id ?? get().currentClientId,
+            rescate: null,
+          });
+        });
+        borrarRescate();
+
+        // Y que quede en el servidor, si no vuelve a pisarse en la próxima.
+        const { sesion } = get();
+        if (sesion) {
+          try {
+            await subirEspacio(sesion, datosDelEspacio(get()));
+            set({ sincro: { estado: 'listo', guardadoEn: new Date().toISOString() } });
+          } catch {
+            set({
+              sincro: {
+                estado: 'error',
+                mensaje: 'Se recuperó en este dispositivo, pero no se pudo subir al servidor.',
+              },
+            });
+          }
+        }
+      },
+
+      descartarRescate: () => {
+        borrarRescate();
+        set({ rescate: null });
+      },
+
+      /**
+       * Salir del link de un cliente y volver a lo suyo.
+       *
+       * Mientras el link estuvo abierto no se guardó nada, así que en el disco
+       * sigue intacto su espacio: alcanza con volver a leerlo. Sin esto, al
+       * volver al panel en la misma pestaña seguiría viendo un solo cliente.
+       */
+      salirDelPortal: async () => {
+        if (!get().portal) return;
+
+        // Si la app abrió directamente en el link, nunca hubo nada propio acá.
+        if (guardandoEnMemoria) {
+          mirandoUnLink = false;
+          set({ portal: null, role: 'creadora' });
+          return;
+        }
+
+        // Primero se recupera lo suyo del disco y recién después se levanta el
+        // candado. Al revés, el `set` de acá abajo guardaría lo del cliente.
+        await useStore.persist.rehydrate();
+        mirandoUnLink = false;
+        set({ portal: null, role: 'creadora' });
+        if (get().sesion) await get().cargarDelServidor();
+      },
+
       abrirPortal: async (portal) => {
+        mirandoUnLink = true;
         set({ sincro: { estado: 'cargando' }, portal });
         try {
           const d = await traerPortal(portal);
@@ -901,7 +1066,7 @@ export const useStore = create<State>()(
       storage: createJSONStorage(safeStorage),
       version: 3,
       /** El estado de la sincronización se recalcula al arrancar. */
-      partialize: ({ sincro: _sincro, portal: _portal, ...resto }) => resto,
+      partialize: ({ sincro: _s, portal: _p, rescate: _r, ...resto }) => resto,
       /**
        * Datos guardados antes de que existiera el módulo de crecimiento:
        * completamos lo que falte para que la app no se rompa.
@@ -968,11 +1133,16 @@ let anterior = useStore.getState();
 async function guardarAhora() {
   const s = useStore.getState();
   if (!s.sesion) return;
+  // Con un link de cliente abierto, lo que hay en memoria es lo de ese cliente
+  // solo. Subirlo borraría del servidor a todos los demás.
+  if (s.portal) return;
 
   useStore.setState({ sincro: { ...s.sincro, estado: 'guardando' } });
   try {
     await subirEspacio(s.sesion, datosDelEspacio(s));
     useStore.setState({
+      // Solo se marca como mandado si nada cambió mientras se mandaba.
+      pendiente: CLAVES_DE_DATOS.some((k) => useStore.getState()[k] !== s[k]),
       sincro: { estado: 'listo', guardadoEn: new Date().toISOString() },
     });
   } catch (e) {
@@ -995,10 +1165,25 @@ if (hayServidor()) {
   useStore.subscribe((s) => {
     const cambio = CLAVES_DE_DATOS.some((k) => s[k] !== anterior[k]);
     anterior = s;
-    if (!cambio || aplicando || !s.sesion) return;
+    if (!cambio || aplicando || !s.sesion || s.portal) return;
+
+    // Se marca como pendiente ya mismo, no cuando salga el pedido: eso es lo
+    // que queda escrito en el dispositivo si la página se actualiza en el medio.
+    if (!s.pendiente) useStore.setState({ pendiente: true });
 
     clearTimeout(temporizador);
     temporizador = setTimeout(() => void guardarAhora(), ESPERA_MS);
+  });
+
+  // Al cerrar o actualizar la página, lo pendiente se manda igual. `keepalive`
+  // permite que el pedido sobreviva a la página que lo largó.
+  window.addEventListener('pagehide', () => {
+    const s = useStore.getState();
+    if (!s.sesion || s.portal || !s.pendiente) return;
+    clearTimeout(temporizador);
+    void subirEspacio(s.sesion, datosDelEspacio(s), true).catch(() => {
+      /* si no llega, queda pendiente y se sube al volver */
+    });
   });
 }
 

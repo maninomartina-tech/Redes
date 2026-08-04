@@ -26,6 +26,7 @@ import Hashtags from '@/views/Hashtags';
 import Report from '@/views/Report';
 import Ingreso from '@/views/Ingreso';
 import Portal from '@/views/Portal';
+import Rescate from '@/components/Rescate';
 
 /** El marco que comparten los dos lados: menú, barra superior y contenido. */
 function Marco({ children }: { children: React.ReactNode }) {
@@ -35,7 +36,10 @@ function Marco({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
         <main className="flex-1 px-4 py-5 pb-24 md:px-6 md:pb-6">
-          <div className="mx-auto max-w-6xl">{children}</div>
+          <div className="mx-auto max-w-6xl">
+            <Rescate />
+            {children}
+          </div>
         </main>
         <MobileNav />
       </div>
@@ -108,6 +112,7 @@ function Panel() {
 function LadoCreadora() {
   const sesion = useStore((s) => s.sesion);
   const cargarDelServidor = useStore((s) => s.cargarDelServidor);
+  const salirDelPortal = useStore((s) => s.salirDelPortal);
 
   const [pideClave, setPideClave] = useState<boolean | null>(null);
   const [soloLocal, setSoloLocal] = useState(false);
@@ -115,6 +120,12 @@ function LadoCreadora() {
   useEffect(() => {
     estadoAcceso().then(({ servidor, clave }) => setPideClave(servidor && clave));
   }, []);
+
+  // Si venía de mirar el link de un cliente en esta misma pestaña, lo que hay
+  // en memoria es el recorte de ese cliente. Se vuelve a lo suyo.
+  useEffect(() => {
+    void salirDelPortal();
+  }, [salirDelPortal]);
 
   // Con la sesión ya guardada de una visita anterior, se trae todo al abrir.
   useEffect(() => {

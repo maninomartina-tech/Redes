@@ -46,3 +46,27 @@ export function permisos() {
   ];
   return soloLectura() ? lectura : [...lectura, 'instagram_content_publish'];
 }
+
+/**
+ * ¿Lo que se carga sobrevive a un reinicio?
+ *
+ * Render, Railway y compañía rehacen el disco de la aplicación en cada
+ * despliegue y en cada reinicio —y el plan gratuito de Render además apaga el
+ * servicio cuando nadie lo usa—. Si la base quedó ahí adentro, un día
+ * cualquiera el panel aparece vacío y los links de los clientes dejan de
+ * abrir, sin ningún aviso.
+ *
+ * Para que sobreviva hay que montar un disco y apuntarle DB_PATH y FILES_PATH.
+ * Eso es lo que se comprueba acá: si estamos en una plataforma de esas y las
+ * rutas no se definieron a mano, los datos están en un lugar que se borra.
+ */
+export function enPlataforma() {
+  return Boolean(
+    process.env.RENDER || process.env.RAILWAY_PUBLIC_DOMAIN || process.env.FLY_APP_NAME
+  );
+}
+
+export function datosPersistentes() {
+  if (!enPlataforma()) return true; // en una máquina propia, el disco es el disco
+  return Boolean(process.env.DB_PATH && process.env.FILES_PATH);
+}
