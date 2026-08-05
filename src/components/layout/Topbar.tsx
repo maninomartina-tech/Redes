@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Avatar } from '@/components/ui';
+import Campana from '@/components/Campana';
 import ClientForm from '@/components/ClientForm';
 import { hayServidor } from '@/lib/espacio';
 
@@ -65,9 +66,12 @@ export default function Topbar() {
             <span className="block text-[11px] text-ink-400">{current.handle}</span>
           </span>
         </div>
-        <span className="chip bg-brand-100 text-brand-800">
-          <Cloud size={13} /> Tu espacio
-        </span>
+        <div className="flex items-center gap-1.5">
+          <Campana />
+          <span className="chip bg-brand-100 text-brand-800">
+            <Cloud size={13} /> Tu espacio
+          </span>
+        </div>
       </header>
     );
   }
@@ -130,6 +134,8 @@ export default function Topbar() {
 
       <div className="flex items-center gap-2">
         <EstadoSincro />
+
+        <Campana />
 
         {/* Toggle de rol. En el teléfono van solo los íconos: con las dos
             palabras enteras, la barra no entraba y empujaba la pantalla. */}

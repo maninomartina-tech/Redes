@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { ahora, db } from './db.js';
+import { avisarComentario, avisarDecision } from './novedades.js';
 
 // ---------------------------------------------------------------------------
 // Espacio de trabajo y portales de cliente.
@@ -133,6 +134,12 @@ export function borrarPortal(clienteId) {
   db.prepare('DELETE FROM portales WHERE cliente_id = ?').run(clienteId);
 }
 
+/** El cliente al que pertenece un link, o null si el link no vale. */
+export function clienteDelPortal(token) {
+  const p = db.prepare('SELECT cliente_id FROM portales WHERE token = ?').get(token);
+  return p?.cliente_id ?? null;
+}
+
 function portalPorToken(token) {
   const p = db.prepare('SELECT * FROM portales WHERE token = ?').get(token);
   if (p) {
@@ -192,6 +199,7 @@ export function comentarDesdePortal(token, postId, texto) {
       createdAt: ahora(),
       resolved: false,
     });
+    avisarComentario(cliente, post, texto.trim());
     return { ok: true };
   });
 }
@@ -219,6 +227,11 @@ export function decidirDesdePortal(token, postId, decision) {
 
     post.status =
       decision === 'aprobado' ? (post.resultado ? 'aprobado' : 'edicion') : 'revision';
+    avisarDecision(
+      (datos.clients ?? []).find((c) => c.id === portal.cliente_id),
+      post,
+      decision
+    );
     return { ok: true, status: post.status };
   });
 }

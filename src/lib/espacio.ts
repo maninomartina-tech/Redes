@@ -212,3 +212,35 @@ export async function decidirEnPortal(
     body: JSON.stringify({ postId, decision }),
   });
 }
+
+/* ------------------------------ novedades -------------------------------- */
+
+export interface Novedad {
+  id: string;
+  tipo: 'comentario' | 'decision' | 'pieza' | 'contenido';
+  texto: string;
+  cliente_id: string | null;
+  post_id: string | null;
+  creada_en: string;
+  vista_en: string | null;
+}
+
+export async function novedadesDeLaCreadora(token: string): Promise<Novedad[]> {
+  const d = await pedir<{ novedades: Novedad[] }>('/api/novedades', {
+    headers: conSesion(token),
+  });
+  return d.novedades;
+}
+
+export async function marcarNovedadesVistas(token: string): Promise<void> {
+  await pedir('/api/novedades/vistas', { method: 'POST', headers: conSesion(token) });
+}
+
+export async function novedadesDelPortal(token: string): Promise<Novedad[]> {
+  const d = await pedir<{ novedades: Novedad[] }>(`/api/portal/${token}/novedades`);
+  return d.novedades;
+}
+
+export async function marcarNovedadesDelPortalVistas(token: string): Promise<void> {
+  await pedir(`/api/portal/${token}/novedades/vistas`, { method: 'POST' });
+}

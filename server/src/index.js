@@ -12,12 +12,19 @@ import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insi
 import { iniciarProgramador, procesarCola } from './programador.js';
 import { hayIA, redactar } from './ia.js';
 import {
+  PARA_LA_CREADORA,
+  avisarCambiosDeLaCreadora,
+  listar as listarNovedades,
+  marcarVistas,
+} from './novedades.js';
+import {
   borrarPortal,
   cerrarSesion,
   comentarDesdePortal,
   crearPortal,
   datosDelPortal,
   decidirDesdePortal,
+  clienteDelPortal,
   guardarEspacio,
   hayClave,
   iniciarSesion,
@@ -317,8 +324,29 @@ app.get('/api/espacio', soloCreadora, (_req, res) => {
 
 app.put('/api/espacio', soloCreadora, (req, res) => {
   if (!req.body?.datos) return res.status(400).json({ error: 'Faltan los datos.' });
+
+  // Se mira contra lo que había para avisarle a cada cliente lo suyo: la app
+  // guarda todo el espacio junto, así que este es el único lugar donde se
+  // puede saber qué cambió de verdad.
+  const { datos: anterior } = leerEspacio();
   const version = guardarEspacio(req.body.datos);
+  try {
+    avisarCambiosDeLaCreadora(anterior, req.body.datos);
+  } catch {
+    // Un aviso que falla no puede tumbar el guardado.
+  }
   res.json({ ok: true, version });
+});
+
+/* ------------------------------ novedades -------------------------------- */
+
+app.get('/api/novedades', soloCreadora, (_req, res) => {
+  res.json({ novedades: listarNovedades(PARA_LA_CREADORA) });
+});
+
+app.post('/api/novedades/vistas', soloCreadora, (_req, res) => {
+  marcarVistas(PARA_LA_CREADORA);
+  res.json({ ok: true });
 });
 
 /* --------- links de cliente (los administra solo la creadora) ------------ */
@@ -348,6 +376,19 @@ app.post('/api/portal/:token/comentario', (req, res) => {
   const r = comentarDesdePortal(req.params.token, req.body?.postId, req.body?.texto);
   if (!r?.ok) return res.status(400).json(r ?? { error: 'No se pudo comentar.' });
   res.json(r);
+});
+
+app.get('/api/portal/:token/novedades', (req, res) => {
+  const cliente = clienteDelPortal(req.params.token);
+  if (!cliente) return res.status(404).json({ error: 'Este link no es válido.' });
+  res.json({ novedades: listarNovedades(cliente) });
+});
+
+app.post('/api/portal/:token/novedades/vistas', (req, res) => {
+  const cliente = clienteDelPortal(req.params.token);
+  if (!cliente) return res.status(404).json({ error: 'Este link no es válido.' });
+  marcarVistas(cliente);
+  res.json({ ok: true });
 });
 
 app.post('/api/portal/:token/decision', (req, res) => {
