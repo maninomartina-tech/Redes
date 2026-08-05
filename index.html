@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <meta name="theme-color" content="#FAF9F7" />
+    <link rel="alternate icon" href="/icono-192.png" />
+
+    <!-- El ícono de la pantalla de inicio. iOS no lee el manifiesto para
+         esto: mira este link, y solo acepta PNG. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta name="apple-mobile-web-app-title" content="Demm" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#4A1E1A" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Demm · Gestión de contenido</title>
   </head>

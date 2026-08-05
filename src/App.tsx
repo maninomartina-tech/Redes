@@ -5,6 +5,7 @@ import Topbar from '@/components/layout/Topbar';
 import MobileNav from '@/components/layout/MobileNav';
 import { useStore } from '@/store/useStore';
 import { applyBranding } from '@/lib/theme';
+import { aplicarIcono } from '@/lib/icono';
 import { estadoAcceso } from '@/lib/espacio';
 
 import Dashboard from '@/views/Dashboard';
@@ -141,11 +142,17 @@ function LadoCreadora() {
 
 export default function App() {
   const branding = useStore((s) => s.branding);
+  const brandLogo = useStore((s) => s.brandLogo);
 
   // La paleta elegida se aplica al arrancar y ante cualquier cambio.
   useEffect(() => {
     applyBranding(branding);
   }, [branding]);
+
+  // Y el ícono de la pestaña sigue al logo, sin tener que tocar archivos.
+  useEffect(() => {
+    void aplicarIcono(brandLogo);
+  }, [brandLogo]);
 
   return (
     <Routes>

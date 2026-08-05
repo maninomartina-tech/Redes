@@ -1,0 +1,16 @@
+{
+  "name": "Demm · Gestión de contenido",
+  "short_name": "Demm",
+  "description": "La planificación de contenido de tus clientes, mes a mes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FCF5E8",
+  "theme_color": "#4A1E1A",
+  "lang": "es",
+  "icons": [
+    { "src": "./icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
