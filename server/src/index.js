@@ -24,6 +24,7 @@ import {
   crearPortal,
   datosDelPortal,
   decidirDesdePortal,
+  aprobarVariasDesdePortal,
   clienteDelPortal,
   guardarEspacio,
   hayClave,
@@ -389,6 +390,12 @@ app.post('/api/portal/:token/novedades/vistas', (req, res) => {
   if (!cliente) return res.status(404).json({ error: 'Este link no es válido.' });
   marcarVistas(cliente);
   res.json({ ok: true });
+});
+
+app.post('/api/portal/:token/aprobar-todo', (req, res) => {
+  const r = aprobarVariasDesdePortal(req.params.token, req.body?.postIds);
+  if (!r?.ok) return res.status(400).json(r ?? { error: 'No se pudo aprobar.' });
+  res.json(r);
 });
 
 app.post('/api/portal/:token/decision', (req, res) => {

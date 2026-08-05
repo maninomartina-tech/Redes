@@ -32,13 +32,17 @@ function EstadoSincro() {
         ? [TriangleAlert, 'Sin guardar', 'text-amber-600']
         : [Check, 'Guardado', 'text-ink-400'];
 
+  // En el teléfono queda solo el ícono. Esconderlo entero, como estaba, dejaba
+  // sin saber si el trabajo se guardó justo a quien más lo necesita: la app se
+  // usa desde el celular.
   return (
     <span
       title={mensaje ?? 'Tus cambios se guardan en el servidor y los ven tus clientes.'}
-      className={`hidden items-center gap-1.5 text-xs font-medium sm:inline-flex ${clase}`}
+      aria-label={texto}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium ${clase}`}
     >
       <Icono size={14} className={estado === 'guardando' ? 'animate-spin' : ''} />
-      {texto}
+      <span className="hidden sm:inline">{texto}</span>
     </span>
   );
 }

@@ -213,6 +213,24 @@ export async function decidirEnPortal(
   });
 }
 
+/**
+ * El cliente aprueba varias de una vez.
+ *
+ * Se mandan los ids y no un "aprobá todo": lo que se aprueba tiene que ser
+ * exactamente lo que se le mostró en la lista, ni uno más.
+ */
+export async function aprobarVariasEnPortal(
+  token: string,
+  postIds: string[]
+): Promise<number> {
+  const d = await pedir<{ cuantos: number }>(`/api/portal/${token}/aprobar-todo`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ postIds }),
+  });
+  return d.cuantos;
+}
+
 /* ------------------------------ novedades -------------------------------- */
 
 export interface Novedad {

@@ -129,7 +129,7 @@ export default function Dashboard() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* próximas publicaciones */}
-        <div className="card p-4">
+        <div className="card min-w-0 p-4">
           <div className="mb-3 flex items-center gap-2">
             <CalendarClock size={18} className="text-brand-600" />
             <h3 className="font-bold text-ink-800">Próximas publicaciones</h3>
@@ -151,14 +151,16 @@ export default function Dashboard() {
                   </p>
                   <p className="text-xs text-ink-400">{fmtDateTime(p.date)}</p>
                 </div>
-                <span className={`chip ${statusChip[p.status]}`}>{statusLabel[p.status]}</span>
+                <span className={`chip shrink-0 ${statusChip[p.status]}`}>
+                  {statusLabel[p.status]}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
         {/* correcciones del cliente */}
-        <div className="card p-4">
+        <div className="card min-w-0 p-4">
           <div className="mb-3 flex items-center gap-2">
             <MessageSquareWarning size={18} className="text-rose-600" />
             <h3 className="font-bold text-ink-800">Correcciones del cliente</h3>
@@ -173,7 +175,7 @@ export default function Dashboard() {
                 onClick={() => setSelected(post.id)}
                 className="block w-full rounded-xl border border-ink-200/70 p-2.5 text-left hover:bg-ink-50"
               >
-                <p className="text-xs font-semibold text-ink-500">{post.title}</p>
+                <p className="truncate text-xs font-semibold text-ink-500">{post.title}</p>
                 <p className="line-clamp-2 text-sm text-ink-700">“{comment.text}”</p>
               </button>
             ))}

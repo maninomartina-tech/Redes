@@ -142,22 +142,46 @@ export function Stat({
   );
 }
 
+/**
+ * El encabezado de cada pantalla.
+ *
+ * En el teléfono el botón se va abajo y ocupa el ancho, en vez de pelear por
+ * el costado con un subtítulo largo: peleando, el subtítulo se partía en cuatro
+ * renglones y el botón en dos, y entre el título y el contenido de verdad se
+ * iba media pantalla.
+ *
+ * `soloEnEscritorio` es para lo que no aplica en un teléfono —"arrastrá la
+ * pieza", por ejemplo, cuando en un teléfono no se puede arrastrar—.
+ */
 export function SectionTitle({
   title,
   subtitle,
   action,
+  soloEnEscritorio,
 }: {
   title: ReactNode;
   subtitle?: string;
   action?: ReactNode;
+  /** Parte del subtítulo que no tiene sentido en un teléfono. */
+  soloEnEscritorio?: string;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="text-lg font-bold text-ink-900">{title}</h2>
-        {subtitle && <p className="text-sm text-ink-500">{subtitle}</p>}
+    <div className="mb-4 flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <div className="min-w-0">
+        <h2 className="text-base font-bold text-ink-900 sm:text-lg">{title}</h2>
+        {(subtitle || soloEnEscritorio) && (
+          <p className="text-[13px] leading-snug text-ink-500 sm:text-sm">
+            {subtitle}
+            {soloEnEscritorio && (
+              <span className="hidden sm:inline">
+                {subtitle ? ' ' : ''}
+                {soloEnEscritorio}
+              </span>
+            )}
+          </p>
+        )}
       </div>
-      {action}
+      {action && <div className="[&>*]:w-full sm:[&>*]:w-auto">{action}</div>}
     </div>
   );
 }

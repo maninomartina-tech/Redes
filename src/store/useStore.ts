@@ -35,6 +35,7 @@ import {
 import {
   SesionVencida,
   comentarEnPortal,
+  aprobarVariasEnPortal,
   decidirEnPortal,
   entrar as entrarEnServidor,
   hayServidor,
@@ -185,6 +186,8 @@ interface State {
   abrirPortal: (token: string) => Promise<string | null>;
   /** Vuelve al espacio de la creadora después de haber mirado el link de un cliente. */
   salirDelPortal: () => Promise<void>;
+  /** El cliente aprueba de una vez las piezas que se le mostraron. */
+  aprobarTodoDelPortal: (postIds: string[]) => Promise<string | null>;
 
   /**
    * Copia de lo que había en este dispositivo cuando el servidor trajo menos.
@@ -501,6 +504,25 @@ export const useStore = create<State>()(
         mirandoUnLink = false;
         set({ portal: null, role: 'creadora' });
         if (get().sesion) await get().cargarDelServidor();
+      },
+
+      /**
+       * Aprobar en tanda.
+       *
+       * Decide el servidor y después se vuelve a traer lo del link: así el
+       * estado de cada pieza sale de un solo lugar y no de dos cuentas
+       * paralelas que podrían no coincidir.
+       */
+      aprobarTodoDelPortal: async (postIds) => {
+        const { portal } = get();
+        if (!portal) return 'No hay ningún link abierto.';
+        try {
+          await aprobarVariasEnPortal(portal, postIds);
+          await get().abrirPortal(portal);
+          return null;
+        } catch (e) {
+          return e instanceof Error ? e.message : 'No se pudo aprobar.';
+        }
       },
 
       abrirPortal: async (portal) => {

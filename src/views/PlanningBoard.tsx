@@ -55,7 +55,8 @@ export default function PlanningBoard() {
     <div>
       <SectionTitle
         title="Planificación"
-        subtitle="El mes completo, día por día. Arrastrá una pieza a otro día, o cambiale la fecha desde adentro del contenido."
+        subtitle="El mes completo, día por día."
+        soloEnEscritorio="Arrastrá una pieza a otro día, o cambiale la fecha desde adentro del contenido."
         action={<AddContentButton onCreated={setSelected} />}
       />
 

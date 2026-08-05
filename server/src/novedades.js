@@ -93,6 +93,18 @@ export function avisarDecision(cliente, post, decision) {
   });
 }
 
+/** Aprobó varias de una vez: un aviso, no quince. */
+export function avisarDecisionEnTanda(cliente, cuantos) {
+  registrar({
+    para: PARA_LA_CREADORA,
+    clienteId: cliente?.id ?? null,
+    tipo: 'decision',
+    texto: `${cliente?.name ?? 'Tu cliente'} aprobó ${cuantos} contenido${
+      cuantos === 1 ? '' : 's'
+    } de una vez`,
+  });
+}
+
 /* ------------------------ lo que carga la creadora ----------------------- */
 
 /**

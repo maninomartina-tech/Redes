@@ -216,3 +216,72 @@ describe('lo que carga la creadora le llega al cliente', () => {
     assert.equal(r.status, 404);
   });
 });
+
+describe('aprobar varias de una vez', () => {
+  const aprobar = (token, postIds) =>
+    fetch(`${base}/api/portal/${token}/aprobar-todo`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ postIds }),
+    });
+
+  it('aplica la misma regla que de a una', async () => {
+    await guardar([
+      post('m1', 'cli_a'), // sin pieza: al aprobar va a edición
+      post('m2', 'cli_a', { resultado: { id: 'x', name: 'p.jpg', kind: 'image' } }),
+    ]);
+
+    const r = await aprobar(linkA, ['m1', 'm2']);
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).cuantos, 2);
+
+    const { datos } = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
+    assert.equal(datos.posts.find((p) => p.id === 'm1').status, 'edicion');
+    assert.equal(datos.posts.find((p) => p.id === 'm2').status, 'aprobado');
+  });
+
+  it('aprueba solo lo que se le mostró, no todo lo pendiente', async () => {
+    await guardar([post('n1', 'cli_a'), post('n2', 'cli_a')]);
+
+    await aprobar(linkA, ['n1']);
+
+    const { datos } = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
+    assert.equal(datos.posts.find((p) => p.id === 'n1').status, 'edicion');
+    assert.equal(
+      datos.posts.find((p) => p.id === 'n2').status,
+      'revision',
+      'lo que no estaba en la lista no se toca'
+    );
+  });
+
+  it('no puede aprobar lo de otro cliente aunque mande su id', async () => {
+    await guardar([post('o1', 'cli_a'), post('o2', 'cli_b')]);
+
+    const r = await aprobar(linkA, ['o1', 'o2']);
+    assert.equal((await r.json()).cuantos, 1, 'solo la suya');
+
+    const { datos } = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
+    assert.equal(datos.posts.find((p) => p.id === 'o2').status, 'revision');
+  });
+
+  it('le llega un solo aviso a la creadora, no uno por pieza', async () => {
+    await fetch(`${base}/api/novedades/vistas`, { method: 'POST', headers: conClave() });
+    await guardar([post('q1', 'cli_a'), post('q2', 'cli_a'), post('q3', 'cli_a')]);
+
+    await aprobar(linkA, ['q1', 'q2', 'q3']);
+
+    const sinVer = (await deLaCreadora()).filter((n) => !n.vista_en && n.tipo === 'decision');
+    assert.equal(sinVer.length, 1);
+    assert.match(sinVer[0].texto, /3 contenidos/);
+  });
+
+  it('sin lista no hace nada', async () => {
+    const r = await aprobar(linkA, []);
+    assert.equal(r.status, 400);
+  });
+
+  it('un link inventado no aprueba nada', async () => {
+    const r = await aprobar('inventado', ['q1']);
+    assert.equal(r.status, 400);
+  });
+});

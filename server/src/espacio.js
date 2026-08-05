@@ -1,6 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { ahora, db } from './db.js';
-import { avisarComentario, avisarDecision } from './novedades.js';
+import { avisarComentario, avisarDecision, avisarDecisionEnTanda } from './novedades.js';
 
 // ---------------------------------------------------------------------------
 // Espacio de trabajo y portales de cliente.
@@ -212,6 +212,47 @@ export function comentarDesdePortal(token, postId, texto) {
  * pieza ya está, queda lista para publicarse. La regla vive acá, del lado del
  * servidor, para que la app y el portal no puedan discrepar.
  */
+/**
+ * El cliente aprueba de una vez varias piezas.
+ *
+ * Revisar de a una está bien cuando hay dos; con las historias del mes es un
+ * peaje, y un peaje termina en que el cliente no revisa nada.
+ *
+ * Recibe exactamente qué aprobar y no "todo lo pendiente", a propósito: la app
+ * le muestra antes la lista de lo que va a aprobar, y si acá se aprobara por
+ * cuenta propia podría alcanzar algo que él nunca vio —lo que llegó entre que
+ * abrió la pantalla y tocó el botón, o lo que la app dejó afuera porque tenía
+ * un comentario suyo sin resolver—. Se aprueba lo que se mostró, nada más.
+ *
+ * La regla de qué significa aprobar es la misma que de a una.
+ */
+export function aprobarVariasDesdePortal(token, postIds) {
+  const portal = portalPorToken(token);
+  if (!portal) return { ok: false, error: 'Link inválido.' };
+  if (!Array.isArray(postIds) || postIds.length === 0) {
+    return { ok: false, error: 'No se indicó qué aprobar.' };
+  }
+
+  const pedidos = new Set(postIds);
+
+  return modificarEspacio((datos) => {
+    const suyos = (datos.posts ?? []).filter(
+      (p) => pedidos.has(p.id) && p.clientId === portal.cliente_id && p.status === 'revision'
+    );
+    if (suyos.length === 0) return { ok: true, cuantos: 0 };
+
+    suyos.forEach((post) => {
+      post.status = post.resultado ? 'aprobado' : 'edicion';
+    });
+
+    avisarDecisionEnTanda(
+      (datos.clients ?? []).find((c) => c.id === portal.cliente_id),
+      suyos.length
+    );
+    return { ok: true, cuantos: suyos.length };
+  });
+}
+
 export function decidirDesdePortal(token, postId, decision) {
   const portal = portalPorToken(token);
   if (!portal) return { ok: false, error: 'Link inválido.' };

@@ -18,6 +18,7 @@ import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { plural } from '@/lib/texto';
+import AprobarTodo from '@/components/AprobarTodo';
 import PlanCalendar from '@/components/PlanCalendar';
 import PostDetail from '@/components/PostDetail';
 import {
@@ -90,7 +91,7 @@ export default function ClientWeek() {
           </p>
         </div>
         {vista === 'semana' && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               className="btn-ghost px-2"
               aria-label="Semana anterior"
@@ -128,6 +129,13 @@ export default function ClientWeek() {
         </GrupoDeSolapas>
 
         <FiltroDeTipo valor={filtro} onChange={setFiltro} posts={suyos} />
+
+        {/* Revisar de a uno está bien con dos; con las historias del mes es un
+            peaje. El botón mira lo que se está viendo: filtrado a historias,
+            aprueba las historias. */}
+        <div className="w-full sm:ml-auto sm:w-auto">
+          <AprobarTodo posts={visibles} />
+        </div>
       </div>
 
       {vista === 'calendario' && (
