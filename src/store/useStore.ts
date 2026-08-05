@@ -43,8 +43,10 @@ import {
   subirEspacio,
   traerEspacio,
   traerPortal,
+  type CuentaDelPortal,
   type DatosEspacio,
 } from '@/lib/espacio';
+import { desvincular, vincular } from '@/lib/vinculos';
 import {
   borrarRescate,
   guardarRescate,
@@ -183,7 +185,14 @@ interface State {
   /** Trae del servidor todo el espacio de trabajo. */
   cargarDelServidor: () => Promise<void>;
   /** Abre la app en modo cliente con el contenido de ese link. */
-  abrirPortal: (token: string) => Promise<string | null>;
+  abrirPortal: (token: string, cuenta?: string) => Promise<string | null>;
+  /**
+   * Las cuentas que alcanza el link abierto: la suya y las vinculadas.
+   * Con una sola, no hay nada que elegir y el selector no aparece.
+   */
+  portalCuentas: CuentaDelPortal[];
+  /** Cambia a otra de sus cuentas vinculadas. */
+  cambiarCuentaDelPortal: (clienteId: string) => Promise<void>;
   /** Vuelve al espacio de la creadora después de haber mirado el link de un cliente. */
   salirDelPortal: () => Promise<void>;
   /** El cliente aprueba de una vez las piezas que se le mostraron. */
@@ -229,6 +238,10 @@ interface State {
   /** Baja de una cuenta, con todo lo que colgaba de ella. */
   removeClient: (clientId: string) => void;
   addAccount: (clientId: string, a: Partial<SocialAccount> & { handle: string }) => void;
+  /** Vincula dos cuentas: el cliente las ve con un solo link. */
+  vincularCuentas: (a: string, b: string) => void;
+  /** Saca una cuenta de su grupo, sin deshacer el de las demás. */
+  desvincularCuenta: (clienteId: string) => void;
   removeAccount: (clientId: string, accountId: string) => void;
 
   // publicación a mano (mientras Meta no apruebe el permiso)
@@ -332,6 +345,7 @@ export const useStore = create<State>()(
 
       sesion: null,
       portal: null,
+      portalCuentas: [],
       sincro: { estado: 'local' },
       pendiente: false,
 
@@ -494,7 +508,7 @@ export const useStore = create<State>()(
         // Si la app abrió directamente en el link, nunca hubo nada propio acá.
         if (guardandoEnMemoria) {
           mirandoUnLink = false;
-          set({ portal: null, role: 'creadora' });
+          set({ portal: null, portalCuentas: [], role: 'creadora' });
           return;
         }
 
@@ -502,7 +516,7 @@ export const useStore = create<State>()(
         // candado. Al revés, el `set` de acá abajo guardaría lo del cliente.
         await useStore.persist.rehydrate();
         mirandoUnLink = false;
-        set({ portal: null, role: 'creadora' });
+        set({ portal: null, portalCuentas: [], role: 'creadora' });
         if (get().sesion) await get().cargarDelServidor();
       },
 
@@ -525,16 +539,22 @@ export const useStore = create<State>()(
         }
       },
 
-      abrirPortal: async (portal) => {
+      cambiarCuentaDelPortal: async (clienteId) => {
+        const { portal } = get();
+        if (portal) await get().abrirPortal(portal, clienteId);
+      },
+
+      abrirPortal: async (portal, cuenta) => {
         mirandoUnLink = true;
         set({ sincro: { estado: 'cargando' }, portal });
         try {
-          const d = await traerPortal(portal);
+          const d = await traerPortal(portal, cuenta);
           aplicarDelServidor(() => {
             const branding = d.branding ?? DEFAULT_BRANDING;
             applyBranding(branding);
             set({
               role: 'cliente',
+              portalCuentas: d.cuentas ?? [],
               clients: [d.cliente],
               currentClientId: d.cliente.id,
               posts: d.posts,
@@ -943,6 +963,11 @@ export const useStore = create<State>()(
           ),
         })),
 
+      vincularCuentas: (a, b) => set((s) => ({ clients: vincular(s.clients, a, b) })),
+
+      desvincularCuenta: (clienteId) =>
+        set((s) => ({ clients: desvincular(s.clients, clienteId) })),
+
       removeAccount: (clientId, accountId) =>
         set((s) => ({
           clients: s.clients.map((c) =>
@@ -1072,7 +1097,7 @@ export const useStore = create<State>()(
       storage: createJSONStorage(safeStorage),
       version: 3,
       /** El estado de la sincronización se recalcula al arrancar. */
-      partialize: ({ sincro: _s, portal: _p, rescate: _r, ...resto }) => resto,
+      partialize: ({ sincro: _s, portal: _p, portalCuentas: _pc, rescate: _r, ...resto }) => resto,
       /**
        * Datos guardados antes de que existiera el módulo de crecimiento:
        * completamos lo que falte para que la app no se rompa.

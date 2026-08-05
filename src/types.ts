@@ -51,6 +51,19 @@ export interface Client {
   tracksLeads?: boolean;
   /** Logo del cliente, si se subió (si no, se usan sus iniciales) */
   logo?: MediaRef;
+  /**
+   * Otras cuentas de la misma persona.
+   *
+   * Un cliente con dos Instagram son dos cuentas acá —cada una con su
+   * calendario, su feed y sus números, que es lo correcto porque son dos
+   * perfiles distintos—, pero una sola persona que las revisa. Vinculándolas,
+   * con un solo link puede pasar de una a la otra.
+   *
+   * Es el grupo completo, no de a pares: vinculando A con B y después B con C,
+   * las tres quedan viéndose entre sí. Guardar el grupo entero en cada una
+   * ahorra tener que recorrer relaciones para saber quién ve qué.
+   */
+  vinculadas?: string[];
 }
 
 /** Un grupo de hashtags guardado para reutilizar. */

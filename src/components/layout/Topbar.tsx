@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { Avatar } from '@/components/ui';
 import Campana from '@/components/Campana';
+import SelectorDeCuenta from '@/components/SelectorDeCuenta';
 import ClientForm from '@/components/ClientForm';
 import { hayServidor } from '@/lib/espacio';
 
@@ -56,23 +57,30 @@ export default function Topbar() {
   const [nuevaCuenta, setNuevaCuenta] = useState(false);
 
   const current = clients.find((c) => c.id === currentClientId) ?? clients[0];
+  const tieneVarias = useStore((s) => s.portalCuentas.length > 1);
 
   // Con el link de un cliente no hay nada que elegir: es su propio espacio.
   if (portal) {
     return (
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-ink-200/70 bg-canvas/85 px-4 backdrop-blur-md md:px-6">
-        <div className="flex items-center gap-2.5">
-          <Avatar name={current.name} color={current.color} logoId={current.logo?.id} size={30} />
-          <span className="leading-tight">
-            <span className="block max-w-[12rem] truncate text-sm font-semibold text-ink-800">
-              {current.name}
+        {/* Con más de una cuenta, el nombre pasa a ser el selector: si no,
+            habría dos cosas diciendo lo mismo y solo una se puede tocar. */}
+        {tieneVarias ? (
+          <SelectorDeCuenta />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2.5">
+            <Avatar name={current.name} color={current.color} logoId={current.logo?.id} size={30} />
+            <span className="min-w-0 leading-tight">
+              <span className="block max-w-[12rem] truncate text-sm font-semibold text-ink-800">
+                {current.name}
+              </span>
+              <span className="block truncate text-[11px] text-ink-400">{current.handle}</span>
             </span>
-            <span className="block text-[11px] text-ink-400">{current.handle}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
+          </div>
+        )}
+        <div className="flex shrink-0 items-center gap-1.5">
           <Campana />
-          <span className="chip bg-brand-100 text-brand-800">
+          <span className="chip hidden bg-brand-100 text-brand-800 sm:inline-flex">
             <Cloud size={13} /> Tu espacio
           </span>
         </div>

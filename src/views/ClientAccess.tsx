@@ -19,6 +19,8 @@ import {
   type LinkCliente,
 } from '@/lib/espacio';
 import { Avatar, EmptyState, SectionTitle } from '@/components/ui';
+import VincularCuentas from '@/components/VincularCuentas';
+import { vinculadasDe } from '@/lib/vinculos';
 import { fmt } from '@/lib/date';
 
 /**
@@ -138,7 +140,7 @@ export default function ClientAccess() {
 
             return (
               <div key={c.id} className="card p-4">
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <Avatar name={c.name} color={c.color} logoId={c.logo?.id} size={38} />
                   <div className="mr-auto min-w-0">
                     <p className="truncate font-semibold text-ink-900">{c.name}</p>
@@ -182,6 +184,21 @@ export default function ClientAccess() {
                       )}
                       Crear link
                     </button>
+                  )}
+                </div>
+
+                {/* Un cliente puede manejar más de una cuenta: vinculándolas
+                    entra a las dos con este mismo link. */}
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-ink-200/70 pt-3">
+                  <VincularCuentas cliente={c} />
+                  {vinculadasDe(clients, c.id).length > 0 && (
+                    <span className="text-[11px] leading-snug text-ink-500">
+                      Con este link también ve{' '}
+                      {vinculadasDe(clients, c.id)
+                        .map((v) => v.name)
+                        .join(', ')}
+                      .
+                    </span>
                   )}
                 </div>
 

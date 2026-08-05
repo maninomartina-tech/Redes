@@ -149,22 +149,55 @@ function portalPorToken(token) {
 }
 
 /**
+ * Las cuentas que puede ver quien entró con este link: la suya y las que la
+ * creadora haya vinculado a ella.
+ *
+ * Es la regla de permiso y vive acá, en el servidor. Si el link sirviera para
+ * pedir cualquier cuenta, alcanzaría con cambiar un id en la dirección para
+ * leer la planificación de otro cliente.
+ */
+export function cuentasDelPortal(datos, clienteId) {
+  const cliente = (datos.clients ?? []).find((c) => c.id === clienteId);
+  if (!cliente) return [];
+  const ids = new Set([clienteId, ...(cliente.vinculadas ?? [])]);
+  return (datos.clients ?? []).filter((c) => ids.has(c.id));
+}
+
+/**
  * Lo que ve un cliente con su link: únicamente lo suyo.
  *
  * Se filtra acá, en el servidor, y no en la app: si dependiera del navegador,
  * bastaría con mirar la respuesta para ver los datos de los demás.
+ *
+ * `cuentaPedida` es para las cuentas vinculadas: la misma persona puede tener
+ * dos Instagram y cambiar de una a la otra con el mismo link. Se comprueba que
+ * de verdad esté vinculada; si no, se le devuelve la suya.
  */
-export function datosDelPortal(token) {
+export function datosDelPortal(token, cuentaPedida) {
   const portal = portalPorToken(token);
   if (!portal) return null;
 
   const { datos } = leerEspacio();
-  const cliente = (datos.clients ?? []).find((c) => c.id === portal.cliente_id);
+  const permitidas = cuentasDelPortal(datos, portal.cliente_id);
+  if (permitidas.length === 0) return null;
+
+  const cliente =
+    permitidas.find((c) => c.id === cuentaPedida) ??
+    permitidas.find((c) => c.id === portal.cliente_id);
   if (!cliente) return null;
 
   const id = cliente.id;
   return {
     cliente,
+    // Las otras cuentas de la misma persona, para poder cambiar de una a otra.
+    // Va solo lo necesario para dibujar el selector, no su contenido.
+    cuentas: permitidas.map((c) => ({
+      id: c.id,
+      name: c.name,
+      handle: c.handle,
+      color: c.color,
+      logo: c.logo ?? null,
+    })),
     posts: (datos.posts ?? []).filter((p) => p.clientId === id),
     campaigns: (datos.campaigns ?? []).filter((c) => c.clientId === id),
     monthlyStats: (datos.monthlyStats ?? []).filter((m) => m.clientId === id),
@@ -184,12 +217,11 @@ export function comentarDesdePortal(token, postId, texto) {
   if (!texto?.trim()) return { ok: false, error: 'El comentario está vacío.' };
 
   return modificarEspacio((datos) => {
-    const post = (datos.posts ?? []).find(
-      (p) => p.id === postId && p.clientId === portal.cliente_id
-    );
+    const suyas = new Set(cuentasDelPortal(datos, portal.cliente_id).map((c) => c.id));
+    const post = (datos.posts ?? []).find((p) => p.id === postId && suyas.has(p.clientId));
     if (!post) return { ok: false, error: 'Ese contenido no es de este cliente.' };
 
-    const cliente = (datos.clients ?? []).find((c) => c.id === portal.cliente_id);
+    const cliente = (datos.clients ?? []).find((c) => c.id === post.clientId);
     post.comments = post.comments ?? [];
     post.comments.push({
       id: `cm_${randomBytes(6).toString('hex')}`,
@@ -236,8 +268,9 @@ export function aprobarVariasDesdePortal(token, postIds) {
   const pedidos = new Set(postIds);
 
   return modificarEspacio((datos) => {
+    const permitidas = new Set(cuentasDelPortal(datos, portal.cliente_id).map((c) => c.id));
     const suyos = (datos.posts ?? []).filter(
-      (p) => pedidos.has(p.id) && p.clientId === portal.cliente_id && p.status === 'revision'
+      (p) => pedidos.has(p.id) && permitidas.has(p.clientId) && p.status === 'revision'
     );
     if (suyos.length === 0) return { ok: true, cuantos: 0 };
 
@@ -246,7 +279,7 @@ export function aprobarVariasDesdePortal(token, postIds) {
     });
 
     avisarDecisionEnTanda(
-      (datos.clients ?? []).find((c) => c.id === portal.cliente_id),
+      (datos.clients ?? []).find((c) => c.id === suyos[0].clientId),
       suyos.length
     );
     return { ok: true, cuantos: suyos.length };
@@ -261,15 +294,14 @@ export function decidirDesdePortal(token, postId, decision) {
   }
 
   return modificarEspacio((datos) => {
-    const post = (datos.posts ?? []).find(
-      (p) => p.id === postId && p.clientId === portal.cliente_id
-    );
+    const suyas = new Set(cuentasDelPortal(datos, portal.cliente_id).map((c) => c.id));
+    const post = (datos.posts ?? []).find((p) => p.id === postId && suyas.has(p.clientId));
     if (!post) return { ok: false, error: 'Ese contenido no es de este cliente.' };
 
     post.status =
       decision === 'aprobado' ? (post.resultado ? 'aprobado' : 'edicion') : 'revision';
     avisarDecision(
-      (datos.clients ?? []).find((c) => c.id === portal.cliente_id),
+      (datos.clients ?? []).find((c) => c.id === post.clientId),
       post,
       decision
     );

@@ -26,6 +26,7 @@ import {
   decidirDesdePortal,
   aprobarVariasDesdePortal,
   clienteDelPortal,
+  cuentasDelPortal,
   guardarEspacio,
   hayClave,
   iniciarSesion,
@@ -368,7 +369,9 @@ app.delete('/api/portales/:clienteId', soloCreadora, (req, res) => {
 /* ------------- lo que ve el cliente con su link (sin clave) -------------- */
 
 app.get('/api/portal/:token', (req, res) => {
-  const datos = datosDelPortal(req.params.token);
+  // `cuenta` es para las cuentas vinculadas: la misma persona cambiando de un
+  // Instagram a otro. El servidor comprueba que esté vinculada de verdad.
+  const datos = datosDelPortal(req.params.token, req.query.cuenta);
   if (!datos) return res.status(404).json({ error: 'Este link no es válido o fue dado de baja.' });
   res.json(datos);
 });
@@ -379,16 +382,32 @@ app.post('/api/portal/:token/comentario', (req, res) => {
   res.json(r);
 });
 
+/** Las cuentas que alcanza este link: la suya y las vinculadas. */
+function cuentasDelLink(token) {
+  const cliente = clienteDelPortal(token);
+  if (!cliente) return null;
+  const { datos } = leerEspacio();
+  const permitidas = cuentasDelPortal(datos, cliente);
+  return permitidas.length ? permitidas.map((c) => c.id) : [cliente];
+}
+
 app.get('/api/portal/:token/novedades', (req, res) => {
-  const cliente = clienteDelPortal(req.params.token);
-  if (!cliente) return res.status(404).json({ error: 'Este link no es válido.' });
-  res.json({ novedades: listarNovedades(cliente) });
+  const cuentas = cuentasDelLink(req.params.token);
+  if (!cuentas) return res.status(404).json({ error: 'Este link no es válido.' });
+
+  // Con cuentas vinculadas es una sola persona: le llegan las de todas sus
+  // cuentas, ordenadas juntas. Si no, tendría que ir cambiando de cuenta para
+  // enterarse de que hay algo en la otra.
+  const novedades = cuentas
+    .flatMap((c) => listarNovedades(c))
+    .sort((a, b) => b.creada_en.localeCompare(a.creada_en));
+  res.json({ novedades });
 });
 
 app.post('/api/portal/:token/novedades/vistas', (req, res) => {
-  const cliente = clienteDelPortal(req.params.token);
-  if (!cliente) return res.status(404).json({ error: 'Este link no es válido.' });
-  marcarVistas(cliente);
+  const cuentas = cuentasDelLink(req.params.token);
+  if (!cuentas) return res.status(404).json({ error: 'Este link no es válido.' });
+  cuentas.forEach((c) => marcarVistas(c));
   res.json({ ok: true });
 });
 

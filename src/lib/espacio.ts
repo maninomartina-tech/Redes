@@ -40,9 +40,20 @@ export interface DatosEspacio {
   brandLogo?: MediaRef;
 }
 
+/** Una de las cuentas que alcanza un link, para dibujar el selector. */
+export interface CuentaDelPortal {
+  id: string;
+  name: string;
+  handle: string;
+  color: string;
+  logo?: MediaRef | null;
+}
+
 /** Lo que ve un cliente con su link: solo lo suyo. */
 export interface DatosPortal {
   cliente: Client;
+  /** Su cuenta y las que la creadora le haya vinculado. */
+  cuentas?: CuentaDelPortal[];
   posts: Post[];
   campaigns: Campaign[];
   monthlyStats: MonthlyStat[];
@@ -185,8 +196,11 @@ export function urlDelLink(token: string): string {
 
 /* ---------------------------- lado del cliente --------------------------- */
 
-export async function traerPortal(token: string): Promise<DatosPortal> {
-  return pedir(`/api/portal/${token}`);
+export async function traerPortal(
+  token: string,
+  cuenta?: string
+): Promise<DatosPortal> {
+  return pedir(`/api/portal/${token}${cuenta ? `?cuenta=${encodeURIComponent(cuenta)}` : ''}`);
 }
 
 export async function comentarEnPortal(
