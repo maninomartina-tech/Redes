@@ -5,7 +5,7 @@ import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ahora, db, uid } from './db.js';
+import { ahora, carpetaDeDatos, db, instalacion, uid } from './db.js';
 import { datosPersistentes, permisos, publicUrl, soloLectura } from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
@@ -563,6 +563,7 @@ app.post('/api/ai/redactar', soloCreadora, async (req, res) => {
 /* ---------------------------------- salud -------------------------------- */
 
 app.get('/api/salud', (_req, res) => {
+  const inst = instalacion();
   res.json({
     ok: true,
     metaConfigurado: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
@@ -571,8 +572,23 @@ app.get('/api/salud', (_req, res) => {
     soloLectura: soloLectura(),
     claveDefinida: hayClave(),
     iaConfigurada: hayIA(),
-    // Si esto viene en false, todo lo cargado se borra en el próximo reinicio.
+    // Configurado para guardar en un disco aparte. Es lo que se pidió, no lo
+    // que está pasando: para eso está `almacenamiento`.
     datosPersistentes: datosPersistentes(),
+    /**
+     * La prueba de que el disco anda.
+     *
+     * `datosPersistentes` solo mira que las variables estén puestas, y apuntar
+     * a una carpeta que igual se borra se ve idéntico desde adentro. Esto, en
+     * cambio, es lo que de verdad pasó: si después de un despliegue `desde`
+     * sigue siendo la fecha vieja y `arranques` subió, los datos sobrevivieron.
+     */
+    almacenamiento: {
+      carpeta: carpetaDeDatos,
+      desde: inst.creada_en,
+      arranques: inst.arranques,
+      ultimoArranque: inst.ultimo_arranque,
+    },
     cuentasConectadas: db.prepare('SELECT COUNT(*) n FROM cuentas').get().n,
   });
 });

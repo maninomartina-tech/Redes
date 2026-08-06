@@ -53,9 +53,38 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_pub_pendientes
     ON publicaciones (estado, publicar_en);
+
+  -- Marca de nacimiento de esta base.
+  --
+  -- Es la única forma de saber si los datos sobreviven de verdad: tener las
+  -- variables bien puestas no prueba nada, porque apuntar a una carpeta que
+  -- se borra en cada despliegue se ve exactamente igual desde adentro. Si
+  -- después de un despliegue esta fecha sigue siendo la vieja y el contador
+  -- de arranques subió, el disco está andando.
+  CREATE TABLE IF NOT EXISTS instalacion (
+    id              INTEGER PRIMARY KEY CHECK (id = 1),
+    creada_en       TEXT NOT NULL,
+    arranques       INTEGER NOT NULL DEFAULT 1,
+    ultimo_arranque TEXT NOT NULL
+  );
 `);
 
 export const ahora = () => new Date().toISOString();
+
+db.prepare(
+  `INSERT INTO instalacion (id, creada_en, arranques, ultimo_arranque)
+   VALUES (1, ?, 1, ?)
+   ON CONFLICT(id) DO UPDATE SET
+     arranques = arranques + 1,
+     ultimo_arranque = excluded.ultimo_arranque`
+).run(ahora(), ahora());
+
+/** Desde cuándo existe esta base y cuántas veces arrancó el servidor. */
+export const instalacion = () =>
+  db.prepare('SELECT creada_en, arranques, ultimo_arranque FROM instalacion WHERE id = 1').get();
+
+/** La carpeta donde se guarda todo, para poder mirarla desde afuera. */
+export const carpetaDeDatos = dirname(rutaDb);
 
 export const uid = (p) =>
   `${p}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
