@@ -77,6 +77,10 @@ export interface HashtagSet {
 /**
  * Foto mensual de la cuenta. Se carga a mano: no depende de Meta, así que
  * sirve igual para cuentas sin conexión a la API.
+ *
+ * Los campos son los mismos que Instagram muestra en su resumen del mes, que
+ * es de donde ella copia los números: seguidores, visualizaciones y cuántas
+ * de esas visualizaciones fueron de gente que todavía no la sigue.
  */
 export interface MonthlyStat {
   id: string;
@@ -84,9 +88,25 @@ export interface MonthlyStat {
   month: string; // 'YYYY-MM'
   /** Seguidores al cierre del mes */
   followers: number;
+
+  /** Visualizaciones del mes */
+  views?: number;
+  /**
+   * Variación de las visualizaciones respecto del mes anterior.
+   *
+   * Se guarda solo si la escribió a mano: cuando el mes anterior también está
+   * cargado, el porcentaje se calcula solo y no hace falta guardarlo. Sirve
+   * para el primer mes, donde el único dato es el que muestra Instagram.
+   */
+  viewsPct?: number;
+  /** Visualizaciones de cuentas que no la siguen */
+  nonFollowerViews?: number;
+  /** Variación de esas visualizaciones, si la escribió a mano */
+  nonFollowerViewsPct?: number;
+
   /** Interacciones del mes. Si se deja vacío se calcula con los posts publicados. */
   interactions?: number;
-  /** Alcance del mes (opcional) */
+  /** Alcance del mes (lo trae la sincronización con Meta) */
   reach?: number;
   /** Visitas al perfil (opcional) */
   profileVisits?: number;
@@ -224,6 +244,13 @@ export interface Campaign {
 
 export type AdStatus = 'activa' | 'pausada' | 'finalizada';
 
+/**
+ * Una campaña paga.
+ *
+ * Los primeros campos son los que devuelve Meta Ads cuando la cuenta está
+ * conectada. Los de abajo se cargan a mano, y son los que Instagram muestra
+ * al final de una promoción: es lo que ella tiene a mano hoy.
+ */
 export interface Ad {
   id: string;
   clientId: string;
@@ -239,6 +266,26 @@ export interface Ad {
   linkedPostId?: string;
   startDate: string;
   endDate: string;
+
+  // --- Resultados cargados a mano ---
+  /** Presupuesto por día */
+  dailyBudget?: number;
+  /** Duración en días */
+  days?: number;
+  /** Visualizaciones */
+  views?: number;
+  /** Interacción: me gusta */
+  likes?: number;
+  /** Interacción: veces que se guardó */
+  saves?: number;
+  /** Interacción: veces que se compartió */
+  shares?: number;
+  /** Actividad del perfil (visitas, toques al link, etc.) */
+  profileActivity?: number;
+  /** Seguidores nuevos que trajo la campaña */
+  newFollowers?: number;
+  /** true si los resultados los cargó ella y no vinieron de Meta */
+  manual?: boolean;
 }
 
 export type Role = 'creadora' | 'cliente';

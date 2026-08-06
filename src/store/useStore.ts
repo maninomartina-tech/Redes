@@ -266,6 +266,7 @@ interface State {
   // ads
   addAd: (a: Partial<Ad> & { clientId: string }) => void;
   updateAd: (id: string, patch: Partial<Ad>) => void;
+  removeAd: (id: string) => void;
   /** Alta o actualización por id de Meta, para la sincronización. */
   upsertAdExterno: (a: Omit<Ad, 'id'> & { externalId: string }) => void;
 
@@ -1067,6 +1068,15 @@ export const useStore = create<State>()(
               linkedPostId: a.linkedPostId,
               startDate: a.startDate ?? new Date().toISOString(),
               endDate: a.endDate ?? new Date().toISOString(),
+              dailyBudget: a.dailyBudget,
+              days: a.days,
+              views: a.views,
+              likes: a.likes,
+              saves: a.saves,
+              shares: a.shares,
+              profileActivity: a.profileActivity,
+              newFollowers: a.newFollowers,
+              manual: a.manual,
             },
             ...s.ads,
           ],
@@ -1074,6 +1084,8 @@ export const useStore = create<State>()(
 
       updateAd: (id, patch) =>
         set((s) => ({ ads: s.ads.map((a) => (a.id === id ? { ...a, ...patch } : a)) })),
+
+      removeAd: (id) => set((s) => ({ ads: s.ads.filter((a) => a.id !== id) })),
 
       addCampaign: (c) =>
         set((s) => ({

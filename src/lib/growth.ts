@@ -18,6 +18,14 @@ export interface MonthPoint {
   /** true si las interacciones se estimaron con los posts, no se cargaron */
   interactionsEstimated: boolean;
   reach?: number;
+
+  /** Visualizaciones del mes, si se cargaron */
+  views?: number;
+  /** Variación respecto del mes anterior: la calculada, o la que escribió ella */
+  viewsPct?: number;
+  /** Visualizaciones de gente que no la sigue */
+  nonFollowerViews?: number;
+  nonFollowerViewsPct?: number;
 }
 
 export interface GrowthSummary {
@@ -35,6 +43,11 @@ export interface GrowthSummary {
   interactionsLast: number;
   interactionsGrowthPct: number;
   bestMonth?: MonthPoint;
+
+  /** ¿Hay algún mes con visualizaciones cargadas? */
+  hayVisualizaciones: boolean;
+  /** El último mes con visualizaciones cargadas */
+  ultimoConVisualizaciones?: MonthPoint;
 }
 
 const MESES = [
@@ -80,6 +93,34 @@ function interactionsFromPosts(posts: Post[], clientId: string, month: string): 
     );
 }
 
+/**
+ * Cuánto cambió un número respecto del mes anterior, en porcentaje.
+ *
+ * Devuelve `undefined` cuando no se puede decir nada: sin mes anterior, o con
+ * un mes anterior en cero (todo crecimiento sobre cero es infinito, y "+∞%"
+ * no le dice nada a nadie).
+ */
+export function variacion(actual?: number, anterior?: number): number | undefined {
+  if (actual == null || anterior == null || anterior === 0) return undefined;
+  return ((actual - anterior) / anterior) * 100;
+}
+
+/** "+23%" / "−8%", con el signo siempre a la vista. */
+export function pctVariacion(n: number): string {
+  return `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(0)}%`;
+}
+
+/**
+ * Lee un porcentaje escrito como venga: "23", "+23", "23%", "-8,5".
+ * Vacío o ilegible devuelve `undefined`, que es "no lo cargó".
+ */
+export function leerPorcentaje(texto: string): number | undefined {
+  const limpio = texto.replace(/[\s%]/g, '').replace('−', '-').replace(',', '.');
+  if (limpio === '' || limpio === '-' || limpio === '+') return undefined;
+  const n = Number(limpio);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export function computeGrowth(
   client: Client,
   stats: MonthlyStat[],
@@ -93,9 +134,13 @@ export function computeGrowth(
   const hasBaseline = client.startingFollowers != null && ordenados.length > 0;
 
   let previos = startingFollowers;
-  const points: MonthPoint[] = ordenados.map((s) => {
+  const points: MonthPoint[] = ordenados.map((s, i) => {
     const cargadas = s.interactions;
     const interactions = cargadas ?? interactionsFromPosts(posts, client.id, s.month);
+    // El porcentaje se calcula con el mes anterior. Lo que ella escribió a
+    // mano manda: es lo que le muestra Instagram, y para el primer mes es el
+    // único dato que hay.
+    const anterior = ordenados[i - 1];
     const punto: MonthPoint = {
       month: s.month,
       label: monthLabel(s.month),
@@ -104,6 +149,11 @@ export function computeGrowth(
       interactions,
       interactionsEstimated: cargadas == null,
       reach: s.reach,
+      views: s.views,
+      viewsPct: s.viewsPct ?? variacion(s.views, anterior?.views),
+      nonFollowerViews: s.nonFollowerViews,
+      nonFollowerViewsPct:
+        s.nonFollowerViewsPct ?? variacion(s.nonFollowerViews, anterior?.nonFollowerViews),
     };
     previos = s.followers;
     return punto;
@@ -122,7 +172,12 @@ export function computeGrowth(
     ? points.reduce((a, b) => (b.gained > a.gained ? b : a))
     : undefined;
 
+  const conVisualizaciones = points.filter((p) => p.views != null);
+  const ultimoConVisualizaciones = conVisualizaciones[conVisualizaciones.length - 1];
+
   return {
+    hayVisualizaciones: conVisualizaciones.length > 0,
+    ultimoConVisualizaciones,
     hasBaseline,
     startingFollowers,
     currentFollowers,

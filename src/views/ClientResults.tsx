@@ -22,7 +22,7 @@ import {
 } from 'recharts';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import { analyzeCampaign, defaultCampaign } from '@/lib/ai';
-import { computeGrowth, computeLeads, sourceLabel } from '@/lib/growth';
+import { computeGrowth, computeLeads, monthLabel, pctVariacion, sourceLabel } from '@/lib/growth';
 import { money, nfmt, pct } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, SectionTitle, Stat } from '@/components/ui';
@@ -169,12 +169,27 @@ export default function ClientResults() {
                 hint={`en ${growth.monthsTracked} meses`}
                 icon={<TrendingUp size={16} />}
               />
-              {growth.bestMonth && (
+              {growth.hayVisualizaciones ? (
                 <Stat
-                  label="Mejor mes"
-                  value={`+${growth.bestMonth.gained}`}
-                  hint={growth.bestMonth.label}
+                  label="Visualizaciones"
+                  value={nfmt(growth.ultimoConVisualizaciones!.views!)}
+                  hint={
+                    growth.ultimoConVisualizaciones!.viewsPct != null
+                      ? `${pctVariacion(
+                          growth.ultimoConVisualizaciones!.viewsPct!
+                        )} vs. el mes anterior`
+                      : `en ${monthLabel(growth.ultimoConVisualizaciones!.month)}`
+                  }
+                  icon={<Eye size={16} />}
                 />
+              ) : (
+                growth.bestMonth && (
+                  <Stat
+                    label="Mejor mes"
+                    value={`+${growth.bestMonth.gained}`}
+                    hint={growth.bestMonth.label}
+                  />
+                )
               )}
             </div>
           </div>

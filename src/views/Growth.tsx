@@ -1,5 +1,6 @@
 import {
   CheckCircle2,
+  Eye,
   Flag,
   MessageCircle,
   Pencil,
@@ -11,7 +12,15 @@ import {
 import { useMemo, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Lead, LeadSource, LeadStatus, MonthlyStat } from '@/types';
-import { computeGrowth, computeLeads, monthLabel, sourceLabel } from '@/lib/growth';
+import {
+  computeGrowth,
+  computeLeads,
+  leerPorcentaje,
+  monthLabel,
+  pctVariacion,
+  sourceLabel,
+  variacion,
+} from '@/lib/growth';
 import { money, nfmt } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat, Toggle } from '@/components/ui';
@@ -137,15 +146,30 @@ export default function Growth() {
             value={`+${Math.round(growth.avgPerMonth)}`}
             hint={`${growth.monthsTracked} meses cargados`}
           />
-          <Stat
-            label="Interacción vs. inicio"
-            value={
-              growth.interactionsGrowthPct >= 0
-                ? `+${growth.interactionsGrowthPct.toFixed(0)}%`
-                : `${growth.interactionsGrowthPct.toFixed(0)}%`
-            }
-            hint={`${nfmt(growth.interactionsLast)} este mes`}
-          />
+          {growth.hayVisualizaciones ? (
+            <Stat
+              label="Visualizaciones"
+              value={nfmt(growth.ultimoConVisualizaciones!.views!)}
+              hint={
+                growth.ultimoConVisualizaciones!.viewsPct != null
+                  ? `${pctVariacion(
+                      growth.ultimoConVisualizaciones!.viewsPct!
+                    )} vs. el mes anterior`
+                  : `en ${monthLabel(growth.ultimoConVisualizaciones!.month)}`
+              }
+              icon={<Eye size={16} />}
+            />
+          ) : (
+            <Stat
+              label="Interacción vs. inicio"
+              value={
+                growth.interactionsGrowthPct >= 0
+                  ? `+${growth.interactionsGrowthPct.toFixed(0)}%`
+                  : `${growth.interactionsGrowthPct.toFixed(0)}%`
+              }
+              hint={`${nfmt(growth.interactionsLast)} este mes`}
+            />
+          )}
         </div>
       )}
 
@@ -155,7 +179,7 @@ export default function Growth() {
           <div>
             <h3 className="font-bold text-ink-900">Registro mensual</h3>
             <p className="text-sm text-ink-500">
-              Un renglón por mes: seguidores al cierre e interacción.
+              Un renglón por mes, con los números del resumen de Instagram.
             </p>
           </div>
           <button className="btn-primary" onClick={() => setStatModal('nuevo')}>
@@ -178,8 +202,8 @@ export default function Growth() {
                     <th className="px-4 py-2.5 font-semibold">Mes</th>
                     <th className="px-4 py-2.5 text-right font-semibold">Seguidores</th>
                     <th className="px-4 py-2.5 text-right font-semibold">Ganados</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Interacción</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Alcance</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">Visualizaciones</th>
+                    <th className="px-4 py-2.5 text-right font-semibold">De no seguidores</th>
                     <th className="px-4 py-2.5" />
                   </tr>
                 </thead>
@@ -205,15 +229,16 @@ export default function Growth() {
                           </span>
                         </td>
                         <td className="px-4 py-2.5 text-right text-ink-700">
-                          {nfmt(punto?.interactions ?? 0)}
-                          {punto?.interactionsEstimated && (
-                            <span className="ml-1 text-[10px] text-ink-400" title="Calculado con los posts publicados">
-                              est.
-                            </span>
-                          )}
+                          <Visualizaciones
+                            numero={punto?.views}
+                            porcentaje={punto?.viewsPct}
+                          />
                         </td>
                         <td className="px-4 py-2.5 text-right text-ink-700">
-                          {s.reach ? nfmt(s.reach) : '—'}
+                          <Visualizaciones
+                            numero={punto?.nonFollowerViews}
+                            porcentaje={punto?.nonFollowerViewsPct}
+                          />
                         </td>
                         <td className="px-4 py-2.5 text-right">
                           <button
@@ -341,6 +366,32 @@ export default function Growth() {
   );
 }
 
+/**
+ * Una celda de visualizaciones: el número, y debajo cuánto cambió respecto
+ * del mes anterior. El porcentaje solo aparece cuando hay con qué compararlo.
+ */
+function Visualizaciones({
+  numero,
+  porcentaje,
+}: {
+  numero?: number;
+  porcentaje?: number;
+}) {
+  if (numero == null) return <span className="text-ink-300">—</span>;
+  return (
+    <span className="inline-flex flex-col items-end leading-tight">
+      <span>{nfmt(numero)}</span>
+      {porcentaje != null && (
+        <span
+          className={`text-[11px] ${porcentaje >= 0 ? 'text-mint-600' : 'text-rose-600'}`}
+        >
+          {pctVariacion(porcentaje)}
+        </span>
+      )}
+    </span>
+  );
+}
+
 /* ---------------- Modales de carga ---------------- */
 
 function BaselineModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -397,6 +448,16 @@ function BaselineModal({ open, onClose }: { open: boolean; onClose: () => void }
   );
 }
 
+/**
+ * Cargar un mes.
+ *
+ * Son los mismos números que Instagram muestra en su resumen mensual, en el
+ * mismo orden, para que copiarlos sea leer de una pantalla y escribir en la
+ * otra. El porcentaje se calcula solo cuando el mes anterior ya está cargado;
+ * el campo queda igual por si Instagram muestra otro número —compara contra
+ * 30 días corridos, no contra el mes calendario— y para el primer mes, donde
+ * no hay con qué comparar.
+ */
 function StatModal({
   stat,
   onClose,
@@ -406,12 +467,15 @@ function StatModal({
 }) {
   const client = useCurrentClient();
   const upsert = useStore((s) => s.upsertMonthlyStat);
+  const monthlyStats = useStore((s) => s.monthlyStats);
   const editando = stat && stat !== 'nuevo' ? stat : null;
 
   const [month, setMonth] = useState('');
   const [followers, setFollowers] = useState('');
-  const [interactions, setInteractions] = useState('');
-  const [reach, setReach] = useState('');
+  const [views, setViews] = useState('');
+  const [viewsPct, setViewsPct] = useState('');
+  const [noSeg, setNoSeg] = useState('');
+  const [noSegPct, setNoSegPct] = useState('');
   const [cargado, setCargado] = useState<string | null>(null);
 
   // Rellena el formulario cuando cambia lo que se está editando.
@@ -420,9 +484,26 @@ function StatModal({
     setCargado(claveActual);
     setMonth(editando?.month ?? new Date().toISOString().slice(0, 7));
     setFollowers(editando ? String(editando.followers) : '');
-    setInteractions(editando?.interactions != null ? String(editando.interactions) : '');
-    setReach(editando?.reach != null ? String(editando.reach) : '');
+    setViews(editando?.views != null ? String(editando.views) : '');
+    setViewsPct(editando?.viewsPct != null ? String(editando.viewsPct) : '');
+    setNoSeg(editando?.nonFollowerViews != null ? String(editando.nonFollowerViews) : '');
+    setNoSegPct(
+      editando?.nonFollowerViewsPct != null ? String(editando.nonFollowerViewsPct) : ''
+    );
   }
+
+  /** El último mes cargado antes de este, que es contra el que se compara. */
+  const anterior = useMemo(() => {
+    if (!month) return undefined;
+    const previos = monthlyStats
+      .filter((s) => s.clientId === client.id && s.month < month)
+      .sort((a, b) => a.month.localeCompare(b.month));
+    return previos[previos.length - 1];
+  }, [monthlyStats, client.id, month]);
+
+  const numero = (t: string) => (t.trim() === '' ? undefined : Number(t));
+  const calcViews = variacion(numero(views), anterior?.views);
+  const calcNoSeg = variacion(numero(noSeg), anterior?.nonFollowerViews);
 
   return (
     <Modal
@@ -433,8 +514,11 @@ function StatModal({
       <div className="space-y-4 p-5">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Mes</label>
+            <label className="label" htmlFor="mes-stat">
+              Mes
+            </label>
             <input
+              id="mes-stat"
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
@@ -442,8 +526,11 @@ function StatModal({
             />
           </div>
           <div>
-            <label className="label">Seguidores al cierre</label>
+            <label className="label" htmlFor="seguidores-stat">
+              Seguidores al cierre
+            </label>
             <input
+              id="seguidores-stat"
               type="number"
               value={followers}
               onChange={(e) => setFollowers(e.target.value)}
@@ -452,31 +539,39 @@ function StatModal({
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Interacciones del mes</label>
-            <input
-              type="number"
-              value={interactions}
-              onChange={(e) => setInteractions(e.target.value)}
-              className="input mt-1"
-              placeholder="Opcional"
+
+        <div className="rounded-xl border border-ink-200/70 bg-ink-50/60 p-3.5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+            Resumen del mes
+          </p>
+          <p className="mb-3 mt-0.5 text-[11px] leading-snug text-ink-500">
+            Copiá los números tal como te los muestra Instagram.
+          </p>
+
+          <div className="space-y-3">
+            <FilaDeVisualizaciones
+              id="views"
+              label="Visualizaciones del mes"
+              numero={views}
+              onNumero={setViews}
+              porcentaje={viewsPct}
+              onPorcentaje={setViewsPct}
+              calculado={calcViews}
+              mesAnterior={anterior?.month}
             />
-            <p className="mt-1 text-[11px] text-ink-400">
-              Si lo dejás vacío se calcula con los posts publicados.
-            </p>
-          </div>
-          <div>
-            <label className="label">Alcance del mes</label>
-            <input
-              type="number"
-              value={reach}
-              onChange={(e) => setReach(e.target.value)}
-              className="input mt-1"
-              placeholder="Opcional"
+            <FilaDeVisualizaciones
+              id="noseg"
+              label="Visualizaciones de no seguidores"
+              numero={noSeg}
+              onNumero={setNoSeg}
+              porcentaje={noSegPct}
+              onPorcentaje={setNoSegPct}
+              calculado={calcNoSeg}
+              mesAnterior={anterior?.month}
             />
           </div>
         </div>
+
         <div className="flex justify-end gap-2">
           <button className="btn-ghost" onClick={onClose}>
             Cancelar
@@ -490,8 +585,14 @@ function StatModal({
                 clientId: client.id,
                 month,
                 followers: Number(followers) || 0,
-                interactions: interactions === '' ? undefined : Number(interactions),
-                reach: reach === '' ? undefined : Number(reach),
+                views: numero(views),
+                viewsPct: leerPorcentaje(viewsPct),
+                nonFollowerViews: numero(noSeg),
+                nonFollowerViewsPct: leerPorcentaje(noSegPct),
+                // Lo que ya estuviera cargado de antes no se pisa.
+                interactions: editando?.interactions,
+                reach: editando?.reach,
+                profileVisits: editando?.profileVisits,
               });
               onClose();
             }}
@@ -501,6 +602,68 @@ function StatModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** El número y su variación, uno al lado del otro. */
+function FilaDeVisualizaciones({
+  id,
+  label,
+  numero,
+  onNumero,
+  porcentaje,
+  onPorcentaje,
+  calculado,
+  mesAnterior,
+}: {
+  id: string;
+  label: string;
+  numero: string;
+  onNumero: (v: string) => void;
+  porcentaje: string;
+  onPorcentaje: (v: string) => void;
+  calculado?: number;
+  mesAnterior?: string;
+}) {
+  return (
+    <div>
+      <div className="grid grid-cols-[1fr_8.5rem] gap-3">
+        <div>
+          <label className="label" htmlFor={id}>
+            {label}
+          </label>
+          <input
+            id={id}
+            type="number"
+            value={numero}
+            onChange={(e) => onNumero(e.target.value)}
+            className="input mt-1"
+            placeholder="Ej: 18400"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor={`${id}-pct`}>
+            vs. mes anterior
+          </label>
+          <input
+            id={`${id}-pct`}
+            value={porcentaje}
+            onChange={(e) => onPorcentaje(e.target.value)}
+            className="input mt-1"
+            // Cuando se puede calcular, el marcador es el número real; si no,
+            // se ve que es un ejemplo y no un dato.
+            placeholder={calculado != null ? pctVariacion(calculado) : 'Ej: +23'}
+          />
+        </div>
+      </div>
+      <p className="mt-1 text-[11px] leading-snug text-ink-400">
+        {calculado != null && mesAnterior
+          ? `Se calcula solo con ${monthLabel(mesAnterior)}: ${pctVariacion(
+              calculado
+            )}. Escribilo solo si Instagram te muestra otro número.`
+          : 'Poné el porcentaje que te muestra Instagram, o dejalo vacío.'}
+      </p>
+    </div>
   );
 }
 
