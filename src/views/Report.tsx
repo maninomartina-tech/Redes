@@ -12,6 +12,7 @@ import {
 import { calcularHorarios, describirCelda } from '@/lib/horarios';
 import { fmt } from '@/lib/date';
 import { money, nfmt, typeLabel } from '@/lib/format';
+import { portadaDelFeed } from '@/lib/piezas';
 import { Avatar, EmptyState, MediaThumb, SectionTitle } from '@/components/ui';
 import Logo from '@/components/Logo';
 import { plural } from '@/lib/texto';
@@ -193,7 +194,7 @@ export default function Report() {
               {delMes.map((p) => (
                 <div key={p.id} className="flex items-center gap-3 text-sm">
                   <MediaThumb
-                    media={p.resultado}
+                    media={portadaDelFeed(p)}
                     imageUrl={p.igImageUrl}
                     src={p.mediaUrl}
                     className="h-9 w-9 shrink-0 rounded-md"
@@ -220,7 +221,7 @@ export default function Report() {
               {mejores.map((p) => (
                 <div key={p.id} className="rounded-xl border border-ink-200/70 p-3">
                   <MediaThumb
-                    media={p.resultado}
+                    media={portadaDelFeed(p)}
                     imageUrl={p.igImageUrl}
                     src={p.mediaUrl}
                     className="mb-2 aspect-square w-full rounded-lg"

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import { fmt } from '@/lib/date';
 import { typeEmoji } from '@/lib/format';
+import { portadaDelFeed } from '@/lib/piezas';
 import { Avatar, MediaThumb, SectionTitle } from '@/components/ui';
 import SyncButton from '@/components/SyncButton';
 import { sincronizarPublicaciones } from '@/lib/sync';
@@ -119,7 +120,7 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
               <MediaThumb
                 src={p.mediaUrl}
                 imageUrl={p.igImageUrl}
-                media={p.resultado}
+                media={portadaDelFeed(p)}
                 kind={p.mediaKind}
                 className="h-full w-full"
               />

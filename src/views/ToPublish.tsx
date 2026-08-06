@@ -14,7 +14,12 @@ import type { Post } from '@/types';
 import { descargarMedia } from '@/lib/media';
 import { fmt, isSameDay } from '@/lib/date';
 import { typeEmoji, typeLabel } from '@/lib/format';
+import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, Modal, SectionTitle } from '@/components/ui';
+
+/** Todo lo que hay que tener en el teléfono para subirlo a mano. */
+const archivosParaBajar = (p: Post) =>
+  [...piezasFinales(p), ...(p.portada ? [p.portada] : [])];
 
 // ---------------------------------------------------------------------------
 // Para publicar.
@@ -75,10 +80,19 @@ export default function ToPublish() {
     }
   };
 
+  /**
+   * Baja todo lo que hay que subir a mano: las imágenes del carrusel en orden,
+   * y en un reel también la portada. De a una, porque el navegador rechaza las
+   * descargas disparadas todas en el mismo instante.
+   */
   const bajar = async (p: Post) => {
-    if (!p.resultado) return;
-    const ok = await descargarMedia(p.resultado);
-    if (!ok) {
+    const archivos = archivosParaBajar(p);
+    if (archivos.length === 0) return;
+    let falto = false;
+    for (const media of archivos) {
+      if (!(await descargarMedia(media))) falto = true;
+    }
+    if (falto) {
       setAviso(
         'La pieza no está en este dispositivo. Abrila desde la computadora donde la cargaste, o volvé a subirla.'
       );
@@ -90,10 +104,10 @@ export default function ToPublish() {
 
     return (
       <div className="card flex items-center gap-3 p-3">
-        {p.resultado ? (
+        {portadaDelFeed(p) ? (
           <MediaThumb
-            media={p.resultado}
-            kind={p.resultado.kind}
+            media={portadaDelFeed(p)}
+            kind={portadaDelFeed(p)!.kind}
             className="h-16 w-16 shrink-0 rounded-xl"
           />
         ) : (
@@ -125,9 +139,12 @@ export default function ToPublish() {
             <button
               className="btn-outline !py-1 text-[11px]"
               onClick={() => bajar(p)}
-              disabled={!p.resultado}
+              disabled={archivosParaBajar(p).length === 0}
             >
-              <Download size={13} /> Bajar pieza
+              <Download size={13} />
+              {archivosParaBajar(p).length > 1
+                ? `Bajar ${archivosParaBajar(p).length} archivos`
+                : 'Bajar pieza'}
             </button>
             <button
               className="btn-primary !py-1 text-[11px]"

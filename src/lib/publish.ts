@@ -32,6 +32,12 @@ export function motivoNoProgramable(
   account: SocialAccount | undefined
 ): string | null {
   if (!post.resultado) return 'Falta subir la pieza final.';
+  // Un carrusel se publica en la API como un contenedor con una hijo por
+  // imagen. Mientras eso no esté hecho, mandaría solo la primera y saldría un
+  // posteo distinto del que se aprobó: mejor que se suba a mano.
+  if ((post.carrusel ?? []).length > 0) {
+    return 'Los carruseles de varias imágenes se suben a mano, desde «Para publicar».';
+  }
   if (!account) return 'El contenido no tiene una cuenta asignada.';
   if (!account.connected)
     return `La cuenta ${account.handle} no está conectada. Conectala en Cuentas.`;

@@ -208,8 +208,10 @@ export function interpretarHistorias(texto: string, desde: Date): Lectura {
 }
 
 /** Agrupadas por día, que es como se miran antes de crearlas. */
-export function porDia(historias: HistoriaLeida[]): { dia: Date; items: HistoriaLeida[] }[] {
-  const mapa = new Map<string, HistoriaLeida[]>();
+export function porDia<T extends { fecha: Date }>(
+  historias: T[]
+): { dia: Date; items: T[] }[] {
+  const mapa = new Map<string, T[]>();
   historias.forEach((h) => {
     const clave = h.fecha.toDateString();
     const lista = mapa.get(clave);
@@ -220,4 +222,47 @@ export function porDia(historias: HistoriaLeida[]): { dia: Date; items: Historia
   return [...mapa.values()]
     .map((items) => ({ dia: items[0].fecha, items }))
     .sort((a, b) => a.dia.getTime() - b.dia.getTime());
+}
+
+// ---------------------------------------------------------------------------
+// Repartir una tanda de imágenes en días.
+//
+// El otro camino para cargar historias: en vez de escribir la planificación,
+// se suben las placas ya diseñadas. Ahí no hay texto que leer, hay que decidir
+// en qué día cae cada una — y eso es una cuenta, no una interpretación.
+//
+// El reparto es solo un punto de partida: después se acomodan arrastrándolas en
+// el calendario, que es donde se ve la semana entera de un vistazo.
+// ---------------------------------------------------------------------------
+
+export interface Repartida<T> {
+  item: T;
+  fecha: Date;
+  /** Su orden dentro del día: 1, 2, 3… */
+  numero: number;
+}
+
+/**
+ * Reparte una tanda en días seguidos, `porDia` en cada uno.
+ *
+ * Con `porDia` en 0 van todas al mismo día, que es lo que se quiere cuando la
+ * tanda es la historia de una jornada.
+ */
+export function repartirEnDias<T>(
+  items: T[],
+  desde: Date,
+  cuantasPorDia: number
+): Repartida<T>[] {
+  const arranque = new Date(desde);
+  arranque.setHours(0, 0, 0, 0);
+  const cupo = cuantasPorDia > 0 ? cuantasPorDia : Math.max(items.length, 1);
+
+  return items.map((item, i) => {
+    const numero = (i % cupo) + 1;
+    return {
+      item,
+      numero,
+      fecha: horaDeLaHistoria(addDays(arranque, Math.floor(i / cupo)), numero),
+    };
+  });
 }

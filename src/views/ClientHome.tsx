@@ -16,6 +16,7 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { computeGrowth } from '@/lib/growth';
 import { nfmt, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
+import { portadaDelFeed } from '@/lib/piezas';
 import { fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { MediaPreview } from '@/components/MediaUploader';
 import PostDetail from '@/components/PostDetail';
@@ -160,8 +161,8 @@ export default function ClientHome() {
                 className="group relative aspect-square"
                 title={p.title}
               >
-                {p.resultado ? (
-                  <MediaPreview media={p.resultado} className="h-full w-full !rounded-none" />
+                {portadaDelFeed(p) ? (
+                  <MediaPreview media={portadaDelFeed(p)!} className="h-full w-full !rounded-none" />
                 ) : (
                   <MediaThumb
                     src={p.mediaUrl}
@@ -281,8 +282,8 @@ function FilaSemana({ post, onOpen }: { post: Post; onOpen: () => void }) {
       onClick={onOpen}
       className="flex w-full items-center gap-3 rounded-xl p-2 text-left transition hover:bg-ink-50"
     >
-      {post.resultado ? (
-        <MediaPreview media={post.resultado} className="h-11 w-11 shrink-0" />
+      {portadaDelFeed(post) ? (
+        <MediaPreview media={portadaDelFeed(post)!} className="h-11 w-11 shrink-0" />
       ) : post.type === 'historia' ? (
         <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-peach-100 text-peach-600">
           <Zap size={16} />

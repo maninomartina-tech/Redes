@@ -17,6 +17,7 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
+import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { plural } from '@/lib/texto';
 import AprobarTodo from '@/components/AprobarTodo';
 import PlanCalendar from '@/components/PlanCalendar';
@@ -278,11 +279,16 @@ function PosteoCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
   return (
     <div className="card overflow-hidden md:flex">
       {listo ? (
-        <div className="w-full md:w-56 md:shrink-0">
+        <div className="relative w-full md:w-56 md:shrink-0">
           <MediaPreview
-            media={post.resultado!}
+            media={portadaDelFeed(post)!}
             className="aspect-[4/5] w-full md:h-full md:rounded-none"
           />
+          {piezasFinales(post).length > 1 && (
+            <span className="absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-ink-900/60 px-1.5 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+              <Images size={12} /> {piezasFinales(post).length}
+            </span>
+          )}
         </div>
       ) : (
         <PanelInspiracion
@@ -345,7 +351,7 @@ function HistoriaCard({ post, onOpen }: { post: Post; onOpen: () => void }) {
       {listo ? (
         <div className="flex flex-1 gap-3 p-3.5">
           <MediaPreview
-            media={post.resultado!}
+            media={portadaDelFeed(post)!}
             className="aspect-[9/16] w-20 shrink-0 rounded-lg"
           />
           <div className="min-w-0 flex-1">

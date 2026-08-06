@@ -1,4 +1,4 @@
-import { ImagePlus, Loader2, Trash2, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ImagePlus, Loader2, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import type { MediaRef } from '@/types';
 import {
@@ -8,6 +8,7 @@ import {
   saveMedia,
   useMediaUrl,
 } from '@/lib/media';
+import { mover } from '@/lib/piezas';
 
 /** Vista previa de un archivo ya guardado. */
 export function MediaPreview({
@@ -62,6 +63,9 @@ export default function MediaUploader({
   hint,
   previewClassName = 'aspect-square',
   disabled = false,
+  ordenable = false,
+  columnas = 'grid-cols-3 sm:grid-cols-4',
+  nombre,
 }: {
   value: MediaRef[];
   onChange: (media: MediaRef[]) => void;
@@ -72,6 +76,18 @@ export default function MediaUploader({
   hint?: string;
   previewClassName?: string;
   disabled?: boolean;
+  /**
+   * Numera las piezas y deja moverlas de lugar. En un carrusel el orden es
+   * parte del contenido: la primera imagen es la que frena el scroll.
+   */
+  ordenable?: boolean;
+  columnas?: string;
+  /**
+   * Qué se está subiendo acá. En una misma pantalla puede haber más de una
+   * zona —el video del reel y su portada— y sin nombre son indistinguibles
+   * para quien no ve la pantalla.
+   */
+  nombre?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [encima, setEncima] = useState(false);
@@ -120,14 +136,45 @@ export default function MediaUploader({
   return (
     <div className="space-y-2">
       {value.length > 0 && (
-        <div className={multiple ? 'grid grid-cols-3 gap-2 sm:grid-cols-4' : ''}>
-          {value.map((m) => (
+        <div className={multiple ? `grid gap-2 ${columnas}` : ''}>
+          {value.map((m, i) => (
             <div key={m.id}>
-              <MediaPreview
-                media={m}
-                className={multiple ? previewClassName : previewClassName}
-                onRemove={disabled ? undefined : () => quitar(m)}
-              />
+              <div className="relative">
+                <MediaPreview
+                  media={m}
+                  className={previewClassName}
+                  onRemove={disabled ? undefined : () => quitar(m)}
+                />
+                {ordenable && (
+                  <span className="pointer-events-none absolute left-1.5 top-1.5 grid h-5 min-w-[1.25rem] place-items-center rounded-md bg-ink-900/65 px-1 text-[10px] font-bold text-white">
+                    {i + 1}
+                  </span>
+                )}
+              </div>
+
+              {ordenable && !disabled && value.length > 1 && (
+                <div className="mt-1 flex items-center justify-center gap-1">
+                  <button
+                    className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 transition enabled:hover:bg-ink-100 enabled:hover:text-ink-700 disabled:opacity-30"
+                    disabled={i === 0}
+                    onClick={() => onChange(mover(value, i, i - 1))}
+                    aria-label={`Mover ${m.name} un lugar antes`}
+                    title="Mover antes"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    className="grid h-6 w-6 place-items-center rounded-lg text-ink-400 transition enabled:hover:bg-ink-100 enabled:hover:text-ink-700 disabled:opacity-30"
+                    disabled={i === value.length - 1}
+                    onClick={() => onChange(mover(value, i, i + 1))}
+                    aria-label={`Mover ${m.name} un lugar después`}
+                    title="Mover después"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              )}
+
               {!multiple && (
                 <p className="mt-1 truncate text-[11px] text-ink-400">
                   {m.name} · {formatSize(m.size)}
@@ -192,6 +239,7 @@ export default function MediaUploader({
         type="file"
         accept={accept}
         multiple={multiple}
+        aria-label={nombre ?? label}
         className="hidden"
         onChange={(e) => procesar(e.target.files)}
       />

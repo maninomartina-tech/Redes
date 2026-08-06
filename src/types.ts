@@ -200,8 +200,22 @@ export interface Post {
   // --- Resultado final ---
   mediaUrl?: string; // placeholder de color mientras no hay pieza cargada
   mediaKind?: 'image' | 'video';
-  /** La pieza terminada que se va a publicar */
+  /**
+   * La pieza terminada que representa la publicación: la foto del post, el
+   * video del reel, la primera imagen del carrusel. Es la que se ve en el feed
+   * y la que se sube al publicar.
+   */
   resultado?: MediaRef;
+  /**
+   * El resto de las imágenes del carrusel, en orden, después de `resultado`.
+   * Un carrusel son varias imágenes; las demás publicaciones son una sola.
+   */
+  carrusel?: MediaRef[];
+  /**
+   * Portada del reel: la imagen que se ve en el feed mientras el video está
+   * quieto. Es aparte del video, y en Instagram se elige aparte.
+   */
+  portada?: MediaRef;
 
   // --- Rastro en Instagram (para lo traído de la cuenta) ---
   /** Id de la publicación en Instagram, si vino de ahí o ya se publicó */

@@ -18,6 +18,7 @@ import { useStore } from '@/store/useStore';
 import type { Post, PostStatus, PostType } from '@/types';
 import { desdeInput, fmtDateTime, paraInput } from '@/lib/date';
 import { etapasDePlan, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
+import { piezasFinales, repartirPiezas } from '@/lib/piezas';
 import { Avatar, Modal } from '@/components/ui';
 import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
@@ -84,6 +85,8 @@ type Borrador = Pick<
   | 'copy'
   | 'hashtags'
   | 'resultado'
+  | 'carrusel'
+  | 'portada'
   | 'date'
 >;
 
@@ -100,6 +103,8 @@ function tomarBorrador(p: Post): Borrador {
     copy: p.copy,
     hashtags: p.hashtags ?? [],
     resultado: p.resultado,
+    carrusel: p.carrusel ?? [],
+    portada: p.portada,
   };
 }
 
@@ -272,6 +277,7 @@ export default function PostDetail({
                       disabled={readOnly}
                       value={draft.inspiracionMedia ?? []}
                       onChange={(m) => set({ inspiracionMedia: m })}
+                      nombre="Imágenes de referencia"
                       label="Arrastrá imágenes o hacé clic para elegirlas"
                       previewClassName="aspect-square"
                     />
@@ -366,17 +372,78 @@ export default function PostDetail({
             {/* resultado final */}
             <div className="rounded-xl border border-mint-200 bg-mint-50 p-3">
               <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-mint-600">
-                <Check size={15} /> Resultado final · la pieza que se publica
+                <Check size={15} />
+                {draft.type === 'carrusel'
+                  ? 'Resultado final · las imágenes del carrusel'
+                  : draft.type === 'reel'
+                  ? 'Resultado final · el reel y su portada'
+                  : 'Resultado final · la pieza que se publica'}
               </div>
-              <div className="max-w-[260px]">
-                <MediaUploader
-                  disabled={readOnly}
-                  value={draft.resultado ? [draft.resultado] : []}
-                  onChange={(m) => set({ resultado: m[0] })}
-                  label="Arrastrá la pieza terminada o hacé clic para elegirla"
-                  previewClassName="aspect-[4/5]"
-                />
-              </div>
+
+              {draft.type === 'carrusel' ? (
+                <>
+                  <MediaUploader
+                    multiple
+                    ordenable
+                    disabled={readOnly}
+                    value={piezasFinales(draft)}
+                    onChange={(m) => set(repartirPiezas(m))}
+                    nombre="Imágenes del carrusel"
+                    accept="image/*"
+                    label="Arrastrá las imágenes o hacé clic para elegirlas"
+                    hint="Podés subirlas todas juntas"
+                    previewClassName="aspect-[4/5]"
+                    columnas="grid-cols-3 sm:grid-cols-4"
+                  />
+                  {!readOnly && piezasFinales(draft).length > 1 && (
+                    <p className="mt-2 text-xs text-ink-500">
+                      El orden es el que va a tener en Instagram. La número 1 es la
+                      primera que se ve.
+                    </p>
+                  )}
+                </>
+              ) : draft.type === 'reel' ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="label mb-1.5">El reel</p>
+                    <MediaUploader
+                      disabled={readOnly}
+                      value={draft.resultado ? [draft.resultado] : []}
+                      onChange={(m) => set({ resultado: m[0] })}
+                      nombre="Video del reel"
+                      accept="video/*"
+                      label="Arrastrá el video o hacé clic para elegirlo"
+                      hint="El video terminado"
+                      previewClassName="aspect-[9/16]"
+                    />
+                  </div>
+                  <div>
+                    <p className="label mb-1.5">Portada</p>
+                    <MediaUploader
+                      disabled={readOnly}
+                      value={draft.portada ? [draft.portada] : []}
+                      onChange={(m) => set({ portada: m[0] })}
+                      nombre="Portada del reel"
+                      accept="image/*"
+                      label="Arrastrá la portada o hacé clic para elegirla"
+                      hint="La imagen que se ve en el feed"
+                      previewClassName="aspect-[9/16]"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-[260px]">
+                  <MediaUploader
+                    disabled={readOnly}
+                    value={draft.resultado ? [draft.resultado] : []}
+                    onChange={(m) => set({ resultado: m[0] })}
+                    nombre="Pieza final"
+                    label="Arrastrá la pieza terminada o hacé clic para elegirla"
+                    previewClassName="aspect-[4/5]"
+                  />
+                </div>
+              )}
+
               {!draft.resultado && !readOnly && (
                 <p className="mt-2 text-xs text-ink-500">
                   Al aprobar el contenido con la pieza cargada, queda programado solo para el{' '}
