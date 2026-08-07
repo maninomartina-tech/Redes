@@ -23,7 +23,7 @@ process.env.CLAVE_CREADORA = 'clave-de-prueba';
 process.env.META_ADS_ESCRITURA = 'true';
 
 const { app } = await import('../src/index.js');
-const { db, ahora } = await import('../src/db.js');
+const { db, ahora, guardarTokenDeUsuario } = await import('../src/db.js');
 const { permisos } = await import('../src/config.js');
 
 let servidor;
@@ -41,8 +41,12 @@ before(async () => {
 
   db.prepare(
     `INSERT OR REPLACE INTO cuentas (id, nombre, usuario, page_id, token, creada_en)
-     VALUES ('ig_9', 'Aurora', '@aurora', 'pg', 'tok', ?)`
+     VALUES ('ig_9', 'Aurora', '@aurora', 'pg', 'tok-de-pagina', ?)`
   ).run(ahora());
+
+  // Las publicitarias cuelgan del usuario, no de la página: sin este token
+  // no hay nada que hacer contra una campaña.
+  guardarTokenDeUsuario('tok-de-usuario', null);
 
   const r = await fetch(`${base}/api/auth/entrar`, {
     method: 'POST',

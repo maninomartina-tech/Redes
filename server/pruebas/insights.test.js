@@ -16,7 +16,7 @@ process.env.PUBLIC_URL = 'https://ejemplo.test';
 process.env.NODE_ENV = 'test';
 
 const { app } = await import('../src/index.js');
-const { db, ahora } = await import('../src/db.js');
+const { db, ahora, guardarTokenDeUsuario } = await import('../src/db.js');
 
 let servidor;
 let base;
@@ -31,6 +31,9 @@ before(async () => {
     `INSERT OR REPLACE INTO cuentas (id, nombre, usuario, page_id, token, creada_en)
      VALUES ('ig_9', 'Aurora', '@aurora', 'pg', 'tok', ?)`
   ).run(ahora());
+
+  // Las cuentas publicitarias cuelgan del usuario, no de la página.
+  guardarTokenDeUsuario('tok-de-usuario', null);
 });
 
 after(() => {

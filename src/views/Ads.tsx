@@ -169,7 +169,19 @@ export default function Ads() {
                       'Primero vinculá la cuenta de Instagram de este cliente, en la sección Cuentas.',
                   };
                 }
-                const r = await sincronizarAds(cuenta.metaAccountId, client.id);
+                if (!cuenta.metaAdAccountId) {
+                  return {
+                    ok: false,
+                    error:
+                      'Falta elegir la cuenta publicitaria de este cliente. Está en Cuentas, ' +
+                      'abajo de la cuenta de Instagram.',
+                  };
+                }
+                const r = await sincronizarAds(
+                  cuenta.metaAccountId,
+                  client.id,
+                  cuenta.metaAdAccountId
+                );
                 if (!r.ok) return { ok: false, error: r.error };
                 r.datos.forEach((c) => upsertAdExterno(c));
                 return {

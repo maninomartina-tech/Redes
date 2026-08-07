@@ -54,6 +54,19 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_pub_pendientes
     ON publicaciones (estado, publicar_en);
 
+  -- El token de la persona que conectó Meta.
+  --
+  -- No alcanza con los de página. Un token de página sirve para lo de esa
+  -- página —Instagram, sus métricas— pero las cuentas publicitarias cuelgan
+  -- del usuario, no de la página: para listarlas o tocar una campaña hace
+  -- falta este. Es uno solo porque hay una sola persona conectando.
+  CREATE TABLE IF NOT EXISTS usuario_meta (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    token       TEXT NOT NULL,
+    expira_en   TEXT,
+    guardado_en TEXT NOT NULL
+  );
+
   -- Marca de nacimiento de esta base.
   --
   -- Es la única forma de saber si los datos sobreviven de verdad: tener las
@@ -85,6 +98,23 @@ export const instalacion = () =>
 
 /** La carpeta donde se guarda todo, para poder mirarla desde afuera. */
 export const carpetaDeDatos = dirname(rutaDb);
+
+/** Guarda el token del usuario que acaba de conectar Meta. */
+export function guardarTokenDeUsuario(token, expiraEn) {
+  db.prepare(
+    `INSERT INTO usuario_meta (id, token, expira_en, guardado_en)
+     VALUES (1, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       token = excluded.token,
+       expira_en = excluded.expira_en,
+       guardado_en = excluded.guardado_en`
+  ).run(token, expiraEn ?? null, ahora());
+}
+
+/** El token del usuario, o `null` si todavía no conectó nadie. */
+export function tokenDeUsuario() {
+  return db.prepare('SELECT token, expira_en FROM usuario_meta WHERE id = 1').get() ?? null;
+}
 
 export const uid = (p) =>
   `${p}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;

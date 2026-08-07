@@ -13,6 +13,9 @@ process.env.MODO_SOLO_LECTURA = 'true';
 process.env.META_APP_ID = '123';
 process.env.PUBLIC_URL = 'https://ejemplo.test';
 process.env.NODE_ENV = 'test';
+// Arrancar el login de Meta pide un pase, y el pase pide sesión de creadora.
+process.env.USUARIO_CREADORA = 'demm';
+process.env.CLAVE_CREADORA = 'clave-de-prueba';
 
 const { app } = await import('../src/index.js');
 const { db, ahora } = await import('../src/db.js');
@@ -52,7 +55,21 @@ describe('modo solo lectura', () => {
   });
 
   it('el enlace de conexión refleja esos permisos', async () => {
-    const r = await fetch(`${base}/api/auth/meta/login`, { redirect: 'manual' });
+    // Arrancar el login necesita un pase, y el pase necesita la sesión.
+    const entrada = await fetch(`${base}/api/auth/entrar`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ usuario: 'demm', clave: 'clave-de-prueba' }),
+    });
+    const { token } = await entrada.json();
+
+    const pedido = await fetch(`${base}/api/auth/meta/pase`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const { pase } = await pedido.json();
+
+    const r = await fetch(`${base}/api/auth/meta/login?pase=${pase}`, { redirect: 'manual' });
     const destino = r.headers.get('location') ?? '';
     assert.ok(destino.includes('instagram_manage_insights'));
     assert.ok(!destino.includes('instagram_content_publish'));

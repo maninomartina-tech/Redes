@@ -129,16 +129,47 @@ anterior deja de funcionar en el momento.
 
 ## 4. Meta
 
+La idea es conectar **una sola cuenta de Facebook: la tuya**. Cada cliente te da
+acceso de administrador a su página, y así todas sus cuentas de Instagram te
+quedan colgando de tu propio usuario. Con un solo login se conectan todas.
+
 En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
 
 1. **Facebook Login → Settings → Valid OAuth Redirect URIs**, agregá:
    ```
    https://tu-servidor.onrender.com/api/auth/meta/callback
    ```
-2. Pedí el permiso **`instagram_content_publish`**. Mientras la app esté en modo
-   desarrollo, funciona con las cuentas de prueba que agregues.
-3. La cuenta de Instagram tiene que ser **Business o Creator** y estar vinculada
-   a una página de Facebook.
+   Tiene que ser exactamente eso. Si no está, el botón de vincular no funciona.
+2. Agregá el **caso de uso de Instagram**. Los permisos que pide el servidor
+   salen de `permisos()` en `server/src/config.js`; el enlace de conexión los
+   arma solo, no hay que copiarlos a mano en ningún lado.
+3. Copiá **META_APP_ID** y **META_APP_SECRET** (Configuración → Básica) a las
+   variables del servidor.
+4. Cada cuenta de Instagram tiene que ser **Business o Creator** y estar
+   vinculada a una página de Facebook. Las personales no sirven, hay que
+   convertirlas primero.
+
+Después, en la app: **Cuentas → Vincular Instagram**. Se abre Meta, autorizás, y
+vuelven todas las cuentas que administrás. Ahí mismo elegís, para cada cliente,
+cuál es su cuenta de Instagram y cuál su cuenta publicitaria.
+
+> **Modo desarrollo.** Mientras la app esté así, solo puede autorizar gente con
+> un rol en la app. Como la única que entra sos vos —y sos su administradora—,
+> alcanza. Recién si algún día un cliente tuviera que entrar con su propio
+> Facebook haría falta la revisión de Meta.
+
+### Cómo se protege la conexión
+
+El servidor está publicado en internet, así que la ruta que arranca el login de
+Meta la puede visitar cualquiera. Si estuviera abierta, quien conozca la
+dirección podría conectar **sus** cuentas de Instagram ahí y dejar su token
+guardado en tu base.
+
+Por eso arrancar el login pide un pase de un solo uso, que se consigue con la
+sesión de la creadora; y la vuelta de Meta trae otro pase, de otro tipo, que se
+valida y se quema. Los dos tipos no son intercambiables: el de vuelta viaja por
+la barra de direcciones y el historial, así que no puede servir para saltearse
+la sesión.
 
 ### Administrar campañas de ADS
 

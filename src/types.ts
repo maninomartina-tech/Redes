@@ -32,6 +32,14 @@ export interface SocialAccount {
    * Es lo que permite traer métricas y publicar en la cuenta correcta.
    */
   metaAccountId?: string;
+  /**
+   * Id de la cuenta publicitaria de este cliente ("act_123456").
+   *
+   * Va por cliente y no en la configuración del servidor: cada uno paga su
+   * publicidad desde la suya, y con una sola global se le mostrarían a todos
+   * las campañas del primero.
+   */
+  metaAdAccountId?: string;
 }
 
 export interface Client {

@@ -94,6 +94,28 @@ export async function cuentasDeInstagram(token) {
     }));
 }
 
+/**
+ * Las cuentas publicitarias que administra el usuario.
+ *
+ * Cuelgan del usuario y no de la página, así que esto va con el token del
+ * usuario. Sirve para que cada cliente tenga la suya elegida de una lista, en
+ * vez de tener que averiguar y copiar un id a mano.
+ */
+export async function cuentasPublicitarias(token) {
+  const r = await llamar('/me/adaccounts', {
+    token,
+    params: { fields: 'id,account_id,name,account_status,currency', limit: 100 },
+  });
+
+  return (r.data ?? []).map((c) => ({
+    id: c.id, // viene como "act_123456"
+    nombre: c.name ?? c.account_id,
+    moneda: c.currency ?? null,
+    // 1 es activa; el resto son deshabilitada, en revisión, cerrada…
+    activa: c.account_status === 1,
+  }));
+}
+
 /** Espera a que el contenedor termine de procesarse (necesario en videos). */
 async function esperarContenedor(id, token, { intentos = 30, esperaMs = 4000 } = {}) {
   for (let i = 0; i < intentos; i++) {

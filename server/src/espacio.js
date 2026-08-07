@@ -38,6 +38,18 @@ db.exec(`
     token     TEXT PRIMARY KEY,
     creada_en TEXT NOT NULL
   );
+
+  -- Permisos de un solo uso para arrancar el login de Meta.
+  --
+  -- La vuelta de Meta llega como una visita del navegador, sin forma de mandar
+  -- la sesión: si la ruta fuera abierta, cualquiera que conozca la dirección
+  -- del servidor podría conectar SUS cuentas de Instagram acá y dejar su token
+  -- guardado. El pase se pide con la sesión, viaja en el "state" de Meta y se
+  -- quema al volver.
+  CREATE TABLE IF NOT EXISTS pases_meta (
+    pase      TEXT PRIMARY KEY,
+    creado_en TEXT NOT NULL
+  );
 `);
 
 const VACIO = { clients: [], posts: [], campaigns: [], ads: [], monthlyStats: [], leads: [] };
@@ -112,6 +124,53 @@ export function sesionValida(token) {
 
 export function cerrarSesion(token) {
   db.prepare('DELETE FROM sesiones WHERE token = ?').run(token);
+}
+
+/* ---------------------- pases para el login de Meta ---------------------- */
+
+/** Cuánto vale un pase. Es el tiempo de autorizar en Meta, no más. */
+const PASE_MINUTOS = 15;
+
+/**
+ * Los dos pases del recorrido, que no son intercambiables.
+ *
+ * El de ida se pide con la sesión y abre el viaje a Meta. El de vuelta lo
+ * genera el servidor y viaja hasta Meta y de regreso, así que pasa por la
+ * barra de direcciones, el historial y el Referer: si sirviera también para
+ * arrancar un login, alcanzaría con verlo una vez para saltearse la sesión.
+ * El prefijo los mantiene separados.
+ */
+const PREFIJO = { ida: 'ida_', vuelta: 'vta_' };
+
+/** Un pase de un solo uso. `tipo` es 'ida' o 'vuelta'. */
+export function crearPaseDeMeta(tipo = 'ida') {
+  const pase = `${PREFIJO[tipo]}${randomBytes(24).toString('base64url')}`;
+  db.prepare('INSERT INTO pases_meta (pase, creado_en) VALUES (?, ?)').run(pase, ahora());
+  return pase;
+}
+
+/**
+ * ¿Sirve este pase para esto? Si sirve, se quema.
+ *
+ * Se consume aunque el resto del flujo falle: un pase que se puede reintentar
+ * es un pase que se puede probar muchas veces.
+ */
+export function usarPaseDeMeta(pase, tipo = 'ida') {
+  if (!pase || !pase.startsWith(PREFIJO[tipo])) return false;
+
+  const fila = db.prepare('SELECT creado_en FROM pases_meta WHERE pase = ?').get(pase);
+  db.prepare('DELETE FROM pases_meta WHERE pase = ?').run(pase);
+  if (!fila) return false;
+
+  const vencido =
+    Date.now() - new Date(fila.creado_en).getTime() > PASE_MINUTOS * 60 * 1000;
+  return !vencido;
+}
+
+/** Limpia los que quedaron sin usar, para que la tabla no crezca sola. */
+export function limpiarPasesDeMeta() {
+  const corte = new Date(Date.now() - PASE_MINUTOS * 60 * 1000).toISOString();
+  db.prepare('DELETE FROM pases_meta WHERE creado_en < ?').run(corte);
 }
 
 /* ------------------------------- portales -------------------------------- */

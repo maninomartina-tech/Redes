@@ -5,7 +5,15 @@ import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
 import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { ahora, carpetaDeDatos, db, instalacion, uid } from './db.js';
+import {
+  ahora,
+  carpetaDeDatos,
+  db,
+  guardarTokenDeUsuario,
+  instalacion,
+  tokenDeUsuario,
+  uid,
+} from './db.js';
 import {
   adsAdministrables,
   datosPersistentes,
@@ -13,7 +21,12 @@ import {
   publicUrl,
   soloLectura,
 } from './config.js';
-import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
+import {
+  cuentasDeInstagram,
+  cuentasPublicitarias,
+  tokenDesdeCodigo,
+  tokenLargo,
+} from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { cambiarEstadoDeCampana, cambiarPresupuestoDiario } from './ads.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
@@ -34,9 +47,12 @@ import {
   aprobarVariasDesdePortal,
   clienteDelPortal,
   cuentasDelPortal,
+  crearPaseDeMeta,
   guardarEspacio,
   hayClave,
   iniciarSesion,
+  limpiarPasesDeMeta,
+  usarPaseDeMeta,
   leerEspacio,
   usuarioCreadora,
   listarPortales,
@@ -226,22 +242,69 @@ app.delete('/api/cuentas/:id', (req, res) => {
 
 const redirectUri = () => `${publicUrl()}/api/auth/meta/callback`;
 
+const paginaSimple = (texto, extra = '') =>
+  `<!doctype html><meta charset="utf-8">
+   <p style="font:16px system-ui;padding:2rem;max-width:34rem;line-height:1.5">${texto}${extra}</p>`;
+
+/**
+ * Paso 0: pedir el pase.
+ *
+ * Va con la sesión de la creadora. Es lo único que impide que alguien que
+ * conozca la dirección del servidor conecte sus propias cuentas de Instagram
+ * acá: la vuelta de Meta es una visita del navegador y no puede traer la
+ * sesión, así que la autorización tiene que viajar en el `state`.
+ */
+app.post('/api/auth/meta/pase', soloCreadora, (_req, res) => {
+  limpiarPasesDeMeta();
+  res.json({ pase: crearPaseDeMeta() });
+});
+
 /** Paso 1: manda al usuario a autorizar la app en Meta. */
-app.get('/api/auth/meta/login', (_req, res) => {
+app.get('/api/auth/meta/login', (req, res) => {
   if (!process.env.META_APP_ID) {
     return res.status(500).send('Falta configurar META_APP_ID en el archivo .env');
   }
+  if (!usarPaseDeMeta(String(req.query.pase ?? ''), 'ida')) {
+    return res
+      .status(403)
+      .send(
+        paginaSimple(
+          'Este link para conectar Instagram no es válido o ya se usó. ' +
+            'Entrá a la app con tu clave y tocá <b>Vincular Instagram</b> de nuevo.'
+        )
+      );
+  }
+
+  // Este valor va hasta Meta y vuelve: es lo que prueba que el regreso
+  // corresponde a un pedido nuestro y no a alguien que llamó al callback por
+  // su cuenta. Es de otro tipo que el de ida a propósito, porque queda a la
+  // vista en la barra de direcciones y en el historial.
+  const state = crearPaseDeMeta('vuelta');
+
   const url = new URL('https://www.facebook.com/v21.0/dialog/oauth');
   url.searchParams.set('client_id', process.env.META_APP_ID);
   url.searchParams.set('redirect_uri', redirectUri());
   url.searchParams.set('scope', permisos().join(','));
+  url.searchParams.set('state', state);
   res.redirect(url.toString());
 });
 
 /** Paso 2: Meta vuelve con un código; lo cambiamos por el token y guardamos. */
 app.get('/api/auth/meta/callback', async (req, res) => {
   try {
-    const { code, error_description } = req.query;
+    const { code, state, error_description } = req.query;
+
+    if (!usarPaseDeMeta(String(state ?? ''), 'vuelta')) {
+      return res
+        .status(403)
+        .send(
+          paginaSimple(
+            'Esta vuelta de Meta no corresponde a ninguna conexión que hayas empezado. ' +
+              'No se guardó nada.'
+          )
+        );
+    }
+
     if (!code) return res.status(400).send(error_description ?? 'Meta no devolvió el código.');
 
     const corto = await tokenDesdeCodigo(String(code), redirectUri());
@@ -260,6 +323,9 @@ app.get('/api/auth/meta/callback', async (req, res) => {
     const expira = largo.expires_in
       ? new Date(Date.now() + largo.expires_in * 1000).toISOString()
       : null;
+
+    // El del usuario, aparte: es el único que sirve para las publicitarias.
+    guardarTokenDeUsuario(largo.access_token, expira);
 
     const guardar = db.prepare(
       `INSERT INTO cuentas (id, nombre, usuario, page_id, token, expira_en, creada_en)
@@ -484,6 +550,36 @@ app.get('/api/insights/publicaciones/:id', async (req, res) => {
   }
 });
 
+/**
+ * El token que sirve para las cuentas publicitarias.
+ *
+ * No es el de la página: las publicitarias cuelgan del usuario. Si nunca se
+ * conectó nadie, no hay nada que hacer y conviene decirlo así y no con el
+ * error de Meta, que en este caso no se entiende.
+ */
+function tokenDeAdsO409(res) {
+  const guardado = tokenDeUsuario();
+  if (!guardado) {
+    res.status(409).json({
+      error:
+        'Todavía no conectaste tu cuenta de Meta. Andá a Cuentas y tocá «Vincular Instagram».',
+    });
+    return null;
+  }
+  return guardado.token;
+}
+
+/** Las cuentas publicitarias que administrás, para elegir la de cada cliente. */
+app.get('/api/adcuentas', soloCreadora, async (_req, res) => {
+  const token = tokenDeAdsO409(res);
+  if (!token) return;
+  try {
+    res.json({ cuentas: await cuentasPublicitarias(token) });
+  } catch (e) {
+    res.status(502).json({ error: e.message });
+  }
+});
+
 /** Campañas de Meta Ads. */
 app.get('/api/ads/:cuentaId', async (req, res) => {
   const cuenta = cuentaO404(req.params.cuentaId, res);
@@ -493,15 +589,19 @@ app.get('/api/ads/:cuentaId', async (req, res) => {
   if (!adAccountId) {
     return res.status(400).json({
       error:
-        'Falta el id de la cuenta publicitaria. Cargalo en META_AD_ACCOUNT_ID o pasalo como adAccountId.',
+        'Este cliente no tiene elegida su cuenta publicitaria. Elegila en Cuentas, ' +
+        'abajo de la cuenta de Instagram.',
     });
   }
+
+  const token = tokenDeAdsO409(res);
+  if (!token) return;
 
   try {
     const { desde, hasta } = rango(req);
     const campanas = await campanasDeAds({
       adAccountId: String(adAccountId),
-      token: cuenta.token,
+      token,
       desde,
       hasta,
     });
@@ -543,12 +643,15 @@ app.post(
       return res.status(400).json({ error: 'El estado tiene que ser "activa" o "pausada".' });
     }
 
+    const token = tokenDeAdsO409(res);
+    if (!token) return;
+
     try {
       res.json(
         await cambiarEstadoDeCampana({
           campaignId: req.params.campaignId,
           estado,
-          token: cuenta.token,
+          token,
         })
       );
     } catch (e) {
@@ -565,12 +668,15 @@ app.post(
     const cuenta = cuentaO404(req.params.cuentaId, res);
     if (!cuenta) return;
 
+    const token = tokenDeAdsO409(res);
+    if (!token) return;
+
     try {
       res.json(
         await cambiarPresupuestoDiario({
           campaignId: req.params.campaignId,
           diario: req.body?.diario,
-          token: cuenta.token,
+          token,
         })
       );
     } catch (e) {

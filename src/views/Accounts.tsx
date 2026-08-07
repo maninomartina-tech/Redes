@@ -18,8 +18,10 @@ import { platformLabel } from '@/lib/format';
 import {
   consultarServidor,
   listarCuentasMeta,
+  listarCuentasPublicitarias,
   urlConexionMeta,
   type CuentaMeta,
+  type CuentaPublicitaria,
   type EstadoServidor,
 } from '@/lib/publish';
 import { Avatar, Modal, SectionTitle, Toggle } from '@/components/ui';
@@ -38,17 +40,23 @@ export default function Accounts() {
   const updateAccount = useStore((s) => s.updateAccount);
   const removeAccount = useStore((s) => s.removeAccount);
   const [cuentasMeta, setCuentasMeta] = useState<CuentaMeta[]>([]);
+  const [publicitarias, setPublicitarias] = useState<CuentaPublicitaria[]>([]);
   const [servidor, setServidor] = useState<EstadoServidor | null>(null);
   const [nuevaCuenta, setNuevaCuenta] = useState(false);
   const [editando, setEditando] = useState(false);
   const [nuevaRed, setNuevaRed] = useState(false);
+  const sesion = useStore((s) => s.sesion);
 
   useEffect(() => {
     consultarServidor().then(setServidor);
     listarCuentasMeta().then(setCuentasMeta);
   }, []);
 
-  const loginMeta = urlConexionMeta();
+  // Las publicitarias cuelgan de su usuario de Facebook, así que aparecen
+  // recién cuando hay sesión y ya conectó Meta.
+  useEffect(() => {
+    listarCuentasPublicitarias(sesion).then(setPublicitarias);
+  }, [sesion]);
 
   return (
     <div>
@@ -62,7 +70,7 @@ export default function Accounts() {
         }
       />
 
-      <EstadoDelServidor estado={servidor} loginMeta={loginMeta} />
+      <EstadoDelServidor estado={servidor} sesion={sesion} />
 
       {/* Ficha de la cuenta que está seleccionada */}
       <div className="card mb-3 flex items-center gap-4 p-4">
@@ -141,6 +149,34 @@ export default function Accounts() {
                 <p className="mt-1 text-[11px] text-ink-400">
                   Es la que se usa para publicar y para traer las métricas de este cliente.
                 </p>
+
+                {publicitarias.length > 0 && (
+                  <div className="mt-3">
+                    <label className="label">Cuenta publicitaria</label>
+                    <select
+                      value={acc.metaAdAccountId ?? ''}
+                      onChange={(e) =>
+                        updateAccount(client.id, acc.id, {
+                          metaAdAccountId: e.target.value || undefined,
+                        })
+                      }
+                      className="input mt-1"
+                    >
+                      <option value="">Sin vincular</option>
+                      {publicitarias.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre}
+                          {c.moneda ? ` · ${c.moneda}` : ''}
+                          {c.activa ? '' : ' · inactiva'}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-[11px] text-ink-400">
+                      De dónde salen las campañas de ADS de este cliente. Cada uno paga
+                      la suya, así que va una por cliente.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -245,11 +281,31 @@ function NuevaRed({
 /** Muestra qué falta para que la publicación automática funcione de verdad. */
 function EstadoDelServidor({
   estado,
-  loginMeta,
+  sesion,
 }: {
   estado: EstadoServidor | null;
-  loginMeta: string | null;
+  sesion: string | null;
 }) {
+  const [yendo, setYendo] = useState(false);
+  const [errorMeta, setErrorMeta] = useState<string | null>(null);
+
+  /**
+   * Conectar Instagram.
+   *
+   * El pase se pide recién al tocar el botón, y dura un rato corto: si el link
+   * viviera armado en la pantalla, quedaría dando vueltas en el historial.
+   */
+  const conectar = async () => {
+    setErrorMeta(null);
+    setYendo(true);
+    const r = await urlConexionMeta(sesion);
+    if (r.url) window.location.href = r.url;
+    else {
+      setErrorMeta(r.error ?? 'No se pudo arrancar la conexión.');
+      setYendo(false);
+    }
+  };
+
   if (!estado) {
     return (
       <div className="mb-4 rounded-xl border border-ink-200/70 bg-surface p-4 text-sm text-ink-500">
@@ -295,11 +351,31 @@ function EstadoDelServidor({
               ? `Hay ${estado.cuentasConectadas} cuenta(s) de Instagram vinculadas. Lo aprobado se publica solo a la hora programada.`
               : 'Todavía no vinculaste ninguna cuenta de Instagram.'}
           </p>
-          {loginMeta && estado.metaConfigurado && (
-            <a href={loginMeta} className="btn-primary mt-3 !py-1.5 text-xs">
-              <Link2 size={14} />
-              {estado.cuentasConectadas > 0 ? 'Vincular otra cuenta' : 'Vincular Instagram'}
-            </a>
+          {estado.metaConfigurado && (
+            <>
+              <button
+                className="btn-primary mt-3 !py-1.5 text-xs"
+                disabled={yendo}
+                onClick={() => void conectar()}
+              >
+                <Link2 size={14} />
+                {yendo
+                  ? 'Abriendo Meta…'
+                  : estado.cuentasConectadas > 0
+                  ? 'Vincular otra cuenta'
+                  : 'Vincular Instagram'}
+              </button>
+              <p className="mt-2 text-xs leading-snug text-ink-500">
+                Se abre Meta con tu cuenta de Facebook y quedan conectadas todas las cuentas
+                de Instagram de las páginas que administrás. Después, acá abajo, elegís cuál
+                corresponde a cada cliente.
+              </p>
+              {errorMeta && (
+                <p className="mt-2 rounded-lg bg-rose-50 p-2 text-xs text-rose-700">
+                  {errorMeta}
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

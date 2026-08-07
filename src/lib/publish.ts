@@ -106,9 +106,61 @@ export async function listarCuentasMeta(): Promise<CuentaMeta[]> {
   }
 }
 
-/** Dirección para iniciar la conexión de una cuenta de Meta. */
-export function urlConexionMeta(): string | null {
-  return hayServidor() ? `${API}/api/auth/meta/login` : null;
+/** Una cuenta publicitaria a la que la creadora tiene acceso. */
+export interface CuentaPublicitaria {
+  id: string; // "act_123456"
+  nombre: string;
+  moneda: string | null;
+  activa: boolean;
+}
+
+/**
+ * Las cuentas publicitarias que administra, para elegir la de cada cliente.
+ *
+ * Cuelgan del usuario de Facebook, no de la página, así que aparecen recién
+ * después de conectar Meta y solo con la sesión de la creadora.
+ */
+export async function listarCuentasPublicitarias(
+  sesion: string | null
+): Promise<CuentaPublicitaria[]> {
+  if (!hayServidor() || !sesion) return [];
+  try {
+    const res = await fetch(`${API}/api/adcuentas`, {
+      headers: { Authorization: `Bearer ${sesion}` },
+    });
+    if (!res.ok) return [];
+    return (await res.json()).cuentas ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Arranca la conexión con Meta.
+ *
+ * Primero se pide un pase al servidor, con la sesión. La vuelta de Meta llega
+ * como una visita del navegador y no puede traer la sesión, así que la
+ * autorización tiene que viajar en la dirección: sin eso, cualquiera que
+ * conozca el servidor podría dejar sus propias cuentas conectadas ahí.
+ */
+export async function urlConexionMeta(sesion: string | null): Promise<{
+  url?: string;
+  error?: string;
+}> {
+  if (!hayServidor()) return { error: 'No hay servidor configurado.' };
+  if (!sesion) return { error: 'Entrá con tu clave para conectar Instagram.' };
+
+  try {
+    const res = await fetch(`${API}/api/auth/meta/pase`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sesion}` },
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: datos.error ?? 'El servidor no dio el permiso para conectar.' };
+    return { url: `${API}/api/auth/meta/login?pase=${encodeURIComponent(datos.pase)}` };
+  } catch {
+    return { error: 'No se pudo contactar al servidor.' };
+  }
 }
 
 /** Id de la copia de la pieza en el servidor, subiéndola si todavía no está. */
