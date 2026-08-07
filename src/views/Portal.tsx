@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Logo from '@/components/Logo';
 import { useStore } from '@/store/useStore';
+import { aplicarManifiestoDelPortal, restaurarManifiesto } from '@/lib/manifiesto';
 
 /**
  * Puerta de entrada del cliente.
@@ -16,6 +17,7 @@ export default function Portal({ children }: { children: React.ReactNode }) {
   const { token = '' } = useParams();
   const abrirPortal = useStore((s) => s.abrirPortal);
   const listo = useStore((s) => s.portal === token && s.sincro.estado === 'listo');
+  const nombre = useStore((s) => s.clients[0]?.name);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +30,20 @@ export default function Portal({ children }: { children: React.ReactNode }) {
       vigente = false;
     };
   }, [token, abrirPortal]);
+
+  /**
+   * Que el ícono de su pantalla de inicio abra su contenido.
+   *
+   * Sin esto, el manifiesto de siempre manda al cliente a la raíz —la pantalla
+   * de ingreso de la creadora— y termina mirando un formulario con una clave
+   * que no tiene. Se pone recién cuando sabemos de quién es la cuenta, para
+   * que la app instalada lleve su nombre.
+   */
+  useEffect(() => {
+    if (!listo || !nombre) return;
+    aplicarManifiestoDelPortal(token, nombre);
+    return restaurarManifiesto;
+  }, [listo, nombre, token]);
 
   if (error) {
     return (

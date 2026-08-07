@@ -6,9 +6,16 @@ import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ahora, carpetaDeDatos, db, instalacion, uid } from './db.js';
-import { datosPersistentes, permisos, publicUrl, soloLectura } from './config.js';
+import {
+  adsAdministrables,
+  datosPersistentes,
+  permisos,
+  publicUrl,
+  soloLectura,
+} from './config.js';
 import { cuentasDeInstagram, tokenDesdeCodigo, tokenLargo } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
+import { cambiarEstadoDeCampana, cambiarPresupuestoDiario } from './ads.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
 import { hayIA, redactar } from './ia.js';
 import {
@@ -503,6 +510,74 @@ app.get('/api/ads/:cuentaId', async (req, res) => {
     res.status(502).json({ error: e.message });
   }
 });
+
+/**
+ * Cambiar una campaña.
+ *
+ * Con sesión de creadora y solo si `META_ADS_ESCRITURA` está prendido: esto
+ * toca la cuenta publicitaria del cliente, donde un cambio gasta plata. Las
+ * dos condiciones son a propósito, y la del entorno no se puede saltar desde
+ * la app.
+ */
+function conAdsAdministrables(req, res, next) {
+  if (!adsAdministrables()) {
+    return res.status(409).json({
+      error:
+        'La administración de campañas está apagada en el servidor. Para prenderla, ' +
+        'poné META_ADS_ESCRITURA=true y volvé a autorizar la cuenta en Meta.',
+    });
+  }
+  next();
+}
+
+app.post(
+  '/api/ads/:cuentaId/campanas/:campaignId/estado',
+  soloCreadora,
+  conAdsAdministrables,
+  async (req, res) => {
+    const cuenta = cuentaO404(req.params.cuentaId, res);
+    if (!cuenta) return;
+
+    const { estado } = req.body ?? {};
+    if (estado !== 'activa' && estado !== 'pausada') {
+      return res.status(400).json({ error: 'El estado tiene que ser "activa" o "pausada".' });
+    }
+
+    try {
+      res.json(
+        await cambiarEstadoDeCampana({
+          campaignId: req.params.campaignId,
+          estado,
+          token: cuenta.token,
+        })
+      );
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
+  }
+);
+
+app.post(
+  '/api/ads/:cuentaId/campanas/:campaignId/presupuesto',
+  soloCreadora,
+  conAdsAdministrables,
+  async (req, res) => {
+    const cuenta = cuentaO404(req.params.cuentaId, res);
+    if (!cuenta) return;
+
+    try {
+      res.json(
+        await cambiarPresupuestoDiario({
+          campaignId: req.params.campaignId,
+          diario: req.body?.diario,
+          token: cuenta.token,
+        })
+      );
+    } catch (e) {
+      res.status(502).json({ error: e.message });
+    }
+  }
+);
 
 /* ----------------------------- análisis con IA --------------------------- */
 

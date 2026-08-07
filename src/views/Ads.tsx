@@ -2,10 +2,12 @@ import {
   BarChart3,
   Heart,
   Link2,
+  Loader2,
   Megaphone,
   Pencil,
   Plus,
   Trash2,
+  TriangleAlert,
   UserPlus,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -14,7 +16,7 @@ import { adStatusChip, money, nfmt, platformLabel } from '@/lib/format';
 import { addDays, fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat } from '@/components/ui';
 import SyncButton from '@/components/SyncButton';
-import { sincronizarAds } from '@/lib/sync';
+import { cambiarEstadoEnMeta, cambiarPresupuestoEnMeta, sincronizarAds } from '@/lib/sync';
 import type { Ad, AdStatus, Platform } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -24,8 +26,9 @@ import type { Ad, AdStatus, Platform } from '@/types';
 // —presupuesto por día y cuántos días dura— y cuando termina se cargan los
 // resultados que muestra Instagram al final de la promoción.
 //
-// El botón de Meta Ads sigue estando para cuando la cuenta esté conectada,
-// pero nada depende de él.
+// Cuando la cuenta está conectada a Meta, las campañas se pueden traer de ahí.
+// Esas además se prenden, se apagan y se les cambia el presupuesto desde acá, y
+// el cambio viaja a Meta de verdad. Las cargadas a mano no: no existen allá.
 // ---------------------------------------------------------------------------
 
 const ESTADOS: AdStatus[] = ['activa', 'pausada', 'finalizada'];
@@ -58,6 +61,7 @@ function tieneResultados(a: Ad): boolean {
 
 export default function Ads() {
   const { ads, currentClientId, addAd, updateAd, removeAd, upsertAdExterno } = useStore();
+  const sesion = useStore((s) => s.sesion);
   const client = useCurrentClient();
   const clientAds = ads.filter((a) => a.clientId === currentClientId);
 
@@ -65,6 +69,71 @@ export default function Ads() {
   /** La campaña que se está editando, y en qué pestaña se abrió. */
   const [editando, setEditando] = useState<Ad | null>(null);
   const [resultados, setResultados] = useState<Ad | null>(null);
+  /** Lo que Meta rechazó, para decirlo en vez de dejar la tarjeta mintiendo. */
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const cuentaMeta = client.accounts.find((a) => a.metaAccountId)?.metaAccountId;
+
+  /** ¿Este cambio se puede mandar a Meta? Solo si la campaña vino de ahí. */
+  const enMeta = (ad: Ad) => Boolean(ad.externalId && cuentaMeta && sesion);
+
+  /**
+   * Cambia el estado.
+   *
+   * Si la campaña vive en Meta, manda el cambio y se queda con el estado que
+   * Meta devuelve —no con el que se pidió—, porque puede quedar en otro: una
+   * campaña terminada no se reactiva, y un método de pago rechazado la deja
+   * apagada igual. Si falla, no se toca nada y se muestra el motivo.
+   */
+  const cambiarEstado = async (ad: Ad, status: AdStatus) => {
+    setAviso(null);
+
+    if (status === 'finalizada' || !enMeta(ad)) {
+      updateAd(ad.id, { status });
+      return;
+    }
+
+    const r = await cambiarEstadoEnMeta(
+      cuentaMeta!,
+      ad.externalId!,
+      status as 'activa' | 'pausada',
+      sesion!
+    );
+    if (!r.ok) {
+      setAviso(r.error ?? 'Meta rechazó el cambio.');
+      return;
+    }
+    updateAd(ad.id, { status: r.estado ?? status });
+    if (r.estado && r.estado !== status) {
+      setAviso(`Meta la dejó en "${r.estado}". Fijate en el Administrador de anuncios.`);
+    }
+  };
+
+  /** Guarda la campaña editada y, si vive en Meta, le lleva el presupuesto. */
+  const guardarCampana = async (ad: Ad, datos: Partial<Ad>) => {
+    setAviso(null);
+    updateAd(ad.id, datos);
+
+    const nuevoDiario = datos.dailyBudget;
+    if (!enMeta(ad) || nuevoDiario == null || nuevoDiario === ad.dailyBudget) return;
+
+    const r = await cambiarPresupuestoEnMeta(
+      cuentaMeta!,
+      ad.externalId!,
+      nuevoDiario,
+      sesion!
+    );
+    if (!r.ok) {
+      setAviso(r.error ?? 'Meta rechazó el presupuesto.');
+      // Se vuelve al que tenía: en la app no puede figurar uno que Meta no aceptó.
+      updateAd(ad.id, { dailyBudget: ad.dailyBudget });
+      return;
+    }
+    if (r.diario != null && r.diario !== nuevoDiario) {
+      updateAd(ad.id, { dailyBudget: r.diario });
+      setAviso(`Meta lo dejó en ${money(r.diario)} por día.`);
+    }
+  };
 
   const total = useMemo(
     () =>
@@ -154,12 +223,20 @@ export default function Ads() {
             />
           </div>
 
+          {aviso && (
+            <p className="mb-3 flex items-start gap-2 rounded-xl border border-butter-300 bg-butter-50 p-3 text-sm leading-snug text-ink-700">
+              <TriangleAlert size={16} className="mt-px shrink-0 text-butter-600" />
+              {aviso}
+            </p>
+          )}
+
           <div className="space-y-3">
             {clientAds.map((ad) => (
               <TarjetaDeCampana
                 key={ad.id}
                 ad={ad}
-                onEstado={(status) => updateAd(ad.id, { status })}
+                enMeta={enMeta(ad)}
+                onEstado={(status) => void cambiarEstado(ad, status)}
                 onEditar={() => setEditando(ad)}
                 onResultados={() => setResultados(ad)}
                 onBorrar={() => removeAd(ad.id)}
@@ -173,10 +250,13 @@ export default function Ads() {
       <div className="mt-5 flex items-start gap-3 rounded-xl border border-ink-200/70 bg-ink-50 p-3.5 text-sm">
         <Link2 className="mt-0.5 shrink-0 text-ink-400" size={18} />
         <p className="text-ink-600">
-          <span className="font-semibold text-ink-800">Más adelante:</span> con la cuenta
-          vinculada y el id de la cuenta publicitaria cargado en el servidor
+          <span className="font-semibold text-ink-800">Conexión con Meta Ads:</span> con la
+          cuenta vinculada y el id de la cuenta publicitaria en el servidor
           (<code className="rounded bg-ink-100 px-1 py-0.5 text-xs">META_AD_ACCOUNT_ID</code>),
-          el botón <b>Traer de Meta Ads</b> completa estos números solo.
+          el botón <b>Traer de Meta Ads</b> completa estos números solo. Las campañas que
+          lleguen así quedan marcadas con <b>Meta</b>: prenderlas, apagarlas o cambiarles
+          el presupuesto diario desde acá las cambia también allá — para eso hace falta
+          además <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">META_ADS_ESCRITURA=true</code>.
         </p>
       </div>
 
@@ -188,7 +268,7 @@ export default function Ads() {
           setEditando(null);
         }}
         onGuardar={(datos) => {
-          if (editando) updateAd(editando.id, datos);
+          if (editando) void guardarCampana(editando, datos);
           else addAd({ ...datos, clientId: currentClientId, manual: true });
         }}
       />
@@ -206,17 +286,21 @@ export default function Ads() {
 
 function TarjetaDeCampana({
   ad,
+  enMeta,
   onEstado,
   onEditar,
   onResultados,
   onBorrar,
 }: {
   ad: Ad;
-  onEstado: (s: AdStatus) => void;
+  /** Vive en Meta: prenderla o apagarla la cambia allá de verdad. */
+  enMeta: boolean;
+  onEstado: (s: AdStatus) => Promise<void> | void;
   onEditar: () => void;
   onResultados: () => void;
   onBorrar: () => void;
 }) {
+  const [mandando, setMandando] = useState(false);
   const presupuesto = ad.budget || (ad.dailyBudget ?? 0) * (ad.days ?? 0);
   const usado = presupuesto ? Math.min(100, (ad.spend / presupuesto) * 100) : 0;
   const interaccion = interaccionDeLaCampana(ad);
@@ -238,12 +322,35 @@ function TarjetaDeCampana({
           </p>
         </div>
 
+        {enMeta && (
+          <span
+            className="chip bg-sky-100 text-sky-700"
+            title="Esta campaña está conectada con Meta Ads"
+          >
+            <Link2 size={12} /> Meta
+          </span>
+        )}
+
+        {mandando && <Loader2 size={14} className="animate-spin text-ink-400" />}
+
         {/* El estado se cambia acá mismo: es lo que más se mira. */}
         <select
           value={ad.status}
-          onChange={(e) => onEstado(e.target.value as AdStatus)}
-          className={`chip cursor-pointer border-0 capitalize ${adStatusChip[ad.status]}`}
-          aria-label={`Estado de ${ad.name}`}
+          disabled={mandando}
+          onChange={async (e) => {
+            setMandando(true);
+            await onEstado(e.target.value as AdStatus);
+            setMandando(false);
+          }}
+          className={`chip cursor-pointer border-0 capitalize disabled:opacity-50 ${
+            adStatusChip[ad.status]
+          }`}
+          aria-label={`Estado de ${ad.name}${enMeta ? ' (se cambia también en Meta)' : ''}`}
+          title={
+            enMeta
+              ? 'Prenderla o apagarla la cambia también en Meta'
+              : 'Cargada a mano: no existe en Meta'
+          }
         >
           {ESTADOS.map((s) => (
             <option key={s} value={s}>

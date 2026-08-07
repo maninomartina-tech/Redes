@@ -140,6 +140,27 @@ En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
 3. La cuenta de Instagram tiene que ser **Business o Creator** y estar vinculada
    a una página de Facebook.
 
+### Administrar campañas de ADS
+
+Traer las campañas de Meta Ads solo necesita `ads_read`, que ya se pide siempre.
+Para además **pausarlas, reactivarlas o cambiarles el presupuesto diario** desde
+la app hace falta:
+
+```
+META_ADS_ESCRITURA = true
+```
+
+Con eso el servidor le suma `ads_management` a los permisos que pide, y habilita
+los dos endpoints que escriben. Ojo con lo que implica: esos cambios tocan la
+cuenta publicitaria del cliente y **gastan plata de verdad**. Por eso está
+apagado por defecto, y por eso `ads_management` no se pide "por las dudas": es
+uno de los permisos que Meta mira con más detalle en la revisión, y pedirlo sin
+usarlo complica la aprobación.
+
+Crear una campaña de cero sigue siendo cosa del Administrador de anuncios: en la
+API son cuatro objetos encadenados (campaña, conjunto, creativo, anuncio) con
+segmentación y pujas. Una vez armada allá, desde acá se maneja.
+
 Después entrás a **Cuentas** en la app, tocás *Vincular Instagram* y elegís qué
 cuenta corresponde a cada cliente.
 

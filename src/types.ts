@@ -280,6 +280,12 @@ export interface Ad {
   linkedPostId?: string;
   startDate: string;
   endDate: string;
+  /**
+   * Id de la campaña en Meta, si vino de ahí. Es lo que permite pausarla o
+   * cambiarle el presupuesto desde acá: una campaña cargada a mano no existe
+   * en Meta y no hay nada que tocar.
+   */
+  externalId?: string;
 
   // --- Resultados cargados a mano ---
   /** Presupuesto por día */

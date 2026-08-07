@@ -34,6 +34,19 @@ export function soloLectura() {
   return String(process.env.MODO_SOLO_LECTURA ?? '').toLowerCase() === 'true';
 }
 
+/**
+ * ¿Se pueden cambiar campañas de ADS desde la app?
+ *
+ * Aparte de `soloLectura`, y a propósito: una cosa es publicar contenido y
+ * otra es tocar una cuenta publicitaria, donde un cambio gasta plata del
+ * cliente. Además `ads_management` es un permiso fuerte que hay que
+ * justificarle a Meta en la revisión, así que no se pide "por las dudas": se
+ * pide cuando se va a usar.
+ */
+export function adsAdministrables() {
+  return String(process.env.META_ADS_ESCRITURA ?? '').toLowerCase() === 'true';
+}
+
 /** Permisos que se le piden a Meta. En solo lectura no se pide publicar. */
 export function permisos() {
   const lectura = [
@@ -44,7 +57,12 @@ export function permisos() {
     'business_management',
     'ads_read', // campañas de Meta Ads
   ];
-  return soloLectura() ? lectura : [...lectura, 'instagram_content_publish'];
+
+  // `ads_management` incluye lo que da `ads_read`, pero se piden los dos: si
+  // Meta aprueba solo el de lectura, la app sigue trayendo las campañas.
+  const conAds = adsAdministrables() ? [...lectura, 'ads_management'] : lectura;
+
+  return soloLectura() ? conAds : [...conAds, 'instagram_content_publish'];
 }
 
 /**

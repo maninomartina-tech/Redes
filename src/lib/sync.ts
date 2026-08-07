@@ -105,3 +105,64 @@ export async function sincronizarAds(
     })),
   };
 }
+
+/* ------------------------- cambiar campañas en Meta ---------------------- */
+
+// Estas dos escriben en la cuenta publicitaria del cliente, así que van con la
+// sesión de la creadora. El servidor además las rechaza si no se prendió
+// META_ADS_ESCRITURA: la decisión de poder gastar plata no vive en el navegador.
+
+async function mandar<T>(
+  ruta: string,
+  cuerpo: unknown,
+  sesion: string
+): Promise<{ ok: boolean; datos?: T; error?: string }> {
+  if (!API) {
+    return { ok: false, error: 'No hay servidor configurado.' };
+  }
+  try {
+    const res = await fetch(`${API}${ruta}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sesion}`,
+      },
+      body: JSON.stringify(cuerpo),
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: datos.error ?? `El servidor respondió ${res.status}` };
+    return { ok: true, datos };
+  } catch {
+    return { ok: false, error: 'No se pudo contactar al servidor.' };
+  }
+}
+
+/** Prende o apaga una campaña en Meta. Devuelve el estado que quedó. */
+export async function cambiarEstadoEnMeta(
+  igUserId: string,
+  campaignId: string,
+  estado: 'activa' | 'pausada',
+  sesion: string
+): Promise<{ ok: boolean; estado?: 'activa' | 'pausada' | 'finalizada'; error?: string }> {
+  const r = await mandar<{ estado: 'activa' | 'pausada' | 'finalizada' }>(
+    `/api/ads/${igUserId}/campanas/${encodeURIComponent(campaignId)}/estado`,
+    { estado },
+    sesion
+  );
+  return { ok: r.ok, estado: r.datos?.estado, error: r.error };
+}
+
+/** Cambia el presupuesto diario en Meta. Devuelve el que quedó. */
+export async function cambiarPresupuestoEnMeta(
+  igUserId: string,
+  campaignId: string,
+  diario: number,
+  sesion: string
+): Promise<{ ok: boolean; diario?: number; error?: string }> {
+  const r = await mandar<{ diario: number }>(
+    `/api/ads/${igUserId}/campanas/${encodeURIComponent(campaignId)}/presupuesto`,
+    { diario },
+    sesion
+  );
+  return { ok: r.ok, diario: r.datos?.diario, error: r.error };
+}
