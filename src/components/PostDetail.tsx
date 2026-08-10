@@ -24,6 +24,8 @@ import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
 import HashtagPicker, { parsearTags } from '@/components/HashtagPicker';
 import GenerarConIA from '@/components/GenerarConIA';
+import BotonCopiar from '@/components/BotonCopiar';
+import { copyParaPegar } from '@/lib/texto';
 
 const types: PostType[] = ['reel', 'post', 'carrusel', 'historia'];
 
@@ -43,6 +45,7 @@ function Campo({
   placeholder,
   className = '',
   vacio = 'Todavía sin cargar.',
+  nombre,
 }: {
   readOnly: boolean;
   value: string;
@@ -51,6 +54,8 @@ function Campo({
   placeholder: string;
   className?: string;
   vacio?: string;
+  /** Qué se escribe acá. El rótulo está afuera del campo, en el encabezado. */
+  nombre?: string;
 }) {
   if (readOnly) {
     return value.trim() ? (
@@ -67,6 +72,7 @@ function Campo({
       onChange={(e) => onChange(e.target.value)}
       rows={rows}
       placeholder={placeholder}
+      aria-label={nombre}
       className={`input resize-y ${className}`}
     />
   );
@@ -124,6 +130,7 @@ export default function PostDetail({
   const [draft, setDraft] = useState<Borrador | null>(null);
   const [comentario, setComentario] = useState('');
   const [confirmarSalida, setConfirmarSalida] = useState(false);
+  const [avisoDeCopia, setAvisoDeCopia] = useState<string | null>(null);
 
   const readOnly = role === 'cliente';
 
@@ -231,6 +238,7 @@ export default function PostDetail({
                   readOnly={readOnly}
                   value={draft.inspiracion ?? ''}
                   onChange={(inspiracion) => set({ inspiracion })}
+                  nombre="Inspiración"
                   rows={2}
                   placeholder="¿Sale de una tendencia, un audio, una referencia, una pregunta que se repite?"
                   vacio="Sin referencia cargada."
@@ -292,6 +300,7 @@ export default function PostDetail({
                 readOnly={readOnly}
                 value={draft.ideaGeneral}
                 onChange={(ideaGeneral) => set({ ideaGeneral })}
+                nombre="Idea general"
                 rows={3}
                 placeholder="¿De qué trata? El concepto y el objetivo del contenido."
               />
@@ -317,6 +326,7 @@ export default function PostDetail({
                 readOnly={readOnly}
                 value={draft.contenido}
                 onChange={(contenido) => set({ contenido })}
+                nombre="Guion o contenido"
                 rows={5}
                 placeholder="El guion, los diálogos o el detalle de cada slide."
                 className="font-mono text-[13px] leading-relaxed"
@@ -333,11 +343,24 @@ export default function PostDetail({
             </Part>
 
             {/* 3) copy */}
-            <Part icon={<Type size={15} />} n={3} label="Copy / Caption" color="text-brand-700 bg-brand-50">
+            <Part
+              icon={<Type size={15} />}
+              n={3}
+              label="Copy / Caption"
+              color="text-brand-700 bg-brand-50"
+              accion={
+                <BotonCopiar
+                  texto={copyParaPegar(draft)}
+                  etiqueta="Copiar"
+                  onError={setAvisoDeCopia}
+                />
+              }
+            >
               <Campo
                 readOnly={readOnly}
                 value={draft.copy}
                 onChange={(copy) => set({ copy })}
+                nombre="Copy"
                 rows={4}
                 placeholder="El texto que acompaña la publicación."
               />
@@ -367,6 +390,11 @@ export default function PostDetail({
                 onChange={(hashtags) => set({ hashtags })}
                 readOnly={readOnly}
               />
+              {avisoDeCopia && (
+                <p className="mt-2 rounded-lg bg-butter-50 p-2 text-xs text-ink-600">
+                  {avisoDeCopia}
+                </p>
+              )}
             </Part>
 
             {/* resultado final */}
@@ -686,12 +714,15 @@ function Part({
   n,
   label,
   color,
+  accion,
   children,
 }: {
   icon: React.ReactNode;
   n: number;
   label: string;
   color: string;
+  /** Botón al final del encabezado, para lo que se hace con esta parte. */
+  accion?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -701,6 +732,7 @@ function Part({
           {icon}
         </span>
         <span className="text-ink-400">{n}.</span> {label}
+        {accion && <span className="ml-auto">{accion}</span>}
       </div>
       {children}
     </div>

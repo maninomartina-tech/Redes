@@ -1,8 +1,6 @@
 import {
   AlertTriangle,
-  Check,
   CheckCircle2,
-  Clipboard,
   Download,
   ExternalLink,
   ImageOff,
@@ -16,6 +14,8 @@ import { fmt, isSameDay } from '@/lib/date';
 import { typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, Modal, SectionTitle } from '@/components/ui';
+import BotonCopiar from '@/components/BotonCopiar';
+import { copyParaPegar } from '@/lib/texto';
 
 /** Todo lo que hay que tener en el teléfono para subirlo a mano. */
 const archivosParaBajar = (p: Post) =>
@@ -33,17 +33,11 @@ const archivosParaBajar = (p: Post) =>
 /** Lo que está listo para subir: aprobado o ya agendado, y todavía sin salir. */
 const pendiente = (p: Post) => p.status === 'aprobado' || p.status === 'programado';
 
-function textoParaPegar(p: Post): string {
-  const tags = p.hashtags.length ? `\n\n${p.hashtags.map((h) => `#${h}`).join(' ')}` : '';
-  return `${p.copy}${tags}`.trim();
-}
-
 export default function ToPublish() {
   const client = useCurrentClient();
   const posts = useStore((s) => s.posts);
 
   const [publicando, setPublicando] = useState<Post | null>(null);
-  const [copiado, setCopiado] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
   const grupos = useMemo(() => {
@@ -69,16 +63,6 @@ export default function ToPublish() {
 
   const total =
     grupos.atrasados.length + grupos.hoy.length + grupos.proximos.length + grupos.despues.length;
-
-  const copiar = async (p: Post) => {
-    try {
-      await navigator.clipboard.writeText(textoParaPegar(p));
-      setCopiado(p.id);
-      setTimeout(() => setCopiado(null), 2000);
-    } catch {
-      setAviso('No se pudo copiar. Abrí el contenido y copialo desde ahí.');
-    }
-  };
 
   /**
    * Baja todo lo que hay que subir a mano: las imágenes del carrusel en orden,
@@ -132,10 +116,12 @@ export default function ToPublish() {
           )}
 
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <button className="btn-outline !py-1 text-[11px]" onClick={() => copiar(p)}>
-              {copiado === p.id ? <Check size={13} /> : <Clipboard size={13} />}
-              {copiado === p.id ? 'Copiado' : 'Copiar copy'}
-            </button>
+            <BotonCopiar
+              texto={copyParaPegar(p)}
+              etiqueta="Copiar copy"
+              className="btn-outline !py-1 text-[11px]"
+              onError={setAviso}
+            />
             <button
               className="btn-outline !py-1 text-[11px]"
               onClick={() => bajar(p)}
