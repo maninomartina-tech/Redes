@@ -29,7 +29,7 @@ db.exec(`
     id            TEXT PRIMARY KEY,
     nombre        TEXT NOT NULL,
     tipo          TEXT NOT NULL,      -- mime
-    ruta          TEXT NOT NULL,      -- ruta en disco
+    ruta          TEXT NOT NULL,      -- ruta en disco ('' si está en la nube)
     tamano        INTEGER NOT NULL,
     creado_en     TEXT NOT NULL
   );
@@ -81,6 +81,19 @@ db.exec(`
     ultimo_arranque TEXT NOT NULL
   );
 `);
+
+/**
+ * Columnas que se agregaron después.
+ *
+ * `CREATE TABLE IF NOT EXISTS` no toca una tabla que ya existe, así que en una
+ * base en uso las nuevas columnas hay que sumarlas a mano.
+ */
+for (const [tabla, columna, tipo] of [['archivos', 'url_externa', 'TEXT']]) {
+  const tiene = db
+    .prepare(`SELECT COUNT(*) n FROM pragma_table_info(?) WHERE name = ?`)
+    .get(tabla, columna).n;
+  if (!tiene) db.exec(`ALTER TABLE ${tabla} ADD COLUMN ${columna} ${tipo}`);
+}
 
 export const ahora = () => new Date().toISOString();
 

@@ -6,6 +6,7 @@ import {
   createReadStream,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   renameSync,
   rmSync,
@@ -39,6 +40,7 @@ import {
 } from './meta.js';
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { cambiarEstadoDeCampana, cambiarPresupuestoDiario } from './ads.js';
+import { faltaDominioPublico, hayNube, subirALaNube } from './nube.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
 import { hayIA, redactar } from './ia.js';
 import {
@@ -118,27 +120,61 @@ const subida = multer({
   limits: { fileSize: TOPE_ARCHIVO },
 });
 
-/** Deja anotado el archivo y devuelve con qué dirección se lo va a mirar. */
-function registrarArchivo({ id, nombre, tipo, ruta, tamano }) {
+/**
+ * Deja anotado el archivo y devuelve con qué dirección se lo va a mirar.
+ *
+ * La dirección es siempre la nuestra, aunque el archivo esté en la nube: así
+ * las piezas ya cargadas siguen abriendo si algún día se cambia de
+ * almacenamiento, y del otro lado nadie tiene que enterarse de dónde vive cada
+ * archivo.
+ */
+function registrarArchivo({ id, nombre, tipo, ruta, tamano, urlExterna }) {
   db.prepare(
-    `INSERT INTO archivos (id, nombre, tipo, ruta, tamano, creado_en)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, nombre, tipo, ruta, tamano, ahora());
+    `INSERT INTO archivos (id, nombre, tipo, ruta, tamano, creado_en, url_externa)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).run(id, nombre, tipo, ruta, tamano, ahora(), urlExterna ?? null);
   return { id, url: `${publicUrl()}/archivos/${id}` };
 }
 
-app.post('/api/media', soloCreadora, subida.single('archivo'), (req, res) => {
+/**
+ * Guarda el archivo donde corresponda: la nube si está configurada, el disco
+ * si no. Devuelve lo que hay que anotar.
+ *
+ * Si la nube falla, **no** se cae al disco en silencio: el disco es de 1 GB y
+ * llenarlo sin que nadie se entere es peor que fallar a la vista.
+ */
+async function guardarArchivo({ id, nombre, tipo, tamano, contenido }) {
+  if (!hayNube()) {
+    const destino = resolve(dirArchivos, id);
+    if (contenido.ruta && contenido.ruta !== destino) renameSync(contenido.ruta, destino);
+    else if (contenido.buffer) writeFileSync(destino, contenido.buffer);
+    return registrarArchivo({ id, nombre, tipo, ruta: destino, tamano });
+  }
+
+  const cuerpo = contenido.buffer ?? readFileSync(contenido.ruta);
+  const urlExterna = await subirALaNube({ clave: id, cuerpo, tipo });
+  if (contenido.ruta) rmSync(contenido.ruta, { force: true });
+
+  return registrarArchivo({ id, nombre, tipo, ruta: '', tamano, urlExterna });
+}
+
+app.post('/api/media', soloCreadora, subida.single('archivo'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Falta el archivo.' });
 
-  res.json(
-    registrarArchivo({
-      id: req.file.filename,
-      nombre: req.file.originalname,
-      tipo: req.file.mimetype,
-      ruta: req.file.path,
-      tamano: req.file.size,
-    })
-  );
+  try {
+    res.json(
+      await guardarArchivo({
+        id: req.file.filename,
+        nombre: req.file.originalname,
+        tipo: req.file.mimetype,
+        tamano: req.file.size,
+        contenido: { ruta: req.file.path },
+      })
+    );
+  } catch (e) {
+    rmSync(req.file.path, { force: true });
+    res.status(502).json({ error: e.message });
+  }
 });
 
 /* ------------------------ subida en pedazos ------------------------------
@@ -228,7 +264,7 @@ app.post('/api/media/parte', soloCreadora, pedazos.single('parte'), (req, res) =
   res.json({ recibido: enCurso.recibido });
 });
 
-app.post('/api/media/terminar', soloCreadora, (req, res) => {
+app.post('/api/media/terminar', soloCreadora, async (req, res) => {
   const { subida: subidaId } = req.body ?? {};
 
   if (!esIdDeSubida(subidaId)) return res.status(400).json({ error: 'Subida inválida.' });
@@ -242,19 +278,22 @@ app.post('/api/media/terminar', soloCreadora, (req, res) => {
   }
 
   const id = `${uid('ar')}${extname(enCurso.nombre)}`;
-  const destino = resolve(dirArchivos, id);
-  renameSync(rutaParcial(subidaId), destino);
   subidasEnCurso.delete(subidaId);
 
-  res.json(
-    registrarArchivo({
-      id,
-      nombre: enCurso.nombre,
-      tipo: enCurso.tipo,
-      ruta: destino,
-      tamano: enCurso.tamano,
-    })
-  );
+  try {
+    res.json(
+      await guardarArchivo({
+        id,
+        nombre: enCurso.nombre,
+        tipo: enCurso.tipo,
+        tamano: enCurso.tamano,
+        contenido: { ruta: rutaParcial(subidaId) },
+      })
+    );
+  } catch (e) {
+    rmSync(rutaParcial(subidaId), { force: true });
+    res.status(502).json({ error: e.message });
+  }
 });
 
 /**
@@ -300,7 +339,13 @@ if (process.env.NODE_ENV !== 'test') {
  */
 app.get('/archivos/:id', (req, res) => {
   const archivo = db.prepare('SELECT * FROM archivos WHERE id = ?').get(req.params.id);
-  if (!archivo || !existsSync(archivo.ruta)) return res.sendStatus(404);
+  if (!archivo) return res.sendStatus(404);
+
+  // Guardado en la nube: se manda para allá. La dirección sigue siendo la
+  // nuestra, así que las piezas ya cargadas abren igual.
+  if (archivo.url_externa) return res.redirect(302, archivo.url_externa);
+
+  if (!existsSync(archivo.ruta)) return res.sendStatus(404);
 
   const total = statSync(archivo.ruta).size;
 
@@ -975,6 +1020,8 @@ app.get('/api/salud', (_req, res) => {
      * sigue siendo la fecha vieja y `arranques` subió, los datos sobrevivieron.
      */
     almacenamiento: {
+      // Dónde van los archivos: la nube si está configurada, el disco si no.
+      archivos: hayNube() ? 'nube' : 'disco',
       carpeta: carpetaDeDatos,
       desde: inst.creada_en,
       arranques: inst.arranques,
@@ -1006,6 +1053,13 @@ if (process.env.NODE_ENV !== 'test') {
           '  las piezas subidas y los links de tus clientes desaparecen sin aviso.\n' +
           '  Solución: montá un disco y definí DB_PATH y FILES_PATH apuntando adentro\n' +
           '  (por ejemplo /datos/demm.db y /datos/archivos). Ver render.yaml.'
+      );
+    }
+    if (faltaDominioPublico()) {
+      console.warn(
+        '⚠ La nube está configurada pero falta R2_PUBLIC_URL.\n' +
+          '  Los archivos se van a guardar bien, pero nadie va a poder abrirlos:\n' +
+          '  hace falta el dominio público del bucket.'
       );
     }
     if (!hayClave()) {

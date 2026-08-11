@@ -64,6 +64,20 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
 
+      # Guardar los archivos en la nube en vez de en el disco de acá arriba.
+      # Con las cinco cargadas, todo lo nuevo va ahí y el disco deja de ser el
+      # límite. Vacías, se sigue usando el disco. Ver DESPLIEGUE.md.
+      - key: R2_ENDPOINT
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
+
       # Solo lectura: trae el feed y las métricas, no publica.
       # Empezar así evita el trámite de aprobación de Meta para publicar.
       # Cuando quieras la publicación automática, poné false.

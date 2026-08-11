@@ -165,12 +165,42 @@ y el servidor lo vuelve a armar. Es lo que permite subir un reel entero desde
 el celular sin que lo corte un intermediario ni se pierda todo si la conexión
 se cae a la mitad — el pedazo que falla se reintenta solo.
 
-El máximo por archivo son **500 MB**. Ojo con el disco: es de 1 GB **para
-todo**, así que unos pocos videos pesados lo llenan. En Render, pestaña
-*Metrics*, se ve cuánto queda.
+El máximo por archivo son **500 MB**. Las imágenes se achican solas antes de
+subirse (1600 px de lado mayor), así que no son un problema.
 
-Las imágenes se achican solas antes de subirse (1600 px de lado mayor), así que
-no son un problema.
+### Dónde se guardan: el disco o la nube
+
+Por defecto van al disco del servidor, que es de 1 GB **para todo**: unos pocos
+videos lo llenan, y cuando se llena el cliente deja de ver las piezas. En
+Render, pestaña *Metrics*, se ve cuánto queda.
+
+Para no depender de eso, los archivos pueden ir a un almacenamiento de objetos.
+Está pensado para **Cloudflare R2** —que no cobra por lo que se descarga, y en
+videos eso es lo que más pesa— pero sirve cualquiera que hable el idioma de S3.
+
+En Cloudflare: **R2 → Create bucket**, después **Manage API tokens → Create API
+token** con permiso de lectura y escritura, y en el bucket **Settings → Public
+access** para tener un dominio público. Con eso, en el servidor:
+
+```
+R2_ENDPOINT          = https://<tu-cuenta>.r2.cloudflarestorage.com
+R2_BUCKET            = demm-archivos
+R2_ACCESS_KEY_ID     = ...
+R2_SECRET_ACCESS_KEY = ...
+R2_PUBLIC_URL        = https://<dominio-publico-del-bucket>
+```
+
+Apenas están las cinco, todo lo que se suba va ahí. Se comprueba en
+`/api/salud`: `almacenamiento.archivos` dice `"nube"` o `"disco"`.
+
+Dos cosas que conviene saber:
+
+- **La dirección de las piezas no cambia.** Siguen siendo
+  `tu-servidor/archivos/<id>`, y el servidor redirige a la nube. Así lo ya
+  cargado sigue abriendo, y si algún día se cambia de almacenamiento tampoco se
+  rompe nada.
+- **Lo viejo no se muda solo.** Lo que ya está en el disco se sigue sirviendo
+  desde el disco; solo lo nuevo va a la nube.
 
 ### Cómo se protege la conexión
 
