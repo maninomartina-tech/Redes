@@ -158,6 +158,20 @@ cuál es su cuenta de Instagram y cuál su cuenta publicitaria.
 > alcanza. Recién si algún día un cliente tuviera que entrar con su propio
 > Facebook haría falta la revisión de Meta.
 
+### Archivos grandes
+
+Los videos se suben **en pedazos**: la app parte el archivo, manda uno por vez
+y el servidor lo vuelve a armar. Es lo que permite subir un reel entero desde
+el celular sin que lo corte un intermediario ni se pierda todo si la conexión
+se cae a la mitad — el pedazo que falla se reintenta solo.
+
+El máximo por archivo son **500 MB**. Ojo con el disco: es de 1 GB **para
+todo**, así que unos pocos videos pesados lo llenan. En Render, pestaña
+*Metrics*, se ve cuánto queda.
+
+Las imágenes se achican solas antes de subirse (1600 px de lado mayor), así que
+no son un problema.
+
 ### Cómo se protege la conexión
 
 El servidor está publicado en internet, así que la ruta que arranca el login de

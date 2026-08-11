@@ -1,7 +1,17 @@
 import 'dotenv/config';
 import express from 'express';
 import multer from 'multer';
-import { createReadStream, existsSync, mkdirSync, statSync } from 'node:fs';
+import {
+  appendFileSync,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { extname, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -78,25 +88,205 @@ app.use((req, res, next) => {
 
 /* ------------------------------- archivos ------------------------------- */
 
+/**
+ * Cuánto puede pesar una pieza entera.
+ *
+ * Un reel largo bien exportado ronda los 100 MB. El techo está más arriba para
+ * no pelearse con un archivo puntual, pero no es infinito: del otro lado hay
+ * un disco de 1 GB para todo.
+ */
+const TOPE_ARCHIVO = 500 * 1024 * 1024;
+
+/**
+ * El pedazo que se le pide al navegador, y el máximo que se acepta.
+ *
+ * No son el mismo número a propósito: al pedazo se le suman los bordes del
+ * formulario, y multer corta apenas se toca el límite —no cuando se pasa—. Con
+ * el tope justo, un pedazo del tamaño pedido se rechaza siempre.
+ */
+const PEDAZO_SUGERIDO = 8 * 1024 * 1024;
+const TOPE_PEDAZO = 12 * 1024 * 1024;
+
+const dirParciales = resolve(dirArchivos, '.parciales');
+mkdirSync(dirParciales, { recursive: true });
+
 const subida = multer({
   storage: multer.diskStorage({
     destination: dirArchivos,
     filename: (_req, file, cb) => cb(null, `${uid('ar')}${extname(file.originalname)}`),
   }),
-  limits: { fileSize: 200 * 1024 * 1024 },
+  limits: { fileSize: TOPE_ARCHIVO },
 });
 
-app.post('/api/media', subida.single('archivo'), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Falta el archivo.' });
-
-  const id = req.file.filename;
+/** Deja anotado el archivo y devuelve con qué dirección se lo va a mirar. */
+function registrarArchivo({ id, nombre, tipo, ruta, tamano }) {
   db.prepare(
     `INSERT INTO archivos (id, nombre, tipo, ruta, tamano, creado_en)
      VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(id, req.file.originalname, req.file.mimetype, req.file.path, req.file.size, ahora());
+  ).run(id, nombre, tipo, ruta, tamano, ahora());
+  return { id, url: `${publicUrl()}/archivos/${id}` };
+}
 
-  res.json({ id, url: `${publicUrl()}/archivos/${id}` });
+app.post('/api/media', soloCreadora, subida.single('archivo'), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Falta el archivo.' });
+
+  res.json(
+    registrarArchivo({
+      id: req.file.filename,
+      nombre: req.file.originalname,
+      tipo: req.file.mimetype,
+      ruta: req.file.path,
+      tamano: req.file.size,
+    })
+  );
 });
+
+/* ------------------------ subida en pedazos ------------------------------
+ *
+ * Un video no entra en un solo pedido. Aunque el servidor lo aceptara, en el
+ * camino hay intermediarios que cortan los pedidos grandes y conexiones de
+ * celular que se caen a la mitad: media hora de subida perdida por un
+ * semáforo. Partido en pedazos, cada uno viaja rápido, el que falla se
+ * reintenta solo, y se puede mostrar cuánto falta.
+ * ------------------------------------------------------------------------ */
+
+const pedazos = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: TOPE_PEDAZO },
+});
+
+/** Lo que se está subiendo ahora. Vive en memoria: dura lo que dura la subida. */
+const subidasEnCurso = new Map();
+
+/** Ids de subida propios, para que nadie escriba fuera de su archivo. */
+const esIdDeSubida = (v) => /^sub_[a-z0-9]{6,40}$/.test(String(v ?? ''));
+const rutaParcial = (subidaId) => resolve(dirParciales, subidaId);
+
+app.post('/api/media/iniciar', soloCreadora, (req, res) => {
+  const { nombre, tipo, tamano } = req.body ?? {};
+
+  if (!Number.isFinite(Number(tamano)) || Number(tamano) <= 0) {
+    return res.status(400).json({ error: 'Falta saber cuánto pesa el archivo.' });
+  }
+  if (Number(tamano) > TOPE_ARCHIVO) {
+    return res.status(413).json({
+      error:
+        `El archivo pesa ${Math.round(Number(tamano) / 1024 / 1024)} MB y el máximo es ` +
+        `${Math.round(TOPE_ARCHIVO / 1024 / 1024)} MB. Exportalo más liviano: para Instagram ` +
+        'no hace falta más.',
+    });
+  }
+
+  const id = uid('sub');
+  writeFileSync(rutaParcial(id), Buffer.alloc(0));
+  subidasEnCurso.set(id, {
+    nombre: String(nombre ?? 'archivo'),
+    tipo: String(tipo ?? 'application/octet-stream'),
+    tamano: Number(tamano),
+    recibido: 0,
+    tocada: Date.now(),
+  });
+
+  res.json({ subida: id, pedazo: PEDAZO_SUGERIDO });
+});
+
+app.post('/api/media/parte', soloCreadora, pedazos.single('parte'), (req, res) => {
+  const { subida: subidaId, desde } = req.body ?? {};
+
+  if (!esIdDeSubida(subidaId)) return res.status(400).json({ error: 'Subida inválida.' });
+  const enCurso = subidasEnCurso.get(subidaId);
+  if (!enCurso) {
+    return res.status(409).json({
+      error: 'Esta subida se cortó. Volvé a elegir el archivo.',
+    });
+  }
+  if (!req.file) return res.status(400).json({ error: 'Falta el pedazo.' });
+
+  // Los pedazos van en orden y no se pisan: si se repite uno —porque se
+  // reintentó y el primero sí había llegado— se responde con lo que hay, sin
+  // escribirlo dos veces.
+  const desdeN = Number(desde);
+  if (desdeN === enCurso.recibido - req.file.size) {
+    return res.json({ recibido: enCurso.recibido });
+  }
+  if (desdeN !== enCurso.recibido) {
+    return res.status(409).json({
+      error: 'Los pedazos llegaron desordenados.',
+      recibido: enCurso.recibido,
+    });
+  }
+  if (enCurso.recibido + req.file.size > TOPE_ARCHIVO) {
+    subidasEnCurso.delete(subidaId);
+    rmSync(rutaParcial(subidaId), { force: true });
+    return res.status(413).json({ error: 'El archivo es más grande de lo declarado.' });
+  }
+
+  appendFileSync(rutaParcial(subidaId), req.file.buffer);
+  enCurso.recibido += req.file.size;
+  enCurso.tocada = Date.now();
+
+  res.json({ recibido: enCurso.recibido });
+});
+
+app.post('/api/media/terminar', soloCreadora, (req, res) => {
+  const { subida: subidaId } = req.body ?? {};
+
+  if (!esIdDeSubida(subidaId)) return res.status(400).json({ error: 'Subida inválida.' });
+  const enCurso = subidasEnCurso.get(subidaId);
+  if (!enCurso) return res.status(409).json({ error: 'Esta subida se cortó.' });
+
+  if (enCurso.recibido !== enCurso.tamano) {
+    return res.status(400).json({
+      error: `Llegaron ${enCurso.recibido} bytes de ${enCurso.tamano}. Probá de nuevo.`,
+    });
+  }
+
+  const id = `${uid('ar')}${extname(enCurso.nombre)}`;
+  const destino = resolve(dirArchivos, id);
+  renameSync(rutaParcial(subidaId), destino);
+  subidasEnCurso.delete(subidaId);
+
+  res.json(
+    registrarArchivo({
+      id,
+      nombre: enCurso.nombre,
+      tipo: enCurso.tipo,
+      ruta: destino,
+      tamano: enCurso.tamano,
+    })
+  );
+});
+
+/**
+ * Barre lo que quedó a medio subir.
+ *
+ * Una subida que se corta deja un archivo parcial que nadie va a reclamar. Sin
+ * esto, el disco se llena de restos —y el disco es lo que hace que el cliente
+ * vea las piezas.
+ */
+const VIDA_DE_UNA_SUBIDA = 60 * 60 * 1000;
+
+function limpiarSubidasAbandonadas() {
+  for (const [id, sub] of subidasEnCurso) {
+    if (Date.now() - sub.tocada > VIDA_DE_UNA_SUBIDA) {
+      subidasEnCurso.delete(id);
+      rmSync(rutaParcial(id), { force: true });
+    }
+  }
+  // Y lo que haya quedado de un reinicio anterior, que ya no está en memoria.
+  for (const nombre of readdirSync(dirParciales)) {
+    const ruta = resolve(dirParciales, nombre);
+    try {
+      if (Date.now() - statSync(ruta).mtimeMs > VIDA_DE_UNA_SUBIDA) rmSync(ruta, { force: true });
+    } catch {
+      /* si ya no está, mejor */
+    }
+  }
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(limpiarSubidasAbandonadas, 15 * 60 * 1000).unref();
+}
 
 // Meta descarga las piezas desde acá, por eso es público y sin autenticación.
 /**
@@ -139,6 +329,26 @@ app.get('/archivos/:id', (req, res) => {
   res.setHeader('Content-Range', `bytes ${desde}-${hasta}/${total}`);
   res.setHeader('Content-Length', hasta - desde + 1);
   createReadStream(archivo.ruta, { start: desde, end: hasta }).pipe(res);
+});
+
+/**
+ * Los errores de subida, dichos con palabras.
+ *
+ * Sin esto, multer los deja llegar al manejador por defecto de Express, que
+ * responde un 500 con el stack: del otro lado se ve "el servidor rechazó el
+ * archivo (500)" y no hay forma de saber qué pasó.
+ */
+app.use((err, _req, res, next) => {
+  if (!err || !err.name?.startsWith('Multer')) return next(err);
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      error:
+        `El archivo pasa el máximo de ${Math.round(TOPE_ARCHIVO / 1024 / 1024)} MB. ` +
+        'Exportalo más liviano: para Instagram no hace falta más.',
+    });
+  }
+  res.status(400).json({ error: `No se pudo recibir el archivo (${err.code ?? err.message}).` });
 });
 
 /* ------------------------------ publicaciones ---------------------------- */

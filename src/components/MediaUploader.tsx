@@ -93,22 +93,57 @@ export default function MediaUploader({
   const [encima, setEncima] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Qué se está subiendo y cuánto va, para que un video no parezca colgado. */
+  const [avance, setAvance] = useState<{ nombre: string; parte: number } | null>(null);
 
   const procesar = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setError(null);
     setSubiendo(true);
+
+    const nuevos: MediaRef[] = [];
+    const fallaron: string[] = [];
+
     try {
-      const nuevos: MediaRef[] = [];
       for (const file of Array.from(files)) {
         if (!file.type.startsWith('image') && !file.type.startsWith('video')) {
-          setError(`"${file.name}" no es una imagen ni un video.`);
+          fallaron.push(`"${file.name}" no es una imagen ni un video.`);
           continue;
         }
-        // Se guarda acá (se ve al instante) y se respalda en el servidor, que
-        // es de donde lo va a mirar el cliente desde su propio dispositivo.
-        nuevos.push(await respaldarEnServidor(await saveMedia(file)));
+
+        setAvance({ nombre: file.name, parte: 0 });
+
+        // Primero al navegador, que se ve al instante; después al servidor,
+        // que es de donde lo va a mirar el cliente desde su dispositivo.
+        let guardada: MediaRef;
+        try {
+          guardada = await saveMedia(file);
+        } catch {
+          fallaron.push(
+            `No se pudo guardar "${file.name}" en este dispositivo. ` +
+              'Puede que no quede espacio en el navegador.'
+          );
+          continue;
+        }
+
+        try {
+          nuevos.push(
+            await respaldarEnServidor(guardada, {
+              alProgreso: (parte) => setAvance({ nombre: file.name, parte }),
+            })
+          );
+        } catch (e) {
+          // La copia local sí quedó, pero sin la del servidor el cliente no la
+          // va a ver: se descarta y se dice por qué, en vez de dejar una pieza
+          // que parece cargada y no lo está.
+          void deleteMedia(guardada.id);
+          fallaron.push(
+            `No se pudo subir "${file.name}". ${e instanceof Error ? e.message : ''}`.trim()
+          );
+        }
       }
+
+      if (fallaron.length) setError(fallaron.join(' '));
       if (nuevos.length === 0) return;
 
       if (multiple) {
@@ -118,10 +153,9 @@ export default function MediaUploader({
         value.forEach((m) => deleteMedia(m.id));
         onChange([nuevos[0]]);
       }
-    } catch {
-      setError('No se pudo guardar el archivo. Probá con uno más chico.');
     } finally {
       setSubiendo(false);
+      setAvance(null);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
@@ -215,12 +249,30 @@ export default function MediaUploader({
               </span>
             )}
             <span className="text-xs font-medium text-ink-600">
-              {subiendo ? 'Guardando…' : label}
+              {subiendo ? 'Subiendo…' : label}
             </span>
             <span className="text-[11px] text-ink-400">
               {hint ?? (accept.includes('video') ? 'Imágenes o video' : 'Imágenes')}
             </span>
           </button>
+
+          {/* Un video tarda, y sin esto la pantalla parece colgada. */}
+          {avance && (
+            <div className="px-3 pb-3">
+              <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-ink-500">
+                <span className="truncate">{avance.nombre}</span>
+                <span className="shrink-0 tabular-nums">
+                  {Math.round(avance.parte * 100)}%
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-ink-100">
+                <div
+                  className="h-full rounded-full bg-brand-500 transition-[width] duration-300"
+                  style={{ width: `${Math.max(3, Math.round(avance.parte * 100))}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -244,7 +296,9 @@ export default function MediaUploader({
         onChange={(e) => procesar(e.target.files)}
       />
 
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && (
+        <p className="rounded-lg bg-rose-50 p-2 text-xs leading-snug text-rose-700">{error}</p>
+      )}
     </div>
   );
 }
