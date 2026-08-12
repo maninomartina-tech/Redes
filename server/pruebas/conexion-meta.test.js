@@ -180,3 +180,45 @@ describe('las cuentas publicitarias', () => {
     assert.equal(guardado.expira_en, '2026-12-31T00:00:00.000Z');
   });
 });
+
+describe('lo que hay que copiar en Facebook Developers', () => {
+  // Meta compara la dirección de vuelta carácter por carácter y, si no
+  // coincide, contesta "URL bloqueada" sin decir cuál esperaba. Por eso la app
+  // la muestra para copiar en vez de que ella la escriba: lo que se muestra
+  // tiene que ser exactamente lo que el servidor manda.
+  it('la dirección que muestra la app es la que de verdad se le manda a Meta', async () => {
+    const salud = await (await fetch(`${base}/api/salud`)).json();
+
+    const { pase } = await pedirPase();
+    const destino = new URL((await arrancarLogin(pase)).headers.get('location'));
+
+    assert.equal(
+      salud.redireccionMeta,
+      destino.searchParams.get('redirect_uri'),
+      'si no son iguales, pegar la de la app deja el login roto'
+    );
+    assert.equal(salud.redireccionMeta, 'https://ejemplo.test/api/auth/meta/callback');
+  });
+
+  it('y los permisos que muestra son los que se piden', async () => {
+    const salud = await (await fetch(`${base}/api/salud`)).json();
+
+    const { pase } = await pedirPase();
+    const destino = new URL((await arrancarLogin(pase)).headers.get('location'));
+
+    assert.deepEqual(salud.permisosMeta, destino.searchParams.get('scope').split(','));
+  });
+
+  it('sin dirección pública no inventa una', async () => {
+    // Antes de que la plataforma le asigne dirección no hay nada que copiar, y
+    // mostrar "undefined/api/..." sería peor que no mostrar nada.
+    const guardada = process.env.PUBLIC_URL;
+    process.env.PUBLIC_URL = '';
+    try {
+      const salud = await (await fetch(`${base}/api/salud`)).json();
+      assert.equal(salud.redireccionMeta, null);
+    } finally {
+      process.env.PUBLIC_URL = guardada;
+    }
+  });
+});

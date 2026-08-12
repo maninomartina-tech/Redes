@@ -1004,6 +1004,18 @@ app.get('/api/salud', (_req, res) => {
     ok: true,
     metaConfigurado: Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET),
     urlPublica: publicUrl() || null,
+    /**
+     * La dirección exacta que hay que pegar en Facebook Developers.
+     *
+     * Se calcula sola y se muestra en la app para copiar. No es un dato
+     * secreto —Meta la manda en cada vuelta, a la vista en la barra de
+     * direcciones— y escribirla a mano es el error que más veces frena la
+     * conexión: un carácter distinto y Meta contesta "URL bloqueada".
+     */
+    redireccionMeta: publicUrl() ? `${publicUrl()}/api/auth/meta/callback` : null,
+    /** Los permisos que se le van a pedir, para saber qué habilitar en la app de Meta. */
+    permisosMeta: permisos(),
+    adsAdministrables: adsAdministrables(),
     adsConfigurado: Boolean(process.env.META_AD_ACCOUNT_ID),
     soloLectura: soloLectura(),
     claveDefinida: hayClave(),

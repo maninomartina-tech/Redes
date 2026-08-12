@@ -51,20 +51,29 @@ export interface EstadoServidor {
   conectado: boolean;
   metaConfigurado: boolean;
   urlPublica: string | null;
+  /** La dirección que hay que pegar en Facebook Developers, ya armada. */
+  redireccionMeta: string | null;
+  /** Los permisos que el servidor le va a pedir a Meta. */
+  permisosMeta: string[];
+  /** Si está en true, la app también puede prender, pausar y cambiar campañas. */
+  adsAdministrables: boolean;
   iaConfigurada: boolean;
   cuentasConectadas: number;
 }
 
+const sinServidor: EstadoServidor = {
+  conectado: false,
+  metaConfigurado: false,
+  urlPublica: null,
+  redireccionMeta: null,
+  permisosMeta: [],
+  adsAdministrables: false,
+  iaConfigurada: false,
+  cuentasConectadas: 0,
+};
+
 export async function consultarServidor(): Promise<EstadoServidor> {
-  if (!hayServidor()) {
-    return {
-      conectado: false,
-      metaConfigurado: false,
-      urlPublica: null,
-      iaConfigurada: false,
-      cuentasConectadas: 0,
-    };
-  }
+  if (!hayServidor()) return sinServidor;
   try {
     const res = await fetch(`${API}/api/salud`);
     if (!res.ok) throw new Error('sin respuesta');
@@ -73,17 +82,14 @@ export async function consultarServidor(): Promise<EstadoServidor> {
       conectado: true,
       metaConfigurado: !!d.metaConfigurado,
       urlPublica: d.urlPublica ?? null,
+      redireccionMeta: d.redireccionMeta ?? null,
+      permisosMeta: Array.isArray(d.permisosMeta) ? d.permisosMeta : [],
+      adsAdministrables: !!d.adsAdministrables,
       iaConfigurada: !!d.iaConfigurada,
       cuentasConectadas: d.cuentasConectadas ?? 0,
     };
   } catch {
-    return {
-      conectado: false,
-      metaConfigurado: false,
-      urlPublica: null,
-      iaConfigurada: false,
-      cuentasConectadas: 0,
-    };
+    return sinServidor;
   }
 }
 

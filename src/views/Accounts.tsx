@@ -25,6 +25,7 @@ import {
   type EstadoServidor,
 } from '@/lib/publish';
 import { Avatar, Modal, SectionTitle, Toggle } from '@/components/ui';
+import BotonCopiar from '@/components/BotonCopiar';
 import ClientForm from '@/components/ClientForm';
 import Backup from '@/components/Backup';
 
@@ -380,6 +381,8 @@ function EstadoDelServidor({
         </div>
       </div>
 
+      <ParaPegarEnMeta estado={estado} />
+
       {faltantes.length > 0 && (
         <div className="flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
           <TriangleAlert className="mt-0.5 shrink-0 text-butter-600" size={20} />
@@ -414,5 +417,71 @@ function EstadoDelServidor({
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * Lo que hay que cargar del otro lado, en developers.facebook.com.
+ *
+ * La dirección de vuelta la arma el servidor con su propia dirección pública,
+ * así que acá no se adivina: se muestra la que de verdad va a usar. Escribirla
+ * a mano es lo que más veces frena la conexión —Meta compara carácter por
+ * carácter y contesta "URL bloqueada" sin decir cuál esperaba—, y por eso está
+ * para copiar y no para leer.
+ */
+function ParaPegarEnMeta({ estado }: { estado: EstadoServidor }) {
+  const [error, setError] = useState<string | null>(null);
+  if (!estado.redireccionMeta) return null;
+
+  return (
+    <details
+      // Mientras no haya ninguna cuenta, esto es justo lo que está buscando.
+      open={estado.cuentasConectadas === 0}
+      className="rounded-xl border border-ink-200/70 bg-surface p-4 text-sm"
+    >
+      <summary className="cursor-pointer font-semibold text-ink-800">
+        Lo que hay que cargar en Facebook Developers
+      </summary>
+
+      <p className="mt-2 text-ink-600">
+        En tu app de Meta, en <b>Inicio de sesión con Facebook → Configuración</b>, pegá
+        esto en <b>URI de redireccionamiento de OAuth válidos</b>:
+      </p>
+      <div className="mt-1.5 flex items-center gap-2">
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-lg bg-ink-100 px-2 py-1.5 text-xs text-ink-700">
+          {estado.redireccionMeta}
+        </code>
+        <BotonCopiar
+          texto={estado.redireccionMeta}
+          etiqueta="Copiar"
+          className="btn-ghost shrink-0 !py-1.5 text-xs"
+          onError={setError}
+        />
+      </div>
+      <p className="mt-1 text-xs text-ink-500">
+        Tiene que quedar igual, sin barra al final. Si no coincide, Meta muestra «URL
+        bloqueada» al abrir el login.
+      </p>
+
+      <p className="mt-3 text-ink-600">
+        Y estos son los permisos que se le piden. Los cubre el <b>caso de uso de
+        Instagram</b>; los de <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">ads</code>{' '}
+        salen del de anuncios.
+      </p>
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+        {estado.permisosMeta.map((p) => (
+          <li key={p} className="chip bg-ink-100 font-mono text-[11px] text-ink-600">
+            {p}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-xs leading-snug text-ink-500">
+        {estado.adsAdministrables
+          ? 'Con ads_management la app también puede prender, pausar y cambiar el presupuesto de las campañas.'
+          : 'Para además prender, pausar y cambiar campañas desde acá, poné META_ADS_ESCRITURA = true en el servidor.'}
+      </p>
+
+      {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
+    </details>
   );
 }

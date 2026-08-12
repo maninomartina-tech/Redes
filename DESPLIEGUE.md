@@ -135,14 +135,15 @@ quedan colgando de tu propio usuario. Con un solo login se conectan todas.
 
 En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
 
-1. **Facebook Login → Settings → Valid OAuth Redirect URIs**, agregá:
-   ```
-   https://tu-servidor.onrender.com/api/auth/meta/callback
-   ```
-   Tiene que ser exactamente eso. Si no está, el botón de vincular no funciona.
-2. Agregá el **caso de uso de Instagram**. Los permisos que pide el servidor
-   salen de `permisos()` en `server/src/config.js`; el enlace de conexión los
-   arma solo, no hay que copiarlos a mano en ningún lado.
+1. **Inicio de sesión con Facebook → Configuración → URI de redireccionamiento de
+   OAuth válidos**: pegá la dirección que figura en la app, en **Cuentas → «Lo
+   que hay que cargar en Facebook Developers»**, con el botón de copiar. Es
+   `https://tu-servidor.onrender.com/api/auth/meta/callback`, pero no la
+   escribas a mano: Meta la compara carácter por carácter y, si no coincide,
+   contesta *«URL bloqueada»* sin decir cuál esperaba.
+2. Agregá el **caso de uso de Instagram**. Los permisos que se piden están en esa
+   misma tarjeta de la app; el enlace de conexión los arma solo, no hay que
+   copiarlos a mano en ningún lado.
 3. Copiá **META_APP_ID** y **META_APP_SECRET** (Configuración → Básica) a las
    variables del servidor.
 4. Cada cuenta de Instagram tiene que ser **Business o Creator** y estar
