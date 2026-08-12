@@ -34,6 +34,7 @@ function Pieza({
   arrastrable,
   arrastrando,
   destacar,
+  cuenta,
 }: {
   post: Post;
   onOpen: () => void;
@@ -43,6 +44,8 @@ function Pieza({
   arrastrando: boolean;
   /** Diferenciar posteos de historias, porque se están viendo mezclados. */
   destacar: boolean;
+  /** De qué cuenta es. Solo cuando el calendario mezcla varias. */
+  cuenta?: { name: string; color: string };
 }) {
   const pendientes = post.comments.filter((c) => !c.resolved).length;
 
@@ -106,6 +109,18 @@ function Pieza({
           />
         )}
       </div>
+      {/* Con varias cuentas mezcladas, de quién es importa tanto como qué es. */}
+      {cuenta && (
+        <div className="mt-0.5 flex min-w-0 items-center gap-1">
+          <span
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{ background: cuenta.color }}
+          />
+          <span className="min-w-0 truncate text-[10px] font-semibold text-ink-500">
+            {cuenta.name}
+          </span>
+        </div>
+      )}
       <div className="mt-0.5 flex min-w-0 items-baseline gap-1">
         <span className="shrink-0 text-[11px]">{typeEmoji[post.type]}</span>
         <span
@@ -127,6 +142,7 @@ export default function PlanCalendar({
   onMove,
   soloLectura = false,
   destacarPosteos = false,
+  cuentaDe,
 }: {
   posts: Post[];
   onOpen: (id: string) => void;
@@ -136,6 +152,8 @@ export default function PlanCalendar({
   soloLectura?: boolean;
   /** Con posteos e historias mezclados, distinguirlos a simple vista. */
   destacarPosteos?: boolean;
+  /** De qué cuenta es cada pieza, cuando el calendario mezcla varias. */
+  cuentaDe?: (post: Post) => { name: string; color: string } | undefined;
 }) {
   const [ancla, setAncla] = useState(() => startOfMonth(new Date()));
   const [arrastrando, setArrastrando] = useState<string | null>(null);
@@ -283,6 +301,7 @@ export default function PlanCalendar({
                       post={p}
                       onOpen={() => onOpen(p.id)}
                       destacar={destacarPosteos}
+                      cuenta={cuentaDe?.(p)}
                       arrastrable={arrastrable}
                       arrastrando={arrastrando === p.id}
                       onDragStart={() => setArrastrando(p.id)}
@@ -335,6 +354,7 @@ export default function PlanCalendar({
                   post={p}
                   onOpen={() => onOpen(p.id)}
                   destacar={destacarPosteos}
+                  cuenta={cuentaDe?.(p)}
                   arrastrable={false}
                   arrastrando={false}
                 />

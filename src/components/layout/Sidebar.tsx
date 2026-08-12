@@ -4,6 +4,7 @@ import {
   Grid3x3,
   Hash,
   LayoutDashboard,
+  LayoutGrid,
   Lightbulb,
   Link2,
   Megaphone,
@@ -33,7 +34,12 @@ export interface NavGroup {
 }
 
 export const creadoraNav: NavGroup[] = [
-  { items: [{ to: '/panel', label: 'Panel general', icon: LayoutDashboard }] },
+  {
+    items: [
+      { to: '/general', label: 'Todos los clientes', icon: LayoutGrid },
+      { to: '/panel', label: 'Panel general', icon: LayoutDashboard },
+    ],
+  },
   {
     title: 'Contenido',
     items: [
