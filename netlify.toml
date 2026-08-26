@@ -22,6 +22,23 @@
   # desplegar para que tenga efecto.
   VITE_API_URL = "https://demm-server.onrender.com"
 
+# Las dos páginas que Meta exige para autorizar la app: la política de
+# privacidad y las instrucciones para borrar los datos.
+#
+# Van antes del comodín de abajo a propósito: las reglas se leen en orden y la
+# última manda todo a la app. Son direcciones que se pegan en Facebook
+# Developers y que Meta va a visitar sola, así que conviene que no dependan de
+# en qué orden termine resolviendo el hosting.
+[[redirects]]
+  from = "/privacidad"
+  to = "/privacidad/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/eliminar-datos"
+  to = "/eliminar-datos/index.html"
+  status = 200
+
 # La app usa rutas con # así que no hace falta reescribir nada, pero esto deja
 # cubierto cualquier acceso directo a una ruta.
 [[redirects]]

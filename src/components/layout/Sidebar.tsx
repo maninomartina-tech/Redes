@@ -154,6 +154,18 @@ export default function Sidebar() {
         </p>
         <p className="mt-1 text-[13px] leading-snug text-ink-600">{pie.texto}</p>
       </div>
+
+      {/* Una política de privacidad que no se puede encontrar desde la app no
+          sirve de mucho, y el cliente entra por acá. */}
+      <p className="mb-3 px-4 text-[11px] text-ink-400">
+        <a href="/privacidad" target="_blank" rel="noreferrer" className="hover:text-ink-600">
+          Privacidad
+        </a>
+        {' · '}
+        <a href="/eliminar-datos" target="_blank" rel="noreferrer" className="hover:text-ink-600">
+          Eliminar mis datos
+        </a>
+      </p>
     </aside>
   );
 }

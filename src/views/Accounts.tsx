@@ -464,6 +464,21 @@ function ParaPegarEnMeta({ estado }: { estado: EstadoServidor }) {
       </p>
 
       <p className="mt-3 text-ink-600">
+        En <b>Configuración → Básica</b> van estas dos, que Meta exige para autorizar la
+        app:
+      </p>
+      <Direccion
+        etiqueta="URL de la política de privacidad"
+        url={`${window.location.origin}/privacidad`}
+        onError={setError}
+      />
+      <Direccion
+        etiqueta="URL de instrucciones de eliminación de datos"
+        url={`${window.location.origin}/eliminar-datos`}
+        onError={setError}
+      />
+
+      <p className="mt-3 text-ink-600">
         Y estos son los permisos que se le piden. Los cubre el <b>caso de uso de
         Instagram</b>; los de <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">ads</code>{' '}
         salen del de anuncios.
@@ -483,5 +498,33 @@ function ParaPegarEnMeta({ estado }: { estado: EstadoServidor }) {
 
       {error && <p className="mt-2 text-xs text-rose-700">{error}</p>}
     </details>
+  );
+}
+
+/** Una dirección larga para copiar y pegar del otro lado. */
+function Direccion({
+  etiqueta,
+  url,
+  onError,
+}: {
+  etiqueta: string;
+  url: string;
+  onError: (m: string) => void;
+}) {
+  return (
+    <div className="mt-1.5">
+      <p className="text-xs text-ink-500">{etiqueta}</p>
+      <div className="mt-0.5 flex items-center gap-2">
+        <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap rounded-lg bg-ink-100 px-2 py-1.5 text-xs text-ink-700">
+          {url}
+        </code>
+        <BotonCopiar
+          texto={url}
+          etiqueta="Copiar"
+          className="btn-ghost shrink-0 !py-1.5 text-xs"
+          onError={onError}
+        />
+      </div>
+    </div>
   );
 }

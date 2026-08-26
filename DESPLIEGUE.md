@@ -146,7 +146,19 @@ En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
    copiarlos a mano en ningún lado.
 3. Copiá **META_APP_ID** y **META_APP_SECRET** (Configuración → Básica) a las
    variables del servidor.
-4. Cada cuenta de Instagram tiene que ser **Business o Creator** y estar
+4. En esa misma pantalla, **Configuración → Básica**, Meta pide dos direcciones
+   más. Están publicadas con el sitio y también figuran en la app, con su botón
+   de copiar:
+
+   | Campo en Meta | Dirección |
+   | --- | --- |
+   | URL de la política de privacidad | `https://tu-sitio.netlify.app/privacidad` |
+   | Instrucciones de eliminación de datos | `https://tu-sitio.netlify.app/eliminar-datos` |
+
+   El texto de las dos vive en `public/privacidad/` y `public/eliminar-datos/`,
+   así que se despliegan con el resto del sitio. Si cambia el correo de contacto
+   o algo de lo que se cuenta ahí, se edita en esos archivos.
+5. Cada cuenta de Instagram tiene que ser **Business o Creator** y estar
    vinculada a una página de Facebook. Las personales no sirven, hay que
    convertirlas primero.
 
