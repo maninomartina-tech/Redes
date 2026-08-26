@@ -4,11 +4,12 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  Megaphone,
   ShoppingBag,
   TrendingUp,
   Users,
 } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -26,11 +27,22 @@ import { computeGrowth, computeLeads, monthLabel, pctVariacion, sourceLabel } fr
 import { money, nfmt, pct } from '@/lib/format';
 import { fmt } from '@/lib/date';
 import { EmptyState, SectionTitle, Stat } from '@/components/ui';
+import ResumenDeAds from '@/components/ResumenDeAds';
+import type { Periodo } from '@/lib/resumenAds';
 import { plural } from '@/lib/texto';
 
 export default function ClientResults() {
-  const { posts, campaigns, monthlyStats, leads } = useStore();
+  const { posts, campaigns, monthlyStats, leads, ads } = useStore();
   const client = useCurrentClient();
+
+  // En el link del cliente el servidor ya manda solo lo suyo, pero esta misma
+  // pantalla se ve desde el modo Cliente de la app, donde están todas: el
+  // filtro tiene que estar igual.
+  const clientAds = useMemo(
+    () => ads.filter((a) => a.clientId === client.id),
+    [ads, client.id]
+  );
+  const [periodo, setPeriodo] = useState<Periodo>('general');
 
   const growth = useMemo(
     () => computeGrowth(client, monthlyStats, posts),
@@ -65,7 +77,8 @@ export default function ClientResults() {
     );
   }, [posts, client.id]);
 
-  const sinDatos = !growth.hasBaseline && (!analysis || analysis.totalReach === 0);
+  const sinDatos =
+    !growth.hasBaseline && (!analysis || analysis.totalReach === 0) && clientAds.length === 0;
 
   if (sinDatos) {
     return (
@@ -292,6 +305,21 @@ export default function ClientResults() {
               </div>
             </div>
           )}
+        </section>
+      )}
+
+      {/* ---------- Publicidad ---------- */}
+      {clientAds.length > 0 && (
+        <section>
+          <div className="mb-1 flex items-center gap-2">
+            <Megaphone size={18} className="text-brand-600" />
+            <h3 className="font-bold text-ink-900">Tu publicidad</h3>
+          </div>
+          <p className="mb-3 text-sm leading-snug text-ink-500">
+            En qué se fue lo invertido en pauta y qué trajo cada campaña.
+          </p>
+          {/* Sin `onCargarResultados`: acá se mira, no se carga. */}
+          <ResumenDeAds ads={clientAds} periodo={periodo} onPeriodo={setPeriodo} />
         </section>
       )}
 

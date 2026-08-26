@@ -223,6 +223,45 @@ export function cuentasDelPortal(datos, clienteId) {
 }
 
 /**
+ * Una campaña, recortada a lo que le corresponde ver al cliente.
+ *
+ * Es plata del cliente y son resultados suyos, así que los números van. Lo que
+ * no va es lo de adentro de la herramienta: el id de la campaña en Meta y de
+ * dónde salieron los datos no le sirven para nada y no tienen por qué viajar.
+ *
+ * Se arma nombrando campo por campo a propósito: si mañana se le agrega algo a
+ * una campaña, no se filtra solo por estar en el objeto.
+ */
+function adParaCliente(a) {
+  return {
+    id: a.id,
+    clientId: a.clientId,
+    platform: a.platform,
+    name: a.name,
+    objective: a.objective,
+    status: a.status,
+    budget: a.budget ?? 0,
+    spend: a.spend ?? 0,
+    impressions: a.impressions ?? 0,
+    clicks: a.clicks ?? 0,
+    conversions: a.conversions ?? 0,
+    startDate: a.startDate,
+    endDate: a.endDate,
+    dailyBudget: a.dailyBudget,
+    days: a.days,
+    views: a.views,
+    likes: a.likes,
+    saves: a.saves,
+    shares: a.shares,
+    profileActivity: a.profileActivity,
+    newFollowers: a.newFollowers,
+    costPerClick: a.costPerClick,
+    messages: a.messages,
+    closedFromMessages: a.closedFromMessages,
+  };
+}
+
+/**
  * Lo que ve un cliente con su link: únicamente lo suyo.
  *
  * Se filtra acá, en el servidor, y no en la app: si dependiera del navegador,
@@ -259,6 +298,8 @@ export function datosDelPortal(token, cuentaPedida) {
     })),
     posts: (datos.posts ?? []).filter((p) => p.clientId === id),
     campaigns: (datos.campaigns ?? []).filter((c) => c.clientId === id),
+    // Las campañas de publicidad: el cliente ve en qué se le fue la plata.
+    ads: (datos.ads ?? []).filter((a) => a.clientId === id).map(adParaCliente),
     monthlyStats: (datos.monthlyStats ?? []).filter((m) => m.clientId === id),
     // Las ventas solo si ese cliente las mide.
     leads: cliente.tracksLeads ? (datos.leads ?? []).filter((l) => l.clientId === id) : [],

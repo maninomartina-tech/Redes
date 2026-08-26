@@ -56,6 +56,8 @@ export interface DatosPortal {
   cuentas?: CuentaDelPortal[];
   posts: Post[];
   campaigns: Campaign[];
+  /** Las campañas de publicidad que se pagaron con su plata. */
+  ads: Ad[];
   monthlyStats: MonthlyStat[];
   leads: Lead[];
   branding?: Branding | null;

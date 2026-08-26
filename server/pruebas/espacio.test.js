@@ -48,7 +48,43 @@ const DATOS = {
     { id: 'l_a', clientId: 'cli_a', name: 'Consulta de Aurora', source: 'whatsapp', status: 'ganado' },
     { id: 'l_b', clientId: 'cli_b', name: 'Consulta de Flora', source: 'dm', status: 'nuevo' },
   ],
-  ads: [],
+  ads: [
+    {
+      id: 'ad_a',
+      clientId: 'cli_a',
+      platform: 'instagram',
+      name: 'Promo de Aurora',
+      objective: 'Más mensajes',
+      status: 'finalizada',
+      budget: 10000,
+      spend: 8000,
+      impressions: 0,
+      clicks: 40,
+      conversions: 0,
+      messages: 20,
+      closedFromMessages: 4,
+      startDate: '2026-07-01T12:00:00.000Z',
+      endDate: '2026-07-08T12:00:00.000Z',
+      // Cosas de adentro de la herramienta, que no tienen por qué viajar.
+      externalId: '23851234567890123',
+      manual: true,
+    },
+    {
+      id: 'ad_b',
+      clientId: 'cli_b',
+      platform: 'instagram',
+      name: 'Promo de Flora',
+      objective: 'Más seguidores',
+      status: 'activa',
+      budget: 5000,
+      spend: 1000,
+      impressions: 0,
+      clicks: 0,
+      conversions: 0,
+      startDate: '2026-07-02T12:00:00.000Z',
+      endDate: '2026-07-09T12:00:00.000Z',
+    },
+  ],
 };
 
 const conClave = (extra = {}) => ({
@@ -180,9 +216,36 @@ describe('portal del cliente', () => {
 
     // Y tampoco debe llegar el resto del espacio.
     assert.equal(d.clients, undefined, 'no ve la lista de clientes');
-    assert.equal(d.ads, undefined, 'no ve las campañas pagas');
     assert.equal(d.monthlyStats.length, 1);
     assert.equal(d.campaigns.length, 1);
+  });
+
+  it('ve sus campañas pagas, y ninguna del otro cliente', async () => {
+    // Es plata suya y son resultados suyos: los ve. Los del otro cliente, no.
+    const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
+
+    assert.equal(d.ads.length, 1, 'tendría que ver la suya');
+    assert.equal(d.ads[0].name, 'Promo de Aurora');
+    assert.equal(d.ads[0].spend, 8000, 'con lo que se gastó');
+    assert.equal(d.ads[0].messages, 20, 'y con los resultados');
+    assert.equal(d.ads[0].closedFromMessages, 4);
+    assert.ok(
+      !JSON.stringify(d.ads).includes('Promo de Flora'),
+      'no puede colarse la campaña del otro cliente'
+    );
+  });
+
+  it('y no le llega lo de adentro de la herramienta', async () => {
+    // El id de la campaña en Meta no le sirve de nada y no tiene por qué
+    // viajar: cada campo que llega es uno que hay que decidir mostrar.
+    const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
+
+    assert.equal(d.ads[0].externalId, undefined, 'el id de Meta no viaja');
+    assert.equal(d.ads[0].manual, undefined, 'de dónde salió el dato tampoco');
+    assert.ok(
+      !JSON.stringify(d.ads).includes('23851234567890123'),
+      'el id de Meta no puede aparecer en ningún lado'
+    );
   });
 
   it('las ventas solo llegan si ese cliente las mide', async () => {

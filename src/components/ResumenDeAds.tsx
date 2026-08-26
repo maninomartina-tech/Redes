@@ -32,7 +32,13 @@ export default function ResumenDeAds({
   ads: Ad[];
   periodo: Periodo;
   onPeriodo: (p: Periodo) => void;
-  onCargarResultados: (ad: Ad) => void;
+  /**
+   * Cargarle los resultados a una campaña que no los tiene.
+   *
+   * Sin esto la pantalla es de solo lectura: es la misma que ve el cliente,
+   * que puede mirar en qué se fue su plata pero no cargar nada.
+   */
+  onCargarResultados?: (ad: Ad) => void;
 }) {
   const meses = useMemo(() => mesesConCampanas(ads), [ads]);
   const delPeriodo = useMemo(() => filtrarPorPeriodo(ads, periodo), [ads, periodo]);
@@ -119,7 +125,7 @@ function Grupo({
   onCargarResultados,
 }: {
   grupo: GrupoDeObjetivo;
-  onCargarResultados: (ad: Ad) => void;
+  onCargarResultados?: (ad: Ad) => void;
 }) {
   // El más barato es la vara: rinde 100%, y el resto se mide contra él.
   const mejorCosto = grupo.conDatos[0]?.costo;
@@ -169,19 +175,27 @@ function Grupo({
       {grupo.sinDatos.length > 0 && (
         <div className="mt-3 border-t border-ink-100 pt-3">
           <p className="text-xs text-ink-400">
-            Sin {grupo.unidad} cargados, así que no entran en la comparación:
+            {onCargarResultados
+              ? `Sin ${grupo.unidad} cargados, así que no entran en la comparación:`
+              : `Todavía sin resultados, así que no entran en la comparación:`}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {grupo.sinDatos.map((c) => (
-              <button
-                key={c.ad.id}
-                className="chip bg-ink-100 text-ink-600 transition hover:bg-brand-100 hover:text-brand-800"
-                onClick={() => onCargarResultados(c.ad)}
-                title="Cargarle los resultados"
-              >
-                {c.ad.name}
-              </button>
-            ))}
+            {grupo.sinDatos.map((c) =>
+              onCargarResultados ? (
+                <button
+                  key={c.ad.id}
+                  className="chip bg-ink-100 text-ink-600 transition hover:bg-brand-100 hover:text-brand-800"
+                  onClick={() => onCargarResultados(c.ad)}
+                  title="Cargarle los resultados"
+                >
+                  {c.ad.name}
+                </button>
+              ) : (
+                <span key={c.ad.id} className="chip bg-ink-100 text-ink-600">
+                  {c.ad.name}
+                </span>
+              )
+            )}
           </div>
         </div>
       )}

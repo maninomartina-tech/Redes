@@ -562,7 +562,7 @@ export const useStore = create<State>()(
               campaigns: d.campaigns,
               monthlyStats: d.monthlyStats,
               leads: d.leads,
-              ads: [],
+              ads: d.ads ?? [],
               branding,
               brandLogo: d.brandLogo ?? undefined,
               sincro: { estado: 'listo' },
