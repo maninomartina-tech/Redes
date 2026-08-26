@@ -18,6 +18,7 @@ import { computeGrowth } from '@/lib/growth';
 import { nfmt, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { portadaDelFeed } from '@/lib/piezas';
 import { fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
+import { useHoy } from '@/lib/hoy';
 import { MediaPreview } from '@/components/MediaUploader';
 import PostDetail from '@/components/PostDetail';
 import Logo from '@/components/Logo';
@@ -42,7 +43,7 @@ export default function ClientHome() {
     [client, monthlyStats, posts]
   );
 
-  const days = weekDays(new Date());
+  const days = weekDays(useHoy());
   const estaSemana = míos
     .filter((p) => days.some((d) => isSameDay(new Date(p.date), d)))
     .sort((a, b) => a.date.localeCompare(b.date));

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import type { Post } from '@/types';
 import { fmt, startOfMonth } from '@/lib/date';
+import { useHoy } from '@/lib/hoy';
 import { panorama, totales, type ResumenDeCuenta } from '@/lib/panorama';
 import { plural } from '@/lib/texto';
 import { Avatar, EmptyState, SectionTitle, Stat } from '@/components/ui';
@@ -35,7 +36,10 @@ export default function Panorama() {
   const [selected, setSelected] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<FiltroTipo>('todo');
 
-  const mes = useMemo(() => startOfMonth(new Date()), []);
+  // `hoy` cambia solo cuando cambia el día: así el mes y los "atrasado / para
+  // hoy" de las tarjetas se rehacen sin tener que recargar la página.
+  const hoy = useHoy();
+  const mes = useMemo(() => startOfMonth(hoy), [hoy]);
   const resumenes = useMemo(() => panorama(clients, posts, mes), [clients, posts, mes]);
   const total = useMemo(() => totales(resumenes), [resumenes]);
 

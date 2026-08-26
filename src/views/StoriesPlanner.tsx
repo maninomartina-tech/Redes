@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { addDays, fmt, isSameDay, moverADia, weekDays } from '@/lib/date';
+import { useAncla } from '@/lib/hoy';
 import { statusChip, statusLabel } from '@/lib/format';
 import { portadaDelFeed } from '@/lib/piezas';
 import { ChevronLeft, ChevronRight, FileUp, GripVertical, Zap } from 'lucide-react';
@@ -83,7 +84,8 @@ export default function StoriesPlanner() {
   const currentClientId = useStore((s) => s.currentClientId);
   const updatePost = useStore((s) => s.updatePost);
 
-  const [anchor, setAnchor] = useState(new Date());
+  // La semana que se está mirando, que vuelve sola a la de hoy al cambiar el día.
+  const { hoy, ancla: anchor, setAncla: setAnchor } = useAncla((d) => d);
   const [selected, setSelected] = useState<string | null>(null);
   const [importando, setImportando] = useState(false);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
@@ -142,7 +144,7 @@ export default function StoriesPlanner() {
         >
           <ChevronRight size={18} />
         </button>
-        <button className="btn-outline !py-1.5" onClick={() => setAnchor(new Date())}>
+        <button className="btn-outline !py-1.5" onClick={() => setAnchor(hoy)}>
           Esta semana
         </button>
       </div>
@@ -152,7 +154,7 @@ export default function StoriesPlanner() {
           const dayStories = stories
             .filter((s) => isSameDay(new Date(s.date), day))
             .sort((a, b) => a.date.localeCompare(b.date));
-          const today = isSameDay(day, new Date());
+          const today = isSameDay(day, hoy);
           const recibiendo = encima === day.toDateString();
 
           return (

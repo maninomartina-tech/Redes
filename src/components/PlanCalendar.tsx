@@ -12,6 +12,7 @@ import {
   startOfMonth,
   weekdayNames,
 } from '@/lib/date';
+import { useAncla } from '@/lib/hoy';
 import { esHistoria, llevaCartelito, statusChip, statusCorto, typeEmoji } from '@/lib/format';
 
 // ---------------------------------------------------------------------------
@@ -155,7 +156,9 @@ export default function PlanCalendar({
   /** De qué cuenta es cada pieza, cuando el calendario mezcla varias. */
   cuentaDe?: (post: Post) => { name: string; color: string } | undefined;
 }) {
-  const [ancla, setAncla] = useState(() => startOfMonth(new Date()));
+  // El mes que se está mirando. Vuelve solo al de hoy cuando cambia el día:
+  // la app se deja abierta, y en el teléfono se despierta como quedó.
+  const { hoy: elDiaDeHoy, ancla, setAncla } = useAncla(startOfMonth);
   const [arrastrando, setArrastrando] = useState<string | null>(null);
   const [encima, setEncima] = useState<string | null>(null);
 
@@ -217,7 +220,7 @@ export default function PlanCalendar({
           </button>
           <button
             className="btn-outline !py-1.5"
-            onClick={() => setAncla(startOfMonth(new Date()))}
+            onClick={() => setAncla(startOfMonth(elDiaDeHoy))}
           >
             Hoy
           </button>
@@ -245,7 +248,7 @@ export default function PlanCalendar({
           {dias.map((dia) => {
             const items = delDia(dia);
             const delMes = isSameMonth(dia, ancla);
-            const hoy = isSameDay(dia, new Date());
+            const hoy = isSameDay(dia, elDiaDeHoy);
             const recibiendo = encima === dia.toDateString();
 
             return (
@@ -332,7 +335,7 @@ export default function PlanCalendar({
             <div className="mb-2 flex items-center justify-between">
               <span
                 className={`text-sm font-bold capitalize ${
-                  isSameDay(dia, new Date()) ? 'text-brand-800' : 'text-ink-700'
+                  isSameDay(dia, elDiaDeHoy) ? 'text-brand-800' : 'text-ink-700'
                 }`}
               >
                 {fmt(dia.toISOString(), "EEEE d")}

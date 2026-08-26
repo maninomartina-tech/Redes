@@ -16,6 +16,7 @@ import { useMemo, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
+import { useAncla } from '@/lib/hoy';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { plural } from '@/lib/texto';
@@ -46,7 +47,8 @@ type Vista = 'calendario' | 'semana';
 export default function ClientWeek() {
   const posts = useStore((s) => s.posts);
   const client = useCurrentClient();
-  const [anchor, setAnchor] = useState(new Date());
+  // Igual que del lado de ella: al cambiar el día vuelve a la semana de hoy.
+  const { hoy, ancla: anchor, setAncla: setAnchor } = useAncla((d) => d);
   const [selected, setSelected] = useState<string | null>(null);
   const [vista, setVista] = useState<Vista>('calendario');
   const [filtro, setFiltro] = useState<FiltroTipo>('todo');
@@ -110,7 +112,7 @@ export default function ClientWeek() {
             >
               <ChevronRight size={18} />
             </button>
-            <button className="btn-outline !py-1.5" onClick={() => setAnchor(new Date())}>
+            <button className="btn-outline !py-1.5" onClick={() => setAnchor(hoy)}>
               Hoy
             </button>
           </div>

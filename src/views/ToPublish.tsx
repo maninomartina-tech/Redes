@@ -11,6 +11,7 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { descargarMedia } from '@/lib/media';
 import { fmt, isSameDay } from '@/lib/date';
+import { useHoy } from '@/lib/hoy';
 import { typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, Modal, SectionTitle } from '@/components/ui';
@@ -40,9 +41,12 @@ export default function ToPublish() {
   const [publicando, setPublicando] = useState<Post | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
+  // `hoy` cambia solo al cambiar el día: eso rehace los grupos sin recargar.
+  // La hora se lee acá adentro, para que "próximos" no compare contra la
+  // medianoche sino contra el momento en que se está mirando.
+  const hoy = useHoy();
   const grupos = useMemo(() => {
     const ahora = new Date();
-    const hoy = ahora;
     const enUnaSemana = new Date(ahora);
     enUnaSemana.setDate(enUnaSemana.getDate() + 7);
 
@@ -51,15 +55,15 @@ export default function ToPublish() {
       .sort((a, b) => +new Date(a.date) - +new Date(b.date));
 
     return {
-      atrasados: cola.filter((p) => new Date(p.date) < ahora && !isSameDay(p.date, hoy)),
-      hoy: cola.filter((p) => isSameDay(p.date, hoy)),
+      atrasados: cola.filter((p) => new Date(p.date) < ahora && !isSameDay(p.date, ahora)),
+      hoy: cola.filter((p) => isSameDay(p.date, ahora)),
       proximos: cola.filter((p) => {
         const d = new Date(p.date);
-        return d > ahora && !isSameDay(p.date, hoy) && d <= enUnaSemana;
+        return d > ahora && !isSameDay(p.date, ahora) && d <= enUnaSemana;
       }),
       despues: cola.filter((p) => new Date(p.date) > enUnaSemana),
     };
-  }, [posts, client.id]);
+  }, [posts, client.id, hoy]);
 
   const total =
     grupos.atrasados.length + grupos.hoy.length + grupos.proximos.length + grupos.despues.length;

@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import { fmtDateTime, isSameMonth } from '@/lib/date';
+import { useHoy } from '@/lib/hoy';
 import { statusChip, statusLabel, statusOrder, typeEmoji } from '@/lib/format';
 import { nfmt } from '@/lib/format';
 import { computeGrowth, computeLeads } from '@/lib/growth';
@@ -26,9 +27,12 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const clientPosts = posts.filter((p) => p.clientId === client.id);
+  // `hoy` se actualiza solo al cambiar el día —la app se deja abierta—; la
+  // hora exacta se lee aparte, para que "próximas" no arranque a la medianoche.
+  const hoy = useHoy();
   const now = new Date();
 
-  const thisMonth = clientPosts.filter((p) => isSameMonth(new Date(p.date), now));
+  const thisMonth = clientPosts.filter((p) => isSameMonth(new Date(p.date), hoy));
   const upcoming = clientPosts
     .filter((p) => new Date(p.date) >= now && p.status !== 'publicado')
     .sort((a, b) => a.date.localeCompare(b.date))
