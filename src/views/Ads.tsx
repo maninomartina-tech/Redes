@@ -10,6 +10,7 @@ import {
   Plus,
   Trash2,
   TriangleAlert,
+  Trophy,
   UserPlus,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -17,6 +18,9 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import { adStatusChip, money, nfmt, platformLabel } from '@/lib/format';
 import { addDays, fmt } from '@/lib/date';
 import { EmptyState, Modal, SectionTitle, Stat } from '@/components/ui';
+import { Cuenta, GrupoDeSolapas, Solapa } from '@/components/Solapas';
+import ResumenDeAds from '@/components/ResumenDeAds';
+import type { Periodo } from '@/lib/resumenAds';
 import SyncButton from '@/components/SyncButton';
 import { cambiarEstadoEnMeta, cambiarPresupuestoEnMeta, sincronizarAds } from '@/lib/sync';
 import type { Ad, AdStatus, Platform } from '@/types';
@@ -105,6 +109,9 @@ export default function Ads() {
     [ads, currentClientId]
   );
 
+  /** Qué se está mirando: la lista de campañas o el resumen. */
+  const [solapa, setSolapa] = useState<'campanas' | 'resumen'>('campanas');
+  const [periodo, setPeriodo] = useState<Periodo>('general');
   const [nueva, setNueva] = useState(false);
   /** La campaña que se está editando, y en qué pestaña se abrió. */
   const [editando, setEditando] = useState<Ad | null>(null);
@@ -250,6 +257,20 @@ export default function Ads() {
         }
       />
 
+      {clientAds.length > 0 && (
+        <div className="mb-4">
+          <GrupoDeSolapas etiqueta="Qué mirar de las campañas">
+            <Solapa activa={solapa === 'campanas'} onClick={() => setSolapa('campanas')}>
+              <Megaphone size={15} /> Campañas{' '}
+              <Cuenta n={clientAds.length} activa={solapa === 'campanas'} />
+            </Solapa>
+            <Solapa activa={solapa === 'resumen'} onClick={() => setSolapa('resumen')}>
+              <Trophy size={15} /> Resumen
+            </Solapa>
+          </GrupoDeSolapas>
+        </div>
+      )}
+
       {clientAds.length === 0 ? (
         <EmptyState
           icon={<Megaphone size={32} />}
@@ -260,6 +281,13 @@ export default function Ads() {
               <Plus size={16} /> Nueva campaña
             </button>
           }
+        />
+      ) : solapa === 'resumen' ? (
+        <ResumenDeAds
+          ads={clientAds}
+          periodo={periodo}
+          onPeriodo={setPeriodo}
+          onCargarResultados={setResultados}
         />
       ) : (
         <>
