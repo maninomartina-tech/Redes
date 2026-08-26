@@ -312,6 +312,24 @@ export interface Ad {
   profileActivity?: number;
   /** Seguidores nuevos que trajo la campaña */
   newFollowers?: number;
+  /**
+   * Costo por clic, tal como lo muestra Meta.
+   *
+   * Se guarda aparte de `clicks` porque no siempre se tienen los dos: el
+   * resumen de una promoción muestra los clics, y el Administrador de anuncios
+   * muestra el costo. Cuando falta, se calcula con el gasto y los clics.
+   */
+  costPerClick?: number;
+  /** Mensajes que trajo la campaña (conversaciones iniciadas). */
+  messages?: number;
+  /**
+   * De esos mensajes, cuántos terminaron siendo clientes.
+   *
+   * Es un número de la campaña, no la lista de consultas: eso son los `Lead`
+   * de Crecimiento, que se cargan uno por uno y pueden venir de cualquier lado.
+   * Acá interesa solamente cuánto rindió la pauta.
+   */
+  closedFromMessages?: number;
   /** true si los resultados los cargó ella y no vinieron de Meta */
   manual?: boolean;
 }

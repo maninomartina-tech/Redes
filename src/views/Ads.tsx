@@ -4,6 +4,8 @@ import {
   Link2,
   Loader2,
   Megaphone,
+  MessageCircle,
+  MousePointerClick,
   Pencil,
   Plus,
   Trash2,
@@ -46,6 +48,23 @@ export function interaccionDeLaCampana(a: Ad): number {
   return (a.likes ?? 0) + (a.saves ?? 0) + (a.shares ?? 0);
 }
 
+/**
+ * El costo por clic.
+ *
+ * Si lo cargó a mano manda ese, porque es el que muestra Meta. Si no, sale de
+ * dividir lo gastado por los clics —que da lo mismo, pero solo si están los
+ * dos números.
+ */
+export function costoPorClic(a: Ad): number | undefined {
+  if (a.costPerClick != null) return a.costPerClick;
+  return a.clicks > 0 && a.spend > 0 ? a.spend / a.clicks : undefined;
+}
+
+/** ¿Esta campaña trajo mensajes? */
+function hayMensajes(a: Ad): boolean {
+  return (a.messages ?? 0) > 0 || (a.closedFromMessages ?? 0) > 0;
+}
+
 /** ¿Ya se le cargó algún resultado? */
 function tieneResultados(a: Ad): boolean {
   return (
@@ -55,15 +74,36 @@ function tieneResultados(a: Ad): boolean {
     a.shares != null ||
     a.profileActivity != null ||
     a.newFollowers != null ||
+    a.costPerClick != null ||
+    a.messages != null ||
+    a.closedFromMessages != null ||
+    a.clicks > 0 ||
     a.spend > 0
   );
 }
+
+/** ¿El objetivo de esta campaña es traer mensajes? */
+const buscaMensajes = (objetivo: string) => /mensaj/i.test(objetivo);
 
 export default function Ads() {
   const { ads, currentClientId, addAd, updateAd, removeAd, upsertAdExterno } = useStore();
   const sesion = useStore((s) => s.sesion);
   const client = useCurrentClient();
-  const clientAds = ads.filter((a) => a.clientId === currentClientId);
+
+  /**
+   * Las campañas, de la más nueva a la más vieja.
+   *
+   * Es el orden en que se las busca: lo que está corriendo ahora va arriba y
+   * lo del año pasado queda al fondo. Sin esto quedaban en el orden en que se
+   * habían cargado, que no significa nada.
+   */
+  const clientAds = useMemo(
+    () =>
+      ads
+        .filter((a) => a.clientId === currentClientId)
+        .sort((a, b) => b.startDate.localeCompare(a.startDate)),
+    [ads, currentClientId]
+  );
 
   const [nueva, setNueva] = useState(false);
   /** La campaña que se está editando, y en qué pestaña se abrió. */
@@ -143,13 +183,26 @@ export default function Ads() {
           views: acc.views + (a.views ?? 0),
           interaccion: acc.interaccion + interaccionDeLaCampana(a),
           seguidores: acc.seguidores + (a.newFollowers ?? 0),
+          mensajes: acc.mensajes + (a.messages ?? 0),
+          clientes: acc.clientes + (a.closedFromMessages ?? 0),
+          /** Solo lo gastado en las campañas que trajeron mensajes. */
+          gastoEnMensajes: acc.gastoEnMensajes + (hayMensajes(a) ? a.spend : 0),
         }),
-        { gasto: 0, views: 0, interaccion: 0, seguidores: 0 }
+        {
+          gasto: 0,
+          views: 0,
+          interaccion: 0,
+          seguidores: 0,
+          mensajes: 0,
+          clientes: 0,
+          gastoEnMensajes: 0,
+        }
       ),
     [clientAds]
   );
 
   const costoPorSeguidor = total.seguidores ? total.gasto / total.seguidores : 0;
+  const costoPorCliente = total.clientes ? total.gastoEnMensajes / total.clientes : 0;
 
   return (
     <div>
@@ -210,7 +263,11 @@ export default function Ads() {
         />
       ) : (
         <>
-          <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div
+            className={`mb-4 grid grid-cols-2 gap-3 ${
+              total.mensajes > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'
+            }`}
+          >
             <Stat label="Invertido" value={money(total.gasto)} />
             <Stat
               label="Visualizaciones"
@@ -233,6 +290,20 @@ export default function Ads() {
               }
               icon={<UserPlus size={16} />}
             />
+            {total.mensajes > 0 && (
+              <Stat
+                label="Mensajes"
+                value={nfmt(total.mensajes)}
+                hint={
+                  total.clientes
+                    ? `${total.clientes} se concretaron · ${money(
+                        Math.round(costoPorCliente)
+                      )} cada cliente`
+                    : 'Todavía ninguno se concretó'
+                }
+                icon={<MessageCircle size={16} />}
+              />
+            )}
           </div>
 
           {aviso && (
@@ -318,6 +389,14 @@ function TarjetaDeCampana({
   const interaccion = interaccionDeLaCampana(ad);
   const cargados = tieneResultados(ad);
   const porSeguidor = ad.newFollowers ? ad.spend / ad.newFollowers : 0;
+  const cpc = costoPorClic(ad);
+  const mensajes = hayMensajes(ad);
+  const porMensaje = ad.messages ? ad.spend / ad.messages : 0;
+  // De cada 100 que escribieron, cuántos terminaron comprando.
+  const cierre =
+    ad.messages && ad.closedFromMessages != null
+      ? (ad.closedFromMessages / ad.messages) * 100
+      : undefined;
 
   return (
     <div className="card p-4">
@@ -402,6 +481,40 @@ function TarjetaDeCampana({
             />
           </div>
 
+          {(cpc != null || mensajes) && (
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-ink-100 pt-3 sm:grid-cols-3">
+              {cpc != null && (
+                <Mini
+                  label="Costo por clic"
+                  enTexto={money(Math.round(cpc))}
+                  pie={ad.clicks > 0 ? `${nfmt(ad.clicks)} clics` : undefined}
+                  icono={<MousePointerClick size={13} />}
+                />
+              )}
+              {mensajes && (
+                <>
+                  <Mini
+                    label="Mensajes"
+                    value={ad.messages}
+                    pie={
+                      porMensaje > 0 ? `${money(Math.round(porMensaje))} cada uno` : undefined
+                    }
+                    icono={<MessageCircle size={13} />}
+                  />
+                  <Mini
+                    label="Clientes concretados"
+                    value={ad.closedFromMessages}
+                    pie={
+                      cierre != null
+                        ? `${cierre.toFixed(0)}% de los mensajes`
+                        : undefined
+                    }
+                  />
+                </>
+              )}
+            </div>
+          )}
+
           {interaccion > 0 && (
             <p className="mt-2 text-xs text-ink-500">
               Interacción total: <b className="text-ink-700">{nfmt(interaccion)}</b>
@@ -439,18 +552,31 @@ function TarjetaDeCampana({
 function Mini({
   label,
   value,
+  enTexto,
+  pie,
+  icono,
   prefijo = '',
 }: {
   label: string;
   value?: number;
+  /** Cuando el número ya viene formateado (plata, porcentaje). */
+  enTexto?: string;
+  /** Una línea chica abajo: el costo, el porcentaje, lo que le da sentido. */
+  pie?: string;
+  icono?: React.ReactNode;
   prefijo?: string;
 }) {
+  const cuerpo = enTexto ?? (value == null ? null : `${prefijo}${nfmt(value)}`);
   return (
     <div className="min-w-0">
-      <p className="truncate text-[11px] uppercase tracking-wide text-ink-400">{label}</p>
-      <p className="font-semibold text-ink-800">
-        {value == null ? <span className="text-ink-300">—</span> : `${prefijo}${nfmt(value)}`}
+      <p className="flex items-center gap-1 truncate text-[11px] uppercase tracking-wide text-ink-400">
+        {icono}
+        {label}
       </p>
+      <p className="font-semibold text-ink-800">
+        {cuerpo ?? <span className="text-ink-300">—</span>}
+      </p>
+      {pie && <p className="truncate text-[11px] text-ink-400">{pie}</p>}
     </div>
   );
 }
@@ -688,8 +814,14 @@ function ResultadosModal({
   const [shares, setShares] = useState('');
   const [profileActivity, setProfileActivity] = useState('');
   const [newFollowers, setNewFollowers] = useState('');
+  const [clicks, setClicks] = useState('');
+  const [costPerClick, setCostPerClick] = useState('');
+  const [messages, setMessages] = useState('');
+  const [closed, setClosed] = useState('');
   const [spend, setSpend] = useState('');
   const [cargado, setCargado] = useState<string | null>(null);
+  /** Se pidió cargar mensajes en una campaña que no era de mensajes. */
+  const [conMensajes, setConMensajes] = useState(false);
 
   if (ad && cargado !== ad.id) {
     setCargado(ad.id);
@@ -699,11 +831,41 @@ function ResultadosModal({
     setShares(texto(ad.shares));
     setProfileActivity(texto(ad.profileActivity));
     setNewFollowers(texto(ad.newFollowers));
+    setClicks(ad.clicks ? String(ad.clicks) : '');
+    setCostPerClick(texto(ad.costPerClick));
+    setMessages(texto(ad.messages));
+    setClosed(texto(ad.closedFromMessages));
     setSpend(ad.spend ? String(ad.spend) : '');
+    setConMensajes(false);
   }
 
   const interaccion =
     (numero(likes) ?? 0) + (numero(saves) ?? 0) + (numero(shares) ?? 0);
+
+  /**
+   * El costo por clic que sale de lo que ya cargó.
+   *
+   * Se muestra como sugerencia, no se guarda solo: si ella tiene el número de
+   * Meta, ese es el bueno —Meta cuenta clics en el enlace y acá puede estar
+   * cargando todos los clics.
+   */
+  const cpcCalculado =
+    (numero(clicks) ?? 0) > 0 && (numero(spend) ?? 0) > 0
+      ? (numero(spend) as number) / (numero(clicks) as number)
+      : undefined;
+
+  // El bloque de mensajes se abre solo si la campaña era para eso, o si ya
+  // tenía mensajes cargados. En las demás queda un botón, para no llenar la
+  // pantalla de campos que casi nunca se usan.
+  const mostrarMensajes =
+    conMensajes ||
+    (ad ? buscaMensajes(ad.objective) : false) ||
+    messages.trim() !== '' ||
+    closed.trim() !== '';
+
+  const mensajes = numero(messages) ?? 0;
+  const concretados = numero(closed) ?? 0;
+  const cierre = mensajes > 0 && closed.trim() !== '' ? (concretados / mensajes) * 100 : undefined;
 
   return (
     <Modal
@@ -770,6 +932,76 @@ function ResultadosModal({
           ayuda="Lo que se gastó de verdad, que puede ser menos que el presupuesto."
         />
 
+        <div className="grid grid-cols-2 gap-3">
+          <Numero id="res-clics" label="Clics" valor={clicks} onChange={setClicks} />
+          <Numero
+            id="res-cpc"
+            label="Costo por clic"
+            valor={costPerClick}
+            onChange={setCostPerClick}
+            placeholder={
+              cpcCalculado ? `${Math.round(cpcCalculado)} (calculado)` : 'Opcional'
+            }
+            ayuda={
+              cpcCalculado
+                ? `Si lo dejás vacío queda ${money(Math.round(cpcCalculado))}, del gasto ÷ los clics.`
+                : 'El que muestra Meta. También sale solo si cargás el gasto y los clics.'
+            }
+          />
+        </div>
+
+        {mostrarMensajes ? (
+          <div className="rounded-xl border border-ink-200/70 bg-ink-50/60 p-3.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Mensajes
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Numero
+                id="res-mensajes"
+                label="Mensajes recibidos"
+                valor={messages}
+                onChange={setMessages}
+                placeholder="Ej: 34"
+              />
+              <Numero
+                id="res-concretados"
+                label="Clientes concretados"
+                valor={closed}
+                onChange={setClosed}
+                placeholder="Ej: 8"
+                ayuda="De esos mensajes, cuántos terminaron comprando."
+              />
+            </div>
+            {cierre != null && (
+              <p className="mt-2 text-[11px] text-ink-500">
+                Se concretó el <b className="text-ink-700">{cierre.toFixed(0)}%</b> de los
+                mensajes
+                {mensajes > 0 && (numero(spend) ?? 0) > 0 && (
+                  <>
+                    {' · '}
+                    {money(Math.round((numero(spend) as number) / mensajes))} por mensaje
+                    {concretados > 0 && (
+                      <>
+                        {' · '}
+                        {money(Math.round((numero(spend) as number) / concretados))} por
+                        cliente
+                      </>
+                    )}
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="btn-ghost !py-1.5 text-xs"
+            onClick={() => setConMensajes(true)}
+          >
+            <MessageCircle size={14} /> Esta campaña también trajo mensajes
+          </button>
+        )}
+
         <div className="flex justify-end gap-2">
           <button className="btn-ghost" onClick={onClose}>
             Cancelar
@@ -784,6 +1016,10 @@ function ResultadosModal({
                 shares: numero(shares),
                 profileActivity: numero(profileActivity),
                 newFollowers: numero(newFollowers),
+                clicks: numero(clicks) ?? 0,
+                costPerClick: numero(costPerClick),
+                messages: numero(messages),
+                closedFromMessages: numero(closed),
                 spend: numero(spend) ?? 0,
               });
               onClose();
