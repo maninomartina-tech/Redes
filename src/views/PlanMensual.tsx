@@ -1,0 +1,391 @@
+import {
+  CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
+  FileDown,
+  Plus,
+  Trash2,
+  TriangleAlert,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStore, useCurrentClient } from '@/store/useStore';
+import type { FilaDePlan, PostType } from '@/types';
+import { paraInput, desdeInput } from '@/lib/date';
+import { useHoy } from '@/lib/hoy';
+import {
+  claveDeMes,
+  cuentaPorTipo,
+  filaNueva,
+  filasListas,
+  filasOrdenadas,
+  mesCorrido,
+  nombreDeMes,
+  planDeCliente,
+  yaEstaEnElCalendario,
+} from '@/lib/plan';
+import { imprimirPlan } from '@/lib/planImpreso';
+import { SectionTitle } from '@/components/ui';
+
+// ---------------------------------------------------------------------------
+// Planificación del mes.
+//
+// El calendario es para producir: una pieza por vez, con su estado, sus
+// comentarios y sus archivos. Antes hay otro momento, que es pensar el mes
+// entero de un saque —qué se busca, qué se va a desarrollar, qué sale cada día
+// y con qué copy— y llevarse esa hoja para grabar.
+//
+// Por eso esta pantalla es una tabla de cuatro columnas y dos textos, y nada
+// más. Cuando el mes está pensado, ella decide pasarlo al calendario: hasta
+// entonces es un borrador y del otro lado no aparece nada.
+// ---------------------------------------------------------------------------
+
+const TIPOS: { valor: PostType; nombre: string }[] = [
+  { valor: 'reel', nombre: 'Reel' },
+  { valor: 'post', nombre: 'Posteo' },
+  { valor: 'carrusel', nombre: 'Carrusel' },
+  { valor: 'historia', nombre: 'Historia' },
+];
+
+export default function PlanMensual() {
+  const client = useCurrentClient();
+  const planes = useStore((s) => s.planes);
+  const posts = useStore((s) => s.posts);
+  const guardarPlan = useStore((s) => s.guardarPlan);
+  const agregarFila = useStore((s) => s.agregarFila);
+  const actualizarFila = useStore((s) => s.actualizarFila);
+  const quitarFila = useStore((s) => s.quitarFila);
+  const pasarPlanAlCalendario = useStore((s) => s.pasarPlanAlCalendario);
+  const navigate = useNavigate();
+
+  const hoy = useHoy();
+  const [mes, setMes] = useState(() => claveDeMes(hoy));
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const plan = planDeCliente(planes, client.id, mes);
+  const filas = useMemo(() => filasOrdenadas(plan?.filas ?? []), [plan]);
+  const cuenta = useMemo(() => cuentaPorTipo(filas), [filas]);
+  const listas = useMemo(
+    () => (plan ? filasListas(plan, posts) : []),
+    [plan, posts]
+  );
+  const yaPasadas = filas.filter((f) => yaEstaEnElCalendario(f, posts)).length;
+
+  /** Escribir en cualquier campo crea el plan del mes si todavía no existía. */
+  const escribir = (patch: { objetivos?: string; plan?: string }) =>
+    guardarPlan(client.id, mes, patch);
+
+  const nuevaFila = () => {
+    const creado = guardarPlan(client.id, mes, {});
+    agregarFila(creado.id, filaNueva(creado, mes));
+  };
+
+  const descargar = () => {
+    setAviso(null);
+    const ok = imprimirPlan({
+      cliente: client,
+      mes,
+      objetivos: plan?.objetivos ?? '',
+      plan: plan?.plan ?? '',
+      filas,
+    });
+    if (!ok) {
+      setAviso(
+        'El navegador bloqueó la ventana del PDF. Permitile abrir ventanas a este sitio y probá de nuevo.'
+      );
+    }
+  };
+
+  const pasar = () => {
+    if (!plan) return;
+    setAviso(null);
+    pasarPlanAlCalendario(plan.id);
+    navigate('/planificacion');
+  };
+
+  return (
+    <div>
+      <SectionTitle
+        title="Planificación"
+        subtitle="Pensá el mes entero acá. Cuando esté listo, lo pasás al calendario."
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <button className="btn-outline" onClick={descargar}>
+              <FileDown size={16} /> Descargar PDF
+            </button>
+            <button
+              className="btn-primary"
+              onClick={pasar}
+              disabled={listas.length === 0}
+              title={
+                listas.length === 0
+                  ? 'Escribí el copy de al menos un contenido'
+                  : `Pasar ${listas.length} al calendario`
+              }
+            >
+              <CalendarPlus size={16} />
+              Pasar al calendario
+              {listas.length > 0 && <> ({listas.length})</>}
+            </button>
+          </div>
+        }
+      />
+
+      {/* mes */}
+      <div className="mb-4 flex items-center gap-2">
+        <button
+          className="btn-ghost px-2"
+          aria-label="Mes anterior"
+          onClick={() => setMes((m) => mesCorrido(m, -1))}
+        >
+          <ChevronLeft size={18} />
+        </button>
+        <h3 className="min-w-0 flex-1 truncate text-center text-base font-bold capitalize text-ink-900 sm:flex-none sm:text-left">
+          {nombreDeMes(mes)}
+        </h3>
+        <button
+          className="btn-ghost px-2"
+          aria-label="Mes siguiente"
+          onClick={() => setMes((m) => mesCorrido(m, 1))}
+        >
+          <ChevronRight size={18} />
+        </button>
+        {mes !== claveDeMes(hoy) && (
+          <button className="btn-outline !py-1.5 text-xs" onClick={() => setMes(claveDeMes(hoy))}>
+            Este mes
+          </button>
+        )}
+        <span className="ml-auto hidden text-xs text-ink-400 sm:block">
+          {filas.length} {filas.length === 1 ? 'contenido' : 'contenidos'}
+          {cuenta.reel > 0 && ` · ${cuenta.reel} reel${cuenta.reel === 1 ? '' : 's'}`}
+          {cuenta.carrusel > 0 && ` · ${cuenta.carrusel} carrusel${cuenta.carrusel === 1 ? '' : 'es'}`}
+          {cuenta.post > 0 && ` · ${cuenta.post} posteo${cuenta.post === 1 ? '' : 's'}`}
+          {cuenta.historia > 0 && ` · ${cuenta.historia} historia${cuenta.historia === 1 ? '' : 's'}`}
+        </span>
+      </div>
+
+      {aviso && (
+        <p className="mb-3 flex items-start gap-2 rounded-xl border border-butter-300 bg-butter-50 p-3 text-sm leading-snug text-ink-700">
+          <TriangleAlert size={16} className="mt-px shrink-0 text-butter-600" />
+          {aviso}
+        </p>
+      )}
+
+      {/* objetivos y plan */}
+      <div className="mb-4 grid gap-3 lg:grid-cols-2">
+        <Texto
+          id="plan-objetivos"
+          label="Objetivos del mes"
+          ayuda="Qué se busca. Ej: más consultas por DM, posicionar el servicio nuevo."
+          valor={plan?.objetivos ?? ''}
+          onChange={(objetivos) => escribir({ objetivos })}
+        />
+        <Texto
+          id="plan-desarrollo"
+          label="Qué se va a desarrollar"
+          ayuda="El plan para lograrlo: los ejes, los formatos, lo que se va a probar."
+          valor={plan?.plan ?? ''}
+          onChange={(v) => escribir({ plan: v })}
+        />
+      </div>
+
+      {/* la tabla */}
+      <div className="card overflow-hidden">
+        <div className="hidden gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500 md:grid md:grid-cols-[150px_128px_minmax(0,1fr)_minmax(0,2fr)_32px]">
+          <span>Fecha</span>
+          <span>Contenido</span>
+          <span>Referencia</span>
+          <span>Copy</span>
+          <span />
+        </div>
+
+        {filas.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-ink-400">
+            Todavía no hay contenido en {nombreDeMes(mes)}.
+          </p>
+        ) : (
+          <div className="divide-y divide-ink-200/70">
+            {filas.map((fila, i) => (
+              <Renglon
+                key={fila.id}
+                fila={fila}
+                numero={i + 1}
+                enElCalendario={yaEstaEnElCalendario(fila, posts)}
+                onCambio={(patch) => plan && actualizarFila(plan.id, fila.id, patch)}
+                onBorrar={() => plan && quitarFila(plan.id, fila.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="border-t border-ink-200/70 p-3">
+          <button className="btn-outline !py-1.5 text-sm" onClick={nuevaFila}>
+            <Plus size={15} /> Agregar contenido
+          </button>
+        </div>
+      </div>
+
+      {/* En qué estado está el mes: es lo que explica el botón de arriba,
+          incluso —sobre todo— cuando está apagado. */}
+      <p className="mt-3 text-sm leading-snug text-ink-500">
+        <b className="text-ink-700">{estadoDelMes(filas.length, listas.length, yaPasadas)}</b>{' '}
+        Al pasarlo, cada línea con copy se convierte en un contenido del calendario, en
+        revisión, esperando al cliente. Lo que ya pasó no se duplica.
+      </p>
+    </div>
+  );
+}
+
+/** Una frase que dice en qué está el mes, para que el botón no quede mudo. */
+function estadoDelMes(cuantas: number, listas: number, pasadas: number): string {
+  if (cuantas === 0) return 'Agregá el contenido del mes para empezar.';
+  if (listas > 0) {
+    return listas === 1
+      ? '1 contenido listo para pasar al calendario.'
+      : `${listas} contenidos listos para pasar al calendario.`;
+  }
+  if (pasadas > 0) return 'Todo lo escrito ya está en el calendario.';
+  return 'Escribí el copy para poder pasarlo al calendario.';
+}
+
+function Texto({
+  id,
+  label,
+  ayuda,
+  valor,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  ayuda: string;
+  valor: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="card p-4">
+      <label className="label" htmlFor={id}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        rows={4}
+        className="input mt-1 resize-y"
+        placeholder={ayuda}
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
+/**
+ * Una línea del plan.
+ *
+ * En una pantalla grande es una fila de tabla; en un teléfono, los mismos
+ * campos uno abajo del otro con su etiqueta. La etiqueta existe en las dos:
+ * en la grande está arriba de todo, en la chica al lado de cada campo.
+ */
+function Renglon({
+  fila,
+  numero,
+  enElCalendario,
+  onCambio,
+  onBorrar,
+}: {
+  fila: FilaDePlan;
+  numero: number;
+  enElCalendario: boolean;
+  onCambio: (patch: Partial<FilaDePlan>) => void;
+  onBorrar: () => void;
+}) {
+  return (
+    <div className="grid gap-2 p-3 md:grid-cols-[150px_128px_minmax(0,1fr)_minmax(0,2fr)_32px] md:items-start md:gap-3 md:px-4">
+      <Celda etiqueta="Fecha">
+        <input
+          type="date"
+          className="input !py-1.5 text-sm"
+          aria-label={`Fecha del contenido ${numero}`}
+          value={paraInput(fila.fecha).slice(0, 10)}
+          onChange={(e) =>
+            e.target.value && onCambio({ fecha: desdeInput(`${e.target.value}T12:00`) })
+          }
+        />
+      </Celda>
+
+      <Celda etiqueta="Contenido">
+        <select
+          className="input !py-1.5 text-sm"
+          aria-label={`Tipo del contenido ${numero}`}
+          value={fila.tipo}
+          onChange={(e) => onCambio({ tipo: e.target.value as PostType })}
+        >
+          {TIPOS.map((t) => (
+            <option key={t.valor} value={t.valor}>
+              {t.nombre}
+            </option>
+          ))}
+        </select>
+      </Celda>
+
+      <Celda etiqueta="Referencia">
+        <input
+          type="url"
+          className="input !py-1.5 text-sm"
+          placeholder="Link, si hace falta"
+          aria-label={`Referencia del contenido ${numero}`}
+          value={fila.referencia ?? ''}
+          onChange={(e) => onCambio({ referencia: e.target.value })}
+        />
+      </Celda>
+
+      <Celda etiqueta="Copy">
+        <textarea
+          rows={3}
+          className="input !py-1.5 resize-y text-sm"
+          placeholder="El texto que va a acompañar la pieza"
+          aria-label={`Copy del contenido ${numero}`}
+          value={fila.copy}
+          onChange={(e) => onCambio({ copy: e.target.value })}
+        />
+      </Celda>
+
+      <div className="flex items-center justify-end gap-2 md:justify-center md:pt-1.5">
+        {enElCalendario && (
+          <span
+            className="chip bg-mint-100 text-mint-600 md:hidden"
+            title="Ya está en el calendario"
+          >
+            En el calendario
+          </span>
+        )}
+        {enElCalendario && (
+          <span
+            className="hidden h-2 w-2 shrink-0 rounded-full bg-mint-400 md:block"
+            title="Ya está en el calendario"
+            aria-label={`El contenido ${numero} ya está en el calendario`}
+          />
+        )}
+        <button
+          className="text-ink-300 transition hover:text-rose-600"
+          onClick={onBorrar}
+          aria-label={`Borrar el contenido ${numero}`}
+          title="Borrar esta línea"
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** La etiqueta solo se ve en el teléfono: arriba ya está la de la columna. */
+function Celda({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400 md:hidden">
+        {etiqueta}
+      </p>
+      {children}
+    </div>
+  );
+}

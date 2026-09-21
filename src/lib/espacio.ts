@@ -6,6 +6,7 @@ import type {
   Lead,
   MediaRef,
   MonthlyStat,
+  PlanMensual,
   Post,
 } from '@/types';
 import type { Branding } from '@/lib/theme';
@@ -36,6 +37,8 @@ export interface DatosEspacio {
   monthlyStats: MonthlyStat[];
   leads: Lead[];
   hashtagSets: HashtagSet[];
+  /** La planificación previa de cada mes. No viaja al portal del cliente. */
+  planes: PlanMensual[];
   branding?: Branding;
   brandLogo?: MediaRef;
 }

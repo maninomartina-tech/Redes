@@ -235,6 +235,39 @@ describe('portal del cliente', () => {
     );
   });
 
+  it('la planificación previa no le llega', async () => {
+    // El plan del mes es trabajo interno: borradores, ideas a medio escribir y
+    // copys sin aprobar. Al cliente le llega el contenido cuando ella lo pasa
+    // al calendario, no antes.
+    const antes = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
+    const conPlan = {
+      ...antes.datos,
+      planes: [
+        {
+          id: 'plan_a',
+          clientId: 'cli_a',
+          month: '2026-09',
+          objetivos: 'Secreto de trabajo de Aurora',
+          plan: 'Tres reels y un carrusel',
+          filas: [{ id: 'f1', fecha: '2026-09-03T12:00:00.000Z', tipo: 'reel', copy: 'Borrador' }],
+        },
+      ],
+    };
+    const guardado = await fetch(`${base}/api/espacio`, {
+      method: 'PUT',
+      headers: conClave(),
+      body: JSON.stringify({ datos: conPlan, version: antes.version }),
+    });
+    assert.equal(guardado.status, 200);
+
+    const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
+    assert.equal(d.planes, undefined, 'el cliente no puede ver la planificación previa');
+    assert.ok(
+      !JSON.stringify(d).includes('Secreto de trabajo'),
+      'no puede colarse por ningún otro lado'
+    );
+  });
+
   it('y no le llega lo de adentro de la herramienta', async () => {
     // El id de la campaña en Meta no le sirve de nada y no tiene por qué
     // viajar: cada campo que llega es uno que hay que decidir mostrar.

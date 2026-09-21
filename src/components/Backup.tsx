@@ -35,6 +35,7 @@ export default function Backup() {
       monthlyStats: estado.monthlyStats,
       leads: estado.leads,
       hashtagSets: estado.hashtagSets,
+      planes: estado.planes,
       branding: estado.branding,
       brandLogo: estado.brandLogo,
     };

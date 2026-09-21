@@ -52,7 +52,17 @@ db.exec(`
   );
 `);
 
-const VACIO = { clients: [], posts: [], campaigns: [], ads: [], monthlyStats: [], leads: [] };
+const VACIO = {
+  clients: [],
+  posts: [],
+  campaigns: [],
+  ads: [],
+  monthlyStats: [],
+  leads: [],
+  // La planificación previa de cada mes. Es trabajo interno: no viaja a los
+  // portales de los clientes (ver `datosDelPortal`).
+  planes: [],
+};
 
 /* ------------------------------- documento ------------------------------- */
 

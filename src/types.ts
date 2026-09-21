@@ -83,6 +83,49 @@ export interface HashtagSet {
 }
 
 /**
+ * Una línea del plan del mes: lo mínimo para poder salir a grabar.
+ *
+ * A propósito no tiene más campos. Esto se llena de una sentada, antes de que
+ * exista ninguna pieza, y cada columna de más es una excusa para frenarse.
+ */
+export interface FilaDePlan {
+  id: string;
+  /** El día en que sale. ISO, con hora, aunque en la tabla se muestre el día. */
+  fecha: string;
+  tipo: PostType;
+  /** Link a la referencia, cuando hace falta mirarla para grabar. */
+  referencia?: string;
+  copy: string;
+  /**
+   * La pieza que se creó al pasar esta línea al calendario.
+   *
+   * Es lo que evita que pasarlo dos veces duplique todo: una línea con esto
+   * puesto ya está del otro lado.
+   */
+  postId?: string;
+}
+
+/**
+ * La planificación de un mes, antes del calendario.
+ *
+ * El calendario es para producir: una pieza por vez, con su estado y sus
+ * comentarios. Esto es el paso anterior —pensar el mes entero de un saque,
+ * escribir los copys seguidos y llevarse la hoja para grabar—, y recién
+ * cuando está listo se pasa al calendario.
+ */
+export interface PlanMensual {
+  id: string;
+  clientId: string;
+  /** 'YYYY-MM' */
+  month: string;
+  /** Qué se busca este mes. */
+  objetivos: string;
+  /** Qué se va a desarrollar para lograrlo. */
+  plan: string;
+  filas: FilaDePlan[];
+}
+
+/**
  * Foto mensual de la cuenta. Se carga a mano: no depende de Meta, así que
  * sirve igual para cuentas sin conexión a la API.
  *

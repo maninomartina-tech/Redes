@@ -1,6 +1,7 @@
 import {
   BarChart3,
   CalendarDays,
+  ClipboardList,
   Grid3x3,
   Hash,
   LayoutDashboard,
@@ -43,7 +44,10 @@ export const creadoraNav: NavGroup[] = [
   {
     title: 'Contenido',
     items: [
-      { to: '/planificacion', label: 'Planificación', icon: CalendarDays },
+      // Dos cosas distintas, y el nombre lo tiene que decir: acá se piensa el
+      // mes, allá se produce pieza por pieza.
+      { to: '/plan', label: 'Planificación', icon: ClipboardList },
+      { to: '/planificacion', label: 'Calendario', icon: CalendarDays },
       { to: '/historias', label: 'Historias', icon: Zap },
       { to: '/publicar', label: 'Para publicar', icon: Send },
       { to: '/feed', label: 'Vista del feed', icon: Grid3x3 },

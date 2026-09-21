@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ClipboardList,
   Grid3x3,
   Home,
   MoreHorizontal,
@@ -13,12 +14,18 @@ import { useStore } from '@/store/useStore';
 import { useBaseCliente } from '@/lib/rutas';
 import { clienteNav, creadoraNav, type NavItem } from '@/components/layout/Sidebar';
 
-/** Accesos directos de la barra inferior. El resto vive en "Más". */
+/**
+ * Accesos directos de la barra inferior. El resto vive en "Más".
+ *
+ * Entran cuatro y no cinco: con seis botones en 390px las etiquetas se parten
+ * en dos renglones. Crecimiento se mira una vez por mes, así que sale de acá y
+ * queda en "Más"; el plan y el calendario se abren todos los días.
+ */
 const atajosCreadora: NavItem[] = [
-  { to: '/planificacion', label: 'Plan', icon: CalendarDays },
+  { to: '/plan', label: 'Plan', icon: ClipboardList },
+  { to: '/planificacion', label: 'Calendario', icon: CalendarDays },
   { to: '/publicar', label: 'Publicar', icon: Send },
   { to: '/feed', label: 'Feed', icon: Grid3x3 },
-  { to: '/crecimiento', label: 'Crecim.', icon: TrendingUp },
 ];
 
 const atajosCliente = (base: string): NavItem[] => [

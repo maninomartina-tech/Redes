@@ -1,14 +1,17 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { filasListas, tituloDeFila } from '@/lib/plan';
 import type {
   Ad,
   Campaign,
   Client,
   Comment,
+  FilaDePlan,
   HashtagSet,
   Lead,
   MediaRef,
   MonthlyStat,
+  PlanMensual,
   Platform,
   Post,
   PostMetrics,
@@ -248,6 +251,21 @@ interface State {
   marcarPublicado: (id: string, datos?: { fecha?: string; permalink?: string }) => void;
   setMetrics: (id: string, m: PostMetrics) => void;
 
+  // planificación previa del mes
+  planes: PlanMensual[];
+  /** Crea el plan de ese mes si no existía, y le aplica el cambio. */
+  guardarPlan: (clientId: string, month: string, patch: Partial<PlanMensual>) => PlanMensual;
+  agregarFila: (planId: string, fila: Omit<FilaDePlan, 'id'>) => void;
+  actualizarFila: (planId: string, filaId: string, patch: Partial<FilaDePlan>) => void;
+  quitarFila: (planId: string, filaId: string) => void;
+  /**
+   * Pasa al calendario las líneas escritas que todavía no estaban.
+   *
+   * Lo decide ella, no pasa solo: hasta que no toca el botón, el plan es un
+   * borrador y el calendario no se entera.
+   */
+  pasarPlanAlCalendario: (planId: string) => { pasadas: number };
+
   // hashtags guardados
   hashtagSets: HashtagSet[];
   addHashtagSet: (clientId: string, name: string, tags: string[]) => void;
@@ -296,6 +314,7 @@ function datosDelEspacio(s: State): DatosEspacio {
     monthlyStats: s.monthlyStats,
     leads: s.leads,
     hashtagSets: s.hashtagSets,
+    planes: s.planes,
     branding: s.branding,
     brandLogo: s.brandLogo,
   };
@@ -427,6 +446,7 @@ export const useStore = create<State>()(
               monthlyStats: datos.monthlyStats ?? [],
               leads: datos.leads ?? [],
               hashtagSets: datos.hashtagSets ?? [],
+              planes: datos.planes ?? [],
               branding,
               brandLogo: datos.brandLogo,
               currentClientId:
@@ -466,6 +486,7 @@ export const useStore = create<State>()(
             monthlyStats: r.datos.monthlyStats ?? [],
             leads: r.datos.leads ?? [],
             hashtagSets: r.datos.hashtagSets ?? [],
+            planes: r.datos.planes ?? [],
             branding,
             brandLogo: r.datos.brandLogo,
             currentClientId: r.datos.clients[0]?.id ?? get().currentClientId,
@@ -941,6 +962,7 @@ export const useStore = create<State>()(
             monthlyStats: s.monthlyStats.filter((m) => m.clientId !== clientId),
             leads: s.leads.filter((l) => l.clientId !== clientId),
             hashtagSets: s.hashtagSets.filter((h) => h.clientId !== clientId),
+            planes: s.planes.filter((p) => p.clientId !== clientId),
             currentClientId:
               s.currentClientId === clientId ? clients[0]?.id ?? '' : s.currentClientId,
           };
@@ -1009,6 +1031,96 @@ export const useStore = create<State>()(
         set((s) => ({
           posts: s.posts.map((p) => (p.id === id ? { ...p, metrics } : p)),
         })),
+
+      planes: [],
+
+      guardarPlan: (clientId, month, patch) => {
+        const existente = get().planes.find(
+          (p) => p.clientId === clientId && p.month === month
+        );
+
+        if (existente) {
+          const actualizado = { ...existente, ...patch };
+          set((s) => ({
+            planes: s.planes.map((p) => (p.id === existente.id ? actualizado : p)),
+          }));
+          return actualizado;
+        }
+
+        const nuevo: PlanMensual = {
+          id: uid('plan'),
+          clientId,
+          month,
+          objetivos: '',
+          plan: '',
+          filas: [],
+          ...patch,
+        };
+        set((s) => ({ planes: [...s.planes, nuevo] }));
+        return nuevo;
+      },
+
+      agregarFila: (planId, fila) =>
+        set((s) => ({
+          planes: s.planes.map((p) =>
+            p.id === planId ? { ...p, filas: [...p.filas, { ...fila, id: uid('fila') }] } : p
+          ),
+        })),
+
+      actualizarFila: (planId, filaId, patch) =>
+        set((s) => ({
+          planes: s.planes.map((p) =>
+            p.id === planId
+              ? { ...p, filas: p.filas.map((f) => (f.id === filaId ? { ...f, ...patch } : f)) }
+              : p
+          ),
+        })),
+
+      quitarFila: (planId, filaId) =>
+        set((s) => ({
+          planes: s.planes.map((p) =>
+            p.id === planId ? { ...p, filas: p.filas.filter((f) => f.id !== filaId) } : p
+          ),
+        })),
+
+      pasarPlanAlCalendario: (planId) => {
+        const plan = get().planes.find((p) => p.id === planId);
+        if (!plan) return { pasadas: 0 };
+
+        const pendientes = filasListas(plan, get().posts);
+        const creados = new Map<string, string>();
+
+        pendientes.forEach((fila) => {
+          const post = get().addPost({
+            clientId: plan.clientId,
+            type: fila.tipo,
+            title: tituloDeFila(fila),
+            date: fila.fecha,
+            copy: fila.copy,
+            // La referencia es el link que se miró para pensarla: del otro lado
+            // ya existe ese campo, así que sigue estando a mano al grabar.
+            inspiracionUrl: fila.referencia || undefined,
+          });
+          creados.set(fila.id, post.id);
+        });
+
+        // Cada línea se queda con el id de su pieza: es lo que impide que
+        // tocar el botón dos veces duplique el mes entero.
+        set((s) => ({
+          planes: s.planes.map((p) =>
+            p.id !== planId
+              ? p
+              : {
+                  ...p,
+                  filas: p.filas.map((f) =>
+                    creados.has(f.id) ? { ...f, postId: creados.get(f.id) } : f
+                  ),
+                }
+          ),
+        }));
+
+        return { pasadas: pendientes.length };
+      },
 
       hashtagSets: [],
 
@@ -1120,6 +1232,7 @@ export const useStore = create<State>()(
       migrate: (persisted, from) => {
         const s = persisted as Partial<State>;
         s.hashtagSets ??= [];
+        s.planes ??= [];
 
         // El flujo pasó a tener tres etapas: "idea" y "producción" ya no
         // existen. Se traduce lo que haya cargado en vez de perderlo.
@@ -1167,6 +1280,7 @@ const CLAVES_DE_DATOS = [
   'monthlyStats',
   'leads',
   'hashtagSets',
+  'planes',
   'branding',
   'brandLogo',
 ] as const;
