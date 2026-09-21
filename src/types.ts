@@ -85,8 +85,9 @@ export interface HashtagSet {
 /**
  * Una línea del plan del mes: lo mínimo para poder salir a grabar.
  *
- * A propósito no tiene más campos. Esto se llena de una sentada, antes de que
- * exista ninguna pieza, y cada columna de más es una excusa para frenarse.
+ * Cuándo sale, qué es, de dónde salió la idea, qué se dice y qué se escribe
+ * abajo. Nada más: esto se llena de una sentada, antes de que exista ninguna
+ * pieza, y cada campo de más es una excusa para frenarse.
  */
 export interface FilaDePlan {
   id: string;
@@ -95,6 +96,14 @@ export interface FilaDePlan {
   tipo: PostType;
   /** Link a la referencia, cuando hace falta mirarla para grabar. */
   referencia?: string;
+  /**
+   * El contenido de la pieza: el guion del reel, lo que dice cada placa del
+   * carrusel, la idea escrita del posteo.
+   *
+   * Es lo que se lee mientras se graba, así que es lo que más lugar necesita.
+   * Del otro lado cae en `contenido` de la pieza, que es el mismo campo.
+   */
+  contenido?: string;
   copy: string;
   /**
    * La pieza que se creó al pasar esta línea al calendario.

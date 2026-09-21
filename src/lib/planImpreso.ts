@@ -37,6 +37,14 @@ const COMO_SE_LLAMA: Record<PostType, string> = {
   historia: 'Historia',
 };
 
+/** Cómo se llama el guion según lo que se vaya a grabar. */
+function tituloDelGuion(tipo: PostType): string {
+  if (tipo === 'reel') return 'Contenido del reel (el diálogo)';
+  if (tipo === 'carrusel') return 'Contenido del carrusel (placa por placa)';
+  if (tipo === 'historia') return 'Contenido de la historia';
+  return 'Contenido del posteo';
+}
+
 export interface PlanParaImprimir {
   cliente: Client;
   mes: string;
@@ -48,20 +56,29 @@ export interface PlanParaImprimir {
 export function htmlDelPlan({ cliente, mes, objetivos, plan, filas }: PlanParaImprimir): string {
   const orden = filasOrdenadas(filas);
 
+  // Cada contenido es un bloque y no un renglón de cinco celdas: el guion es
+  // lo que se lee mientras se graba, y en una columna angosta no se lee.
   const renglones = orden
     .map((f) => {
+      const parte = (titulo: string, texto: string, falta: string) =>
+        `<div class="parte"><p class="que">${titulo}</p><p class="dice">${
+          texto.trim() ? esc(texto) : `<span class="vacio">${falta}</span>`
+        }</p></div>`;
+
       const referencia = f.referencia?.trim()
-        ? `<a href="${esc(f.referencia)}">${esc(f.referencia)}</a>`
-        : '<span class="vacio">—</span>';
-      const copy = f.copy.trim()
-        ? esc(f.copy)
-        : '<span class="vacio">Sin copy todavía</span>';
+        ? `<p class="ref"><a href="${esc(f.referencia)}">${esc(f.referencia)}</a></p>`
+        : '';
 
       return `<tr>
-        <td class="fecha">${esc(conMayuscula(fmt(f.fecha, "EEE d 'de' MMM")))}</td>
-        <td><span class="tipo">${COMO_SE_LLAMA[f.tipo]}</span></td>
-        <td class="ref">${referencia}</td>
-        <td class="copy">${copy}</td>
+        <td class="cuando">
+          <p class="fecha">${esc(conMayuscula(fmt(f.fecha, "EEE d 'de' MMM")))}</p>
+          <p><span class="tipo">${COMO_SE_LLAMA[f.tipo]}</span></p>
+          ${referencia}
+        </td>
+        <td class="que-va">
+          ${parte(tituloDelGuion(f.tipo), f.contenido ?? '', 'Sin guion todavía')}
+          ${parte('Copy', f.copy, 'Sin copy todavía')}
+        </td>
       </tr>`;
     })
     .join('\n');
@@ -99,16 +116,23 @@ export function htmlDelPlan({ cliente, mes, objetivos, plan, filas }: PlanParaIm
     text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
     color: #8a6865; border-bottom: 1px solid #d8c4b4; padding: 0 8px 5px 0;
   }
-  td { vertical-align: top; padding: 9px 8px 9px 0; border-bottom: 1px solid #ece0d4; }
+  td { vertical-align: top; padding: 11px 10px 13px 0; border-bottom: 1px solid #ece0d4; }
   tr { break-inside: avoid; page-break-inside: avoid; }
-  .fecha { white-space: nowrap; font-weight: 600; width: 108px; }
+  .cuando { width: 140px; }
+  .cuando p { margin: 0 0 5px; }
+  .fecha { font-weight: 700; font-size: 14px; }
   .tipo {
     display: inline-block; background: #f3e7db; border-radius: 20px;
     padding: 1px 9px; font-size: 11px; font-weight: 600; color: #4a1e1a;
   }
-  .ref { width: 150px; word-break: break-all; font-size: 11px; }
+  .ref { word-break: break-all; font-size: 10px; line-height: 1.35; }
   .ref a { color: #8a6865; }
-  .copy { white-space: pre-wrap; }
+  .parte + .parte { margin-top: 9px; }
+  .que {
+    margin: 0 0 2px; font-size: 10px; font-weight: 700; letter-spacing: .05em;
+    text-transform: uppercase; color: #8a6865;
+  }
+  .dice { margin: 0; white-space: pre-wrap; }
   .vacio { color: #b9a69c; }
   .nada { color: #8a6865; padding: 20px 0; }
   .barra {
@@ -148,7 +172,7 @@ export function htmlDelPlan({ cliente, mes, objetivos, plan, filas }: PlanParaIm
         orden.length === 0
           ? '<p class="nada">Todavía no hay contenido cargado.</p>'
           : `<table>
-        <thead><tr><th>Fecha</th><th>Tipo</th><th>Referencia</th><th>Copy</th></tr></thead>
+        <thead><tr><th>Cuándo</th><th>Qué va</th></tr></thead>
         <tbody>${renglones}</tbody>
       </table>`
       }

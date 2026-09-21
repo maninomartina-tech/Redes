@@ -1097,6 +1097,9 @@ export const useStore = create<State>()(
             title: tituloDeFila(fila),
             date: fila.fecha,
             copy: fila.copy,
+            // El guion del plan es el mismo campo que el contenido de la
+            // pieza: se sigue escribiendo del otro lado, no se copia.
+            contenido: fila.contenido ?? '',
             // La referencia es el link que se miró para pensarla: del otro lado
             // ya existe ese campo, así que sigue estando a mano al grabar.
             inspiracionUrl: fila.referencia || undefined,

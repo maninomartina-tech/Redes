@@ -9,9 +9,10 @@ import { fmt } from '@/lib/date';
 // entero de un saque: qué se busca, qué se va a desarrollar y qué sale cada
 // día, con el copy escrito seguido.
 //
-// Eso es lo que vive acá, y por eso una fila tiene cuatro cosas y nada más:
-// fecha, tipo, referencia y copy. Lo demás —la pieza, el estado, la
-// aprobación— aparece recién cuando el plan se pasa al calendario.
+// Eso es lo que vive acá, y por eso una fila tiene cinco cosas y nada más:
+// fecha, tipo, referencia, el contenido —el guion— y el copy. Lo demás —la
+// pieza, el estado, la aprobación— aparece recién cuando se pasa al
+// calendario.
 // ---------------------------------------------------------------------------
 
 /** 'YYYY-MM' del mes de una fecha. */
@@ -58,14 +59,14 @@ export function filasOrdenadas(filas: FilaDePlan[]): FilaDePlan[] {
 }
 
 /**
- * El título de la pieza, sacado del copy.
+ * El título de la pieza, sacado de lo que ya está escrito.
  *
- * La tabla del plan no pide título —son cuatro columnas y ninguna es esa—,
- * pero del otro lado cada pieza necesita un nombre para poder encontrarla. El
- * primer renglón del copy es lo que ella reconocería.
+ * El plan no pide título —ninguna de sus columnas lo es—, pero del otro lado
+ * cada pieza necesita un nombre para poder encontrarla. El primer renglón del
+ * copy, o del guion si el copy todavía está vacío, es lo que ella reconocería.
  */
 export function tituloDeFila(fila: FilaDePlan): string {
-  const primera = fila.copy
+  const primera = `${fila.copy}\n${fila.contenido ?? ''}`
     .split('\n')
     .map((l) => l.trim())
     .find((l) => l.length > 0);
@@ -99,11 +100,14 @@ export function filasPendientes(plan: PlanMensual, posts: Post[]): FilaDePlan[] 
 /**
  * ¿Se puede pasar al calendario?
  *
- * Una línea sin copy no es una pieza: sería crear un contenido vacío en el
- * calendario y tener que completarlo igual. Se pasan las que están escritas.
+ * Una línea vacía no es una pieza: sería crear un contenido en blanco y tener
+ * que completarlo igual. Alcanza con el guion o con el copy —un reel puede
+ * tener el guion escrito y el copy todavía no— pero algo tiene que haber.
  */
 export function filasListas(plan: PlanMensual, posts: Post[]): FilaDePlan[] {
-  return filasPendientes(plan, posts).filter((f) => f.copy.trim().length > 0);
+  return filasPendientes(plan, posts).filter(
+    (f) => f.copy.trim().length > 0 || (f.contenido ?? '').trim().length > 0
+  );
 }
 
 /** Cuántas hay de cada tipo, para el resumen de arriba. */
@@ -113,12 +117,23 @@ export function cuentaPorTipo(filas: FilaDePlan[]): Record<PostType, number> {
   return cuenta;
 }
 
-/** Una fila nueva, el día que sigue a la última. */
-export function filaNueva(plan: PlanMensual | undefined, mes: string): Omit<FilaDePlan, 'id'> {
+/**
+ * Una fila nueva, el día que sigue a la última.
+ *
+ * La primera del mes cae hoy, no el día 1: si estamos a 21 no tiene sentido
+ * empezar a planificar el 1, que ya pasó. En un mes que todavía no empezó, en
+ * cambio, el 1 es el principio de verdad.
+ */
+export function filaNueva(
+  plan: PlanMensual | undefined,
+  mes: string,
+  hoy = new Date()
+): Omit<FilaDePlan, 'id'> {
   const ultimas = filasOrdenadas(plan?.filas ?? []);
   const ultima = ultimas[ultimas.length - 1];
 
-  const fecha = ultima ? new Date(ultima.fecha) : fechaDeMes(mes);
+  const arranque = claveDeMes(hoy) === mes ? new Date(hoy) : fechaDeMes(mes);
+  const fecha = ultima ? new Date(ultima.fecha) : arranque;
   if (ultima) fecha.setDate(fecha.getDate() + 2);
   fecha.setHours(12, 0, 0, 0);
 

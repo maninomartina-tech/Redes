@@ -7,7 +7,7 @@ import {
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { FilaDePlan, PostType } from '@/types';
@@ -35,9 +35,10 @@ import { SectionTitle } from '@/components/ui';
 // entero de un saque —qué se busca, qué se va a desarrollar, qué sale cada día
 // y con qué copy— y llevarse esa hoja para grabar.
 //
-// Por eso esta pantalla es una tabla de cuatro columnas y dos textos, y nada
-// más. Cuando el mes está pensado, ella decide pasarlo al calendario: hasta
-// entonces es un borrador y del otro lado no aparece nada.
+// Cada contenido es una línea de datos —cuándo, qué, de dónde salió la idea— y
+// abajo las dos cajas donde se escribe de verdad: el guion, que es lo que se
+// lee al grabar, y el copy. Cuando el mes está pensado, ella decide pasarlo al
+// calendario: hasta entonces es un borrador y del otro lado no aparece nada.
 // ---------------------------------------------------------------------------
 
 const TIPOS: { valor: PostType; nombre: string }[] = [
@@ -65,10 +66,7 @@ export default function PlanMensual() {
   const plan = planDeCliente(planes, client.id, mes);
   const filas = useMemo(() => filasOrdenadas(plan?.filas ?? []), [plan]);
   const cuenta = useMemo(() => cuentaPorTipo(filas), [filas]);
-  const listas = useMemo(
-    () => (plan ? filasListas(plan, posts) : []),
-    [plan, posts]
-  );
+  const listas = useMemo(() => (plan ? filasListas(plan, posts) : []), [plan, posts]);
   const yaPasadas = filas.filter((f) => yaEstaEnElCalendario(f, posts)).length;
 
   /** Escribir en cualquier campo crea el plan del mes si todavía no existía. */
@@ -77,7 +75,7 @@ export default function PlanMensual() {
 
   const nuevaFila = () => {
     const creado = guardarPlan(client.id, mes, {});
-    agregarFila(creado.id, filaNueva(creado, mes));
+    agregarFila(creado.id, filaNueva(creado, mes, hoy));
   };
 
   const descargar = () => {
@@ -91,7 +89,7 @@ export default function PlanMensual() {
     });
     if (!ok) {
       setAviso(
-        'El navegador bloqueó la ventana del PDF. Permitile abrir ventanas a este sitio y probá de nuevo.'
+        'El navegador bloqueó la ventana del PDF. Permitile abrir ventanas a este sitio y probá de nuevo.',
       );
     }
   };
@@ -119,7 +117,7 @@ export default function PlanMensual() {
               disabled={listas.length === 0}
               title={
                 listas.length === 0
-                  ? 'Escribí el copy de al menos un contenido'
+                  ? 'Escribí el contenido o el copy de al menos una línea'
                   : `Pasar ${listas.length} al calendario`
               }
             >
@@ -151,16 +149,21 @@ export default function PlanMensual() {
           <ChevronRight size={18} />
         </button>
         {mes !== claveDeMes(hoy) && (
-          <button className="btn-outline !py-1.5 text-xs" onClick={() => setMes(claveDeMes(hoy))}>
+          <button
+            className="btn-outline !py-1.5 text-xs"
+            onClick={() => setMes(claveDeMes(hoy))}
+          >
             Este mes
           </button>
         )}
         <span className="ml-auto hidden text-xs text-ink-400 sm:block">
           {filas.length} {filas.length === 1 ? 'contenido' : 'contenidos'}
           {cuenta.reel > 0 && ` · ${cuenta.reel} reel${cuenta.reel === 1 ? '' : 's'}`}
-          {cuenta.carrusel > 0 && ` · ${cuenta.carrusel} carrusel${cuenta.carrusel === 1 ? '' : 'es'}`}
+          {cuenta.carrusel > 0 &&
+            ` · ${cuenta.carrusel} carrusel${cuenta.carrusel === 1 ? '' : 'es'}`}
           {cuenta.post > 0 && ` · ${cuenta.post} posteo${cuenta.post === 1 ? '' : 's'}`}
-          {cuenta.historia > 0 && ` · ${cuenta.historia} historia${cuenta.historia === 1 ? '' : 's'}`}
+          {cuenta.historia > 0 &&
+            ` · ${cuenta.historia} historia${cuenta.historia === 1 ? '' : 's'}`}
         </span>
       </div>
 
@@ -191,11 +194,13 @@ export default function PlanMensual() {
 
       {/* la tabla */}
       <div className="card overflow-hidden">
-        <div className="hidden gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500 md:grid md:grid-cols-[150px_128px_minmax(0,1fr)_minmax(0,2fr)_32px]">
+        {/* Los encabezados son de la línea de arriba de cada contenido. El
+            guion y el copy van abajo, con su propia etiqueta: son cajas de
+            escribir, no celdas, y necesitan todo el ancho. */}
+        <div className="hidden gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-ink-500 md:grid md:grid-cols-[150px_128px_minmax(0,1fr)_32px]">
           <span>Fecha</span>
-          <span>Contenido</span>
+          <span>Tipo</span>
           <span>Referencia</span>
-          <span>Copy</span>
           <span />
         </div>
 
@@ -229,8 +234,9 @@ export default function PlanMensual() {
           incluso —sobre todo— cuando está apagado. */}
       <p className="mt-3 text-sm leading-snug text-ink-500">
         <b className="text-ink-700">{estadoDelMes(filas.length, listas.length, yaPasadas)}</b>{' '}
-        Al pasarlo, cada línea con copy se convierte en un contenido del calendario, en
-        revisión, esperando al cliente. Lo que ya pasó no se duplica.
+        Al pasarlo, cada línea escrita —con el guion, con el copy o con los dos— se
+        convierte en un contenido del calendario, en revisión, esperando al cliente. Lo que
+        ya pasó no se duplica.
       </p>
     </div>
   );
@@ -245,7 +251,7 @@ function estadoDelMes(cuantas: number, listas: number, pasadas: number): string 
       : `${listas} contenidos listos para pasar al calendario.`;
   }
   if (pasadas > 0) return 'Todo lo escrito ya está en el calendario.';
-  return 'Escribí el copy para poder pasarlo al calendario.';
+  return 'Escribí el contenido o el copy para poder pasarlo al calendario.';
 }
 
 function Texto({
@@ -299,81 +305,154 @@ function Renglon({
   onBorrar: () => void;
 }) {
   return (
-    <div className="grid gap-2 p-3 md:grid-cols-[150px_128px_minmax(0,1fr)_minmax(0,2fr)_32px] md:items-start md:gap-3 md:px-4">
-      <Celda etiqueta="Fecha">
-        <input
-          type="date"
-          className="input !py-1.5 text-sm"
-          aria-label={`Fecha del contenido ${numero}`}
-          value={paraInput(fila.fecha).slice(0, 10)}
-          onChange={(e) =>
-            e.target.value && onCambio({ fecha: desdeInput(`${e.target.value}T12:00`) })
-          }
+    <div className="p-3 md:px-4">
+      <div className="grid gap-2 md:grid-cols-[150px_128px_minmax(0,1fr)_32px] md:items-center md:gap-3">
+        <Celda etiqueta="Fecha">
+          <input
+            type="date"
+            className="input !py-1.5 text-sm"
+            aria-label={`Fecha del contenido ${numero}`}
+            value={paraInput(fila.fecha).slice(0, 10)}
+            onChange={(e) =>
+              e.target.value && onCambio({ fecha: desdeInput(`${e.target.value}T12:00`) })
+            }
+          />
+        </Celda>
+
+        <Celda etiqueta="Tipo">
+          <select
+            className="input !py-1.5 text-sm"
+            aria-label={`Tipo del contenido ${numero}`}
+            value={fila.tipo}
+            onChange={(e) => onCambio({ tipo: e.target.value as PostType })}
+          >
+            {TIPOS.map((t) => (
+              <option key={t.valor} value={t.valor}>
+                {t.nombre}
+              </option>
+            ))}
+          </select>
+        </Celda>
+
+        <Celda etiqueta="Referencia">
+          <input
+            type="url"
+            className="input !py-1.5 text-sm"
+            placeholder="Link, si hace falta"
+            aria-label={`Referencia del contenido ${numero}`}
+            value={fila.referencia ?? ''}
+            onChange={(e) => onCambio({ referencia: e.target.value })}
+          />
+        </Celda>
+
+        <div className="flex items-center justify-end gap-2 md:justify-center">
+          {enElCalendario && (
+            <span
+              className="chip bg-mint-100 text-mint-600 md:hidden"
+              title="Ya está en el calendario"
+            >
+              En el calendario
+            </span>
+          )}
+          {enElCalendario && (
+            <span
+              className="hidden h-2 w-2 shrink-0 rounded-full bg-mint-400 md:block"
+              title="Ya está en el calendario"
+              aria-label={`El contenido ${numero} ya está en el calendario`}
+            />
+          )}
+          <button
+            className="text-ink-300 transition hover:text-rose-600"
+            onClick={onBorrar}
+            aria-label={`Borrar el contenido ${numero}`}
+            title="Borrar esta línea"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+
+      {/* Lo que se lee al grabar y lo que se pega al publicar. Las dos cajas
+          grandes, una al lado de la otra cuando hay lugar. */}
+      <div className="mt-2 grid gap-2 lg:grid-cols-2 lg:gap-3">
+        <CajaDeTexto
+          etiqueta={etiquetaDelGuion(fila.tipo)}
+          placeholder={placeholderDelGuion(fila.tipo)}
+          aria-label={`Contenido del contenido ${numero}`}
+          valor={fila.contenido ?? ''}
+          onChange={(contenido) => onCambio({ contenido })}
         />
-      </Celda>
-
-      <Celda etiqueta="Contenido">
-        <select
-          className="input !py-1.5 text-sm"
-          aria-label={`Tipo del contenido ${numero}`}
-          value={fila.tipo}
-          onChange={(e) => onCambio({ tipo: e.target.value as PostType })}
-        >
-          {TIPOS.map((t) => (
-            <option key={t.valor} value={t.valor}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
-      </Celda>
-
-      <Celda etiqueta="Referencia">
-        <input
-          type="url"
-          className="input !py-1.5 text-sm"
-          placeholder="Link, si hace falta"
-          aria-label={`Referencia del contenido ${numero}`}
-          value={fila.referencia ?? ''}
-          onChange={(e) => onCambio({ referencia: e.target.value })}
-        />
-      </Celda>
-
-      <Celda etiqueta="Copy">
-        <textarea
-          rows={3}
-          className="input !py-1.5 resize-y text-sm"
+        <CajaDeTexto
+          etiqueta="Copy"
           placeholder="El texto que va a acompañar la pieza"
           aria-label={`Copy del contenido ${numero}`}
-          value={fila.copy}
-          onChange={(e) => onCambio({ copy: e.target.value })}
+          valor={fila.copy}
+          onChange={(copy) => onCambio({ copy })}
         />
-      </Celda>
-
-      <div className="flex items-center justify-end gap-2 md:justify-center md:pt-1.5">
-        {enElCalendario && (
-          <span
-            className="chip bg-mint-100 text-mint-600 md:hidden"
-            title="Ya está en el calendario"
-          >
-            En el calendario
-          </span>
-        )}
-        {enElCalendario && (
-          <span
-            className="hidden h-2 w-2 shrink-0 rounded-full bg-mint-400 md:block"
-            title="Ya está en el calendario"
-            aria-label={`El contenido ${numero} ya está en el calendario`}
-          />
-        )}
-        <button
-          className="text-ink-300 transition hover:text-rose-600"
-          onClick={onBorrar}
-          aria-label={`Borrar el contenido ${numero}`}
-          title="Borrar esta línea"
-        >
-          <Trash2 size={15} />
-        </button>
       </div>
+    </div>
+  );
+}
+
+/** Un ejemplo de cómo se escribe, según lo que se vaya a grabar. */
+function placeholderDelGuion(tipo: PostType): string {
+  if (tipo === 'reel') return 'Escena 1 (0-2s): …\nEscena 2 (2-8s): …\nEscena 3: el cierre';
+  if (tipo === 'carrusel') return 'Placa 1: el gancho\nPlaca 2: …\nÚltima placa: el cierre';
+  if (tipo === 'historia') return 'Qué se muestra y qué dice la placa';
+  return 'La idea escrita: qué se ve y qué cuenta';
+}
+
+/** Cómo se llama el guion según lo que se vaya a grabar. */
+function etiquetaDelGuion(tipo: PostType): string {
+  if (tipo === 'reel') return 'Contenido del reel (el diálogo)';
+  if (tipo === 'carrusel') return 'Contenido del carrusel (placa por placa)';
+  if (tipo === 'historia') return 'Contenido de la historia';
+  return 'Contenido del posteo';
+}
+
+/**
+ * Una caja de escribir de verdad.
+ *
+ * Crece con lo que se escribe hasta un tope y después hace scroll: un guion de
+ * reel son diez renglones, y tener que arrastrar la esquinita cada vez para
+ * leerlo entero es lo que hace que uno deje de escribirlo acá.
+ */
+function CajaDeTexto({
+  etiqueta,
+  placeholder,
+  valor,
+  onChange,
+  'aria-label': ariaLabel,
+}: {
+  etiqueta: string;
+  placeholder: string;
+  valor: string;
+  onChange: (v: string) => void;
+  'aria-label': string;
+}) {
+  const caja = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight + 2, 460)}px`;
+  }, [valor]);
+
+  return (
+    <div className="min-w-0">
+      <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wide text-ink-400">
+        {etiqueta}
+      </p>
+      <textarea
+        ref={caja}
+        rows={6}
+        className="input min-h-[7.5rem] resize-y py-2 text-sm leading-relaxed"
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        value={valor}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }
