@@ -61,6 +61,11 @@ export interface DatosPortal {
   campaigns: Campaign[];
   /** Las campañas de publicidad que se pagaron con su plata. */
   ads: Ad[];
+  /**
+   * De la planificación, solo los objetivos y el plan de cada mes: las líneas
+   * con los guiones y los copys no salen del lado de la creadora.
+   */
+  planes: Pick<PlanMensual, 'month' | 'objetivos' | 'plan'>[];
   monthlyStats: MonthlyStat[];
   leads: Lead[];
   branding?: Branding | null;

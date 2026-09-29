@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   MessageSquare,
   Sparkle,
+  Target,
   Type,
   Zap,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
 import { addDays, fmt, fmtTime, isSameDay, weekDays } from '@/lib/date';
 import { useAncla } from '@/lib/hoy';
+import { claveDeMes, nombreDeMes, planDeCliente } from '@/lib/plan';
 import { statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { plural } from '@/lib/texto';
@@ -118,6 +120,8 @@ export default function ClientWeek() {
           </div>
         )}
       </div>
+
+      <PlanDelMes clientId={client.id} mes={claveDeMes(anchor)} />
 
       {/* Las mismas solapas que ve la creadora. Lo que cambia es la segunda:
           a ella le sirve el estado de producción, al cliente su semana. */}
@@ -225,6 +229,54 @@ function SeccionHeader({
       <span className="rounded-full bg-ink-100 px-2 py-0.5 text-xs font-semibold text-ink-500">
         {cantidad}
       </span>
+    </div>
+  );
+}
+
+/**
+ * Los objetivos del mes y lo que se va a desarrollar.
+ *
+ * Es lo que ella le cuenta igual en la reunión: verlo escrito arriba del
+ * contenido es lo que hace que lo de abajo se entienda. Del plan no llega nada
+ * más —ni guiones ni copys sin aprobar—: eso se lo muestra cuando lo pasa al
+ * calendario.
+ */
+function PlanDelMes({ clientId, mes }: { clientId: string; mes: string }) {
+  const planes = useStore((s) => s.planes);
+  const plan = planDeCliente(planes, clientId, mes);
+
+  const objetivos = plan?.objetivos?.trim();
+  const desarrollo = plan?.plan?.trim();
+  if (!objetivos && !desarrollo) return null;
+
+  return (
+    <div className="card border-brand-200 bg-gradient-to-br from-brand-50 to-peach-50 p-5">
+      <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-brand-700">
+        <Target size={13} /> El plan de {nombreDeMes(mes)}
+      </p>
+
+      <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {objetivos && (
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Objetivos
+            </p>
+            <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+              {objetivos}
+            </p>
+          </div>
+        )}
+        {desarrollo && (
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Qué se va a desarrollar
+            </p>
+            <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-ink-700">
+              {desarrollo}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import {
   CalendarPlus,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
   FileDown,
   Plus,
   Trash2,
@@ -10,7 +12,7 @@ import {
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, useCurrentClient } from '@/store/useStore';
-import type { FilaDePlan, PostType } from '@/types';
+import type { FilaDePlan, PlanMensual, PostType } from '@/types';
 import { paraInput, desdeInput } from '@/lib/date';
 import { useHoy } from '@/lib/hoy';
 import {
@@ -70,8 +72,9 @@ export default function PlanMensual() {
   const yaPasadas = filas.filter((f) => yaEstaEnElCalendario(f, posts)).length;
 
   /** Escribir en cualquier campo crea el plan del mes si todavía no existía. */
-  const escribir = (patch: { objetivos?: string; plan?: string }) =>
-    guardarPlan(client.id, mes, patch);
+  const escribir = (patch: Partial<PlanMensual>) => guardarPlan(client.id, mes, patch);
+
+  const oculto = Boolean(plan?.ocultoParaCliente);
 
   const nuevaFila = () => {
     const creado = guardarPlan(client.id, mes, {});
@@ -190,6 +193,30 @@ export default function PlanMensual() {
           valor={plan?.plan ?? ''}
           onChange={(v) => escribir({ plan: v })}
         />
+      </div>
+
+      {/* Qué de todo esto ve el cliente. Va acá abajo de los dos textos,
+          pegado a lo que describe: es lo único del plan que le llega. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+        <button
+          className={`chip ${
+            oculto ? 'bg-ink-100 text-ink-500' : 'bg-mint-100 text-mint-600'
+          }`}
+          onClick={() => escribir({ ocultoParaCliente: !oculto })}
+          title={
+            oculto
+              ? 'Mostrarle al cliente los objetivos y el plan de este mes'
+              : 'Dejar de mostrárselos mientras los escribís'
+          }
+        >
+          {oculto ? <EyeOff size={13} /> : <Eye size={13} />}
+          {oculto ? 'El cliente no ve esto' : 'El cliente ve esto'}
+        </button>
+        <span className="text-xs leading-snug text-ink-400">
+          {oculto
+            ? 'Los objetivos y el plan de este mes quedan solo para vos.'
+            : 'Ve los objetivos y el plan, no las líneas de abajo.'}
+        </span>
       </div>
 
       {/* la tabla */}

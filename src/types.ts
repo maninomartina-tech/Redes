@@ -132,6 +132,15 @@ export interface PlanMensual {
   /** Qué se va a desarrollar para lograrlo. */
   plan: string;
   filas: FilaDePlan[];
+  /**
+   * El cliente ve los objetivos y el plan de cada mes; las líneas de abajo
+   * —el guion, el copy— no, que son borrador hasta que se pasan al calendario.
+   *
+   * Con esto se puede tapar un mes suelto: sirve para escribir tranquila los
+   * objetivos del mes que viene antes de contárselos. Por defecto está visible,
+   * porque una pantalla que hay que ir a habilitar no la ve nadie.
+   */
+  ocultoParaCliente?: boolean;
 }
 
 /**

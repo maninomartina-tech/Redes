@@ -272,6 +272,18 @@ function adParaCliente(a) {
 }
 
 /**
+ * Del plan del mes, lo único que le corresponde ver al cliente.
+ *
+ * Los objetivos y el plan se los cuenta ella igual: verlos escritos es parte
+ * de lo que paga. Las líneas de abajo no van: son borrador —guiones a medio
+ * escribir, copys sin aprobar— y le llegan cuando ella los pasa al calendario,
+ * que es el momento en que decide mostrárselos.
+ */
+function planParaCliente(p) {
+  return { month: p.month, objetivos: p.objetivos ?? '', plan: p.plan ?? '' };
+}
+
+/**
  * Lo que ve un cliente con su link: únicamente lo suyo.
  *
  * Se filtra acá, en el servidor, y no en la app: si dependiera del navegador,
@@ -310,6 +322,16 @@ export function datosDelPortal(token, cuentaPedida) {
     campaigns: (datos.campaigns ?? []).filter((c) => c.clientId === id),
     // Las campañas de publicidad: el cliente ve en qué se le fue la plata.
     ads: (datos.ads ?? []).filter((a) => a.clientId === id).map(adParaCliente),
+    // De la planificación, solo los objetivos y el plan de cada mes, y solo de
+    // los meses que ella no tapó y que tienen algo escrito.
+    planes: (datos.planes ?? [])
+      .filter(
+        (p) =>
+          p.clientId === id &&
+          !p.ocultoParaCliente &&
+          ((p.objetivos ?? '').trim() || (p.plan ?? '').trim())
+      )
+      .map(planParaCliente),
     monthlyStats: (datos.monthlyStats ?? []).filter((m) => m.clientId === id),
     // Las ventas solo si ese cliente las mide.
     leads: cliente.tracksLeads ? (datos.leads ?? []).filter((l) => l.clientId === id) : [],

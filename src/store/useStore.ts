@@ -584,6 +584,15 @@ export const useStore = create<State>()(
               monthlyStats: d.monthlyStats,
               leads: d.leads,
               ads: d.ads ?? [],
+              // Del plan llegan los objetivos y el plan de cada mes, sin las
+              // líneas: las filas vacías son la verdad de lo que recibió, no
+              // un recorte que haga la pantalla.
+              planes: (d.planes ?? []).map((pl) => ({
+                ...pl,
+                id: `plan_${pl.month}`,
+                clientId: d.cliente.id,
+                filas: [],
+              })),
               branding,
               brandLogo: d.brandLogo ?? undefined,
               sincro: { estado: 'listo' },

@@ -235,10 +235,8 @@ describe('portal del cliente', () => {
     );
   });
 
-  it('la planificación previa no le llega', async () => {
-    // El plan del mes es trabajo interno: borradores, ideas a medio escribir y
-    // copys sin aprobar. Al cliente le llega el contenido cuando ella lo pasa
-    // al calendario, no antes.
+  /** Deja cargados dos planes: uno de Aurora y uno de Flora. */
+  const cargarPlanes = async (extra = {}) => {
     const antes = await (await fetch(`${base}/api/espacio`, { headers: conClave() })).json();
     const conPlan = {
       ...antes.datos,
@@ -247,9 +245,26 @@ describe('portal del cliente', () => {
           id: 'plan_a',
           clientId: 'cli_a',
           month: '2026-09',
-          objetivos: 'Secreto de trabajo de Aurora',
+          objetivos: 'Más consultas por DM',
           plan: 'Tres reels y un carrusel',
-          filas: [{ id: 'f1', fecha: '2026-09-03T12:00:00.000Z', tipo: 'reel', copy: 'Borrador' }],
+          filas: [
+            {
+              id: 'f1',
+              fecha: '2026-09-03T12:00:00.000Z',
+              tipo: 'reel',
+              contenido: 'ESCENA 1: guion a medio escribir',
+              copy: 'Copy sin aprobar',
+            },
+          ],
+          ...extra,
+        },
+        {
+          id: 'plan_b',
+          clientId: 'cli_b',
+          month: '2026-09',
+          objetivos: 'Los objetivos de Flora',
+          plan: 'El plan de Flora',
+          filas: [],
         },
       ],
     };
@@ -259,12 +274,41 @@ describe('portal del cliente', () => {
       body: JSON.stringify({ datos: conPlan, version: antes.version }),
     });
     assert.equal(guardado.status, 200);
+  };
 
+  it('ve los objetivos y el plan del mes, y nada de otro cliente', async () => {
+    await cargarPlanes();
     const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
-    assert.equal(d.planes, undefined, 'el cliente no puede ver la planificación previa');
+
+    assert.equal(d.planes.length, 1, 'solo el suyo');
+    assert.equal(d.planes[0].month, '2026-09');
+    assert.equal(d.planes[0].objetivos, 'Más consultas por DM');
+    assert.equal(d.planes[0].plan, 'Tres reels y un carrusel');
     assert.ok(
-      !JSON.stringify(d).includes('Secreto de trabajo'),
-      'no puede colarse por ningún otro lado'
+      !JSON.stringify(d).includes('de Flora'),
+      'no puede colarse el plan del otro cliente'
+    );
+  });
+
+  it('pero no las líneas, que son borrador', async () => {
+    // Guiones a medio escribir y copys sin aprobar. Al cliente le llegan
+    // cuando ella los pasa al calendario, que es cuando decide mostrárselos.
+    const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
+
+    assert.equal(d.planes[0].filas, undefined, 'las líneas no viajan');
+    const crudo = JSON.stringify(d.planes);
+    assert.ok(!crudo.includes('guion a medio escribir'), 'no se cuela el guion');
+    assert.ok(!crudo.includes('Copy sin aprobar'), 'no se cuela el copy sin aprobar');
+  });
+
+  it('y un mes tapado no se le muestra', async () => {
+    await cargarPlanes({ ocultoParaCliente: true });
+    const d = await (await fetch(`${base}/api/portal/${linkA}`)).json();
+
+    assert.equal(d.planes.length, 0, 'el mes tapado no tiene que llegar');
+    assert.ok(
+      !JSON.stringify(d).includes('Más consultas por DM'),
+      'tampoco por ningún otro lado'
     );
   });
 
