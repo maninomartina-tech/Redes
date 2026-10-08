@@ -15,6 +15,7 @@ import { useHoy } from '@/lib/hoy';
 import { typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, Modal, SectionTitle } from '@/components/ui';
+import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 import BotonCopiar from '@/components/BotonCopiar';
 import { copyParaPegar } from '@/lib/texto';
 
@@ -189,6 +190,8 @@ export default function ToPublish() {
         title="Para publicar"
         subtitle={`Lo que hay que subir a mano en ${client.name}, en orden.`}
       />
+
+      <SolapasDePublicacion />
 
       <div className="mb-4 flex items-start gap-3 rounded-xl border border-ink-200/70 bg-surface p-4 text-sm">
         <Send className="mt-0.5 shrink-0 text-brand-800" size={20} />

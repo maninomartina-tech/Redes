@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Grid3x3,
   Hash,
+  Inbox,
   LayoutDashboard,
   LayoutGrid,
   Lightbulb,
@@ -21,6 +22,7 @@ import { NavLink } from 'react-router-dom';
 import { useStore } from '@/store/useStore';
 import { useBaseCliente } from '@/lib/rutas';
 import Logo from '@/components/Logo';
+import { Avatar } from '@/components/ui';
 
 export interface NavItem {
   to: string;
@@ -47,6 +49,10 @@ export const creadoraNav: NavGroup[] = [
       // Dos cosas distintas, y el nombre lo tiene que decir: acá se piensa el
       // mes, allá se produce pieza por pieza.
       { to: '/plan', label: 'Planificación', icon: ClipboardList },
+      // La cola es la puerta de entrada al trabajo del día. Las demás formas
+      // de mirarlo —calendario, historias, para publicar, feed— están en las
+      // solapas de arriba, y también acá para quien las busque en el menú.
+      { to: '/cola', label: 'Cola', icon: Inbox },
       { to: '/planificacion', label: 'Calendario', icon: CalendarDays },
       { to: '/historias', label: 'Historias', icon: Zap },
       { to: '/publicar', label: 'Para publicar', icon: Send },
@@ -93,6 +99,57 @@ export const clienteNav = (base: string): NavGroup[] => [
   },
 ];
 
+/**
+ * Las cuentas, arriba de todo.
+ *
+ * Es lo primero que muestra Buffer en su barra lateral, y tiene razón: antes
+ * de elegir qué pantalla mirar hay que elegir de quién. Acá estaba escondido
+ * en un desplegable de la barra de arriba, que en una pantalla grande es el
+ * lugar donde menos se mira.
+ */
+function Canales() {
+  const clients = useStore((s) => s.clients);
+  const currentClientId = useStore((s) => s.currentClientId);
+  const setClient = useStore((s) => s.setClient);
+
+  if (clients.length === 0) return null;
+
+  return (
+    <div className="border-y border-ink-200/70 px-3 py-2.5">
+      <p className="mb-1 px-2 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
+        Cuentas
+      </p>
+      <div className="max-h-56 space-y-0.5 overflow-y-auto">
+        {clients.map((c) => {
+          const activa = c.id === currentClientId;
+          return (
+            <button
+              key={c.id}
+              onClick={() => setClient(c.id)}
+              aria-current={activa ? 'true' : undefined}
+              className={`flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition ${
+                activa ? 'bg-brand-100' : 'hover:bg-ink-50'
+              }`}
+            >
+              <Avatar name={c.name} color={c.color} logoId={c.logo?.id} size={26} />
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block truncate text-sm font-semibold ${
+                    activa ? 'text-brand-800' : 'text-ink-700'
+                  }`}
+                >
+                  {c.name}
+                </span>
+                <span className="block truncate text-[11px] text-ink-400">{c.handle}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function Sidebar() {
   const role = useStore((s) => s.role);
   const portal = useStore((s) => s.portal);
@@ -121,6 +178,8 @@ export default function Sidebar() {
       <div className="flex h-16 items-center px-5">
         <Logo size={34} />
       </div>
+
+      {role === 'creadora' && <Canales />}
 
       <nav className="flex-1 overflow-y-auto px-3 py-2">
         {groups.map((group, i) => (

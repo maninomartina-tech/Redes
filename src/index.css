@@ -67,13 +67,19 @@ body {
 }
 
 @layer components {
-  /* Superficies: borde suave en vez de sombra fuerte */
+  /*
+   * Superficies.
+   *
+   * Borde nítido y sombra apenas insinuada, como en Buffer: lo que separa una
+   * tarjeta del fondo es la línea, no el relieve. Con sombras fuertes, una
+   * pantalla con diez tarjetas parece diez pisos.
+   */
   .card {
-    @apply rounded-2xl border border-ink-200/70 bg-surface shadow-card;
+    @apply rounded-2xl border border-ink-200/70 bg-surface shadow-soft;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition-all duration-150 disabled:pointer-events-none disabled:opacity-45;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-all duration-150 disabled:pointer-events-none disabled:opacity-45;
   }
   .btn-primary {
     @apply btn bg-brand-800 text-canvas hover:bg-brand-900 active:bg-brand-900;
@@ -89,7 +95,7 @@ body {
   }
 
   .input {
-    @apply w-full rounded-xl border border-ink-200 bg-surface px-3 py-2 text-sm text-ink-800 outline-none transition placeholder:text-ink-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-ink-50 disabled:text-ink-600;
+    @apply w-full rounded-lg border border-ink-200 bg-surface px-3 py-2 text-sm text-ink-800 outline-none transition placeholder:text-ink-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100 disabled:bg-ink-50 disabled:text-ink-600;
   }
   .label {
     @apply text-[11px] font-semibold uppercase tracking-wider text-ink-400;

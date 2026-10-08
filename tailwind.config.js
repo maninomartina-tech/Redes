@@ -59,10 +59,19 @@ export default {
         card: '0 1px 3px rgb(var(--c-ink-900) / 0.06)',
         lift: '0 4px 16px rgb(var(--c-ink-900) / 0.09)',
       },
+      /*
+       * Esquinas más cerradas, como las de Buffer.
+       *
+       * La app tenía todo bastante redondeado, que para una tarjeta grande
+       * queda bien pero en una lista de renglones los separa de más: con el
+       * radio chico, veinte piezas seguidas se leen como una lista y no como
+       * veinte cajitas.
+       */
       borderRadius: {
-        xl: '0.875rem',
-        '2xl': '1.125rem',
-        '3xl': '1.5rem',
+        lg: '0.5rem',
+        xl: '0.625rem',
+        '2xl': '0.875rem',
+        '3xl': '1.125rem',
       },
     },
   },

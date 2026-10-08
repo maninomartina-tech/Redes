@@ -10,6 +10,7 @@ import { estadoAcceso } from '@/lib/espacio';
 
 import Dashboard from '@/views/Dashboard';
 import Panorama from '@/views/Panorama';
+import Cola from '@/views/Cola';
 import PlanMensual from '@/views/PlanMensual';
 import PlanningBoard from '@/views/PlanningBoard';
 import FeedPreview from '@/views/FeedPreview';
@@ -107,6 +108,7 @@ function Panel() {
         <Route path="/panel" element={<Dashboard />} />
         <Route path="/general" element={<Panorama />} />
         <Route path="/plan" element={<PlanMensual />} />
+        <Route path="/cola" element={<Cola />} />
         <Route path="/planificacion" element={<PlanningBoard />} />
         {/* Había dos calendarios distintos: ahora el de Planificación es el
             único, y los links viejos van a parar ahí. */}

@@ -3,6 +3,7 @@ import {
   ClipboardList,
   Grid3x3,
   Home,
+  Inbox,
   MoreHorizontal,
   Send,
   TrendingUp,
@@ -22,10 +23,10 @@ import { clienteNav, creadoraNav, type NavItem } from '@/components/layout/Sideb
  * queda en "Más"; el plan y el calendario se abren todos los días.
  */
 const atajosCreadora: NavItem[] = [
+  { to: '/cola', label: 'Cola', icon: Inbox },
   { to: '/plan', label: 'Plan', icon: ClipboardList },
   { to: '/planificacion', label: 'Calendario', icon: CalendarDays },
   { to: '/publicar', label: 'Publicar', icon: Send },
-  { to: '/feed', label: 'Feed', icon: Grid3x3 },
 ];
 
 const atajosCliente = (base: string): NavItem[] => [

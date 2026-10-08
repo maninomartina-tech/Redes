@@ -8,6 +8,7 @@ import PlanCalendar from '@/components/PlanCalendar';
 import PostCard from '@/components/PostCard';
 import PostDetail from '@/components/PostDetail';
 import { SectionTitle } from '@/components/ui';
+import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 import {
   FiltroDeTipo,
   GrupoDeSolapas,
@@ -59,6 +60,8 @@ export default function PlanningBoard() {
         soloEnEscritorio="Arrastrá una pieza a otro día, o cambiale la fecha desde adentro del contenido."
         action={<AddContentButton onCreated={setSelected} />}
       />
+
+      <SolapasDePublicacion />
 
       {/* Cómo mirarlo, y qué mirar */}
       <div className="mb-4 flex flex-wrap items-center gap-2">

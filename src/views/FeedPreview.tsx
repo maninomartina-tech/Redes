@@ -4,6 +4,7 @@ import { fmt } from '@/lib/date';
 import { typeEmoji } from '@/lib/format';
 import { portadaDelFeed } from '@/lib/piezas';
 import { Avatar, MediaThumb, SectionTitle } from '@/components/ui';
+import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 import SyncButton from '@/components/SyncButton';
 import { sincronizarPublicaciones } from '@/lib/sync';
 import PostDetail from '@/components/PostDetail';
@@ -41,6 +42,9 @@ export default function FeedPreview({ clientMode = false }: { clientMode?: boole
                 onChange={(e) => setOnlyReady(e.target.checked)}
                 className="h-4 w-4 rounded border-ink-300 text-brand-600"
               />
+
+      {/* Las solapas son de ella: el cliente tiene su propio menú. */}
+      {!clientMode && <SolapasDePublicacion />}
               {clientMode ? 'Ocultar lo que falta aprobar' : 'Solo aprobado/publicado'}
             </label>
 

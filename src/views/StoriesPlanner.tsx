@@ -10,6 +10,7 @@ import AddContentButton from '@/components/AddContentButton';
 import ImportarHistorias from '@/components/ImportarHistorias';
 import PostDetail from '@/components/PostDetail';
 import { MediaThumb, SectionTitle } from '@/components/ui';
+import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 
 // ---------------------------------------------------------------------------
 // La semana de historias.
@@ -122,6 +123,8 @@ export default function StoriesPlanner() {
               defaultType="historia"
               label="Nueva historia"
             />
+
+      <SolapasDePublicacion />
           </div>
         }
       />
