@@ -1,4 +1,4 @@
-import { CalendarClock, Inbox, Plus, TriangleAlert } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Inbox, Plus, TriangleAlert } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useStore, useCurrentClient } from '@/store/useStore';
 import type { Post } from '@/types';
@@ -10,6 +10,7 @@ import { portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, SectionTitle } from '@/components/ui';
 import AddContentButton, { NewContentModal } from '@/components/AddContentButton';
 import PostDetail from '@/components/PostDetail';
+import ConfirmarPublicado from '@/components/ConfirmarPublicado';
 import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 import { FiltroDeTipo, filtrarPorTipo, type FiltroTipo } from '@/components/Solapas';
 
@@ -32,6 +33,7 @@ export default function Cola() {
   const [selected, setSelected] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<FiltroTipo>('todo');
   const [creandoEn, setCreandoEn] = useState<string | null>(null);
+  const [publicando, setPublicando] = useState<Post | null>(null);
 
   const suyos = useMemo(
     () => posts.filter((p) => p.clientId === currentClientId),
@@ -76,7 +78,13 @@ export default function Cola() {
               </div>
               <div className="card divide-y divide-ink-200/70 overflow-hidden">
                 {cola.atrasados.map((p) => (
-                  <Renglon key={p.id} post={p} onAbrir={() => setSelected(p.id)} atrasado />
+                  <Renglon
+                    key={p.id}
+                    post={p}
+                    onAbrir={() => setSelected(p.id)}
+                    onPublicado={() => setPublicando(p)}
+                    atrasado
+                  />
                 ))}
               </div>
             </section>
@@ -88,6 +96,7 @@ export default function Cola() {
               dia={d}
               hoy={hoy}
               onAbrir={setSelected}
+              onPublicado={setPublicando}
               onAgregar={() => {
                 const cuando = new Date(d.dia);
                 cuando.setHours(12, 0, 0, 0);
@@ -104,6 +113,7 @@ export default function Cola() {
         onCreated={setSelected}
         defaultDate={creandoEn ?? undefined}
       />
+      <ConfirmarPublicado post={publicando} onClose={() => setPublicando(null)} />
       <PostDetail postId={selected} onClose={() => setSelected(null)} />
     </div>
   );
@@ -113,11 +123,13 @@ function Dia({
   dia,
   hoy,
   onAbrir,
+  onPublicado,
   onAgregar,
 }: {
   dia: DiaDeLaCola;
   hoy: Date;
   onAbrir: (id: string) => void;
+  onPublicado: (post: Post) => void;
   onAgregar: () => void;
 }) {
   const como = nombreDelDia(dia.dia, hoy);
@@ -140,7 +152,12 @@ function Dia({
 
       <div className="card divide-y divide-ink-200/70 overflow-hidden">
         {dia.posts.map((p) => (
-          <Renglon key={p.id} post={p} onAbrir={() => onAbrir(p.id)} />
+          <Renglon
+            key={p.id}
+            post={p}
+            onAbrir={() => onAbrir(p.id)}
+            onPublicado={() => onPublicado(p)}
+          />
         ))}
       </div>
     </section>
@@ -156,16 +173,23 @@ function Dia({
 function Renglon({
   post,
   onAbrir,
+  onPublicado,
   atrasado = false,
 }: {
   post: Post;
   onAbrir: () => void;
+  onPublicado: () => void;
   atrasado?: boolean;
 }) {
   return (
-    <button
+    // Un `div` y no un `button`: adentro va el de "Publicado", y un botón
+    // adentro de otro botón no es HTML válido ni se puede tocar bien.
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onAbrir}
-      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-ink-50 sm:px-4"
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onAbrir()}
+      className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition hover:bg-ink-50 sm:px-4"
     >
       <span
         className={`w-14 shrink-0 text-sm font-semibold tabular-nums ${
@@ -209,6 +233,20 @@ function Renglon({
           {statusCorto[post.status]}
         </span>
       )}
-    </button>
+
+      <button
+        // En el teléfono queda solo el tilde, y un tilde de 24px no se puede
+        // tocar: el mínimo cómodo son 44, que es lo que mide un dedo.
+        className="btn-outline h-11 w-11 shrink-0 !px-0 text-xs sm:h-auto sm:w-auto sm:!px-2.5 sm:!py-1"
+        title={`Marcar «${post.title}» como publicado`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onPublicado();
+        }}
+      >
+        <CheckCircle2 size={14} />
+        <span className="hidden sm:inline">Publicado</span>
+      </button>
+    </div>
   );
 }

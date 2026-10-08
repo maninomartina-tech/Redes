@@ -20,6 +20,7 @@ import { desdeInput, fmtDateTime, paraInput } from '@/lib/date';
 import { etapasDePlan, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, repartirPiezas } from '@/lib/piezas';
 import { Avatar, Modal } from '@/components/ui';
+import ConfirmarPublicado from '@/components/ConfirmarPublicado';
 import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
 import HashtagPicker, { parsearTags } from '@/components/HashtagPicker';
@@ -130,6 +131,7 @@ export default function PostDetail({
   const [draft, setDraft] = useState<Borrador | null>(null);
   const [comentario, setComentario] = useState('');
   const [confirmarSalida, setConfirmarSalida] = useState(false);
+  const [confirmarPublicado, setConfirmarPublicado] = useState(false);
   const [avisoDeCopia, setAvisoDeCopia] = useState<string | null>(null);
 
   const readOnly = role === 'cliente';
@@ -627,6 +629,18 @@ export default function PostDetail({
             ) : (
               <span className="mr-auto text-xs text-ink-400">Todo guardado</span>
             )}
+            {/* Lo que más se hace con una pieza que ya salió: dejarlo
+                anotado. Estaba solo en "Para publicar", y hasta ahí había que
+                ir aunque la pieza se estuviera mirando acá. */}
+            {post.status !== 'publicado' && (
+              <button
+                className="btn-outline"
+                onClick={() => setConfirmarPublicado(true)}
+                title="Marcar este contenido como publicado"
+              >
+                <CheckCircle2 size={15} /> Publicado
+              </button>
+            )}
             <button className="btn-ghost" onClick={intentarCerrar}>
               Cerrar
             </button>
@@ -636,6 +650,11 @@ export default function PostDetail({
           </div>
         )}
       </Modal>
+
+      <ConfirmarPublicado
+        post={confirmarPublicado ? post : null}
+        onClose={() => setConfirmarPublicado(false)}
+      />
 
       {/* aviso de cambios sin guardar */}
       <Modal
