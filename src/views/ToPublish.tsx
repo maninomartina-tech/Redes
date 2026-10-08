@@ -16,7 +16,6 @@ import { typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, Modal, SectionTitle } from '@/components/ui';
 import SolapasDePublicacion from '@/components/SolapasDePublicacion';
-import ConfirmarPublicado from '@/components/ConfirmarPublicado';
 import BotonCopiar from '@/components/BotonCopiar';
 import { copyParaPegar } from '@/lib/texto';
 
@@ -39,8 +38,9 @@ const pendiente = (p: Post) => p.status === 'aprobado' || p.status === 'programa
 export default function ToPublish() {
   const client = useCurrentClient();
   const posts = useStore((s) => s.posts);
+  const marcarPublicado = useStore((s) => s.marcarPublicado);
 
-  const [publicando, setPublicando] = useState<Post | null>(null);
+
   const [aviso, setAviso] = useState<string | null>(null);
 
   // `hoy` cambia solo al cambiar el día: eso rehace los grupos sin recargar.
@@ -140,9 +140,9 @@ export default function ToPublish() {
             </button>
             <button
               className="btn-primary !py-1 text-[11px]"
-              onClick={() => setPublicando(p)}
+              onClick={() => marcarPublicado(p.id)}
             >
-              <CheckCircle2 size={13} /> Ya lo publiqué
+              <CheckCircle2 size={13} /> Publicado
             </button>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function ToPublish() {
         <p className="text-ink-600">
           Mientras Meta no apruebe el permiso para publicar, las piezas se suben
           a mano. Acá tenés el copy listo para pegar y la pieza para bajar al
-          teléfono. Cuando la subas, tocá <b>Ya lo publiqué</b>: con eso el feed,
+          teléfono. Cuando la subas, tocá <b>Publicado</b>: con eso el feed,
           las métricas y lo que ve tu cliente quedan al día.
         </p>
       </div>
@@ -228,7 +228,6 @@ export default function ToPublish() {
         </>
       )}
 
-      <ConfirmarPublicado post={publicando} onClose={() => setPublicando(null)} />
     </div>
   );
 }

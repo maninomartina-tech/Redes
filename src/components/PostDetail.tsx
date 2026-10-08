@@ -20,7 +20,6 @@ import { desdeInput, fmtDateTime, paraInput } from '@/lib/date';
 import { etapasDePlan, statusChip, statusLabel, typeEmoji, typeLabel } from '@/lib/format';
 import { piezasFinales, repartirPiezas } from '@/lib/piezas';
 import { Avatar, Modal } from '@/components/ui';
-import ConfirmarPublicado from '@/components/ConfirmarPublicado';
 import MediaUploader from '@/components/MediaUploader';
 import MetricsForm from '@/components/MetricsForm';
 import HashtagPicker, { parsearTags } from '@/components/HashtagPicker';
@@ -125,13 +124,19 @@ export default function PostDetail({
   const post = useStore((s) => s.posts.find((p) => p.id === postId));
   const role = useStore((s) => s.role);
   const clients = useStore((s) => s.clients);
-  const { updatePost, removePost, setPostStatus, addComment, toggleComment, cancelSchedule } =
-    useStore();
+  const {
+    updatePost,
+    removePost,
+    setPostStatus,
+    addComment,
+    toggleComment,
+    cancelSchedule,
+    marcarPublicado,
+  } = useStore();
 
   const [draft, setDraft] = useState<Borrador | null>(null);
   const [comentario, setComentario] = useState('');
   const [confirmarSalida, setConfirmarSalida] = useState(false);
-  const [confirmarPublicado, setConfirmarPublicado] = useState(false);
   const [avisoDeCopia, setAvisoDeCopia] = useState<string | null>(null);
 
   const readOnly = role === 'cliente';
@@ -635,7 +640,7 @@ export default function PostDetail({
             {post.status !== 'publicado' && (
               <button
                 className="btn-outline"
-                onClick={() => setConfirmarPublicado(true)}
+                onClick={() => marcarPublicado(post.id)}
                 title="Marcar este contenido como publicado"
               >
                 <CheckCircle2 size={15} /> Publicado
@@ -650,11 +655,6 @@ export default function PostDetail({
           </div>
         )}
       </Modal>
-
-      <ConfirmarPublicado
-        post={confirmarPublicado ? post : null}
-        onClose={() => setConfirmarPublicado(false)}
-      />
 
       {/* aviso de cambios sin guardar */}
       <Modal

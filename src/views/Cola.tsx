@@ -10,7 +10,6 @@ import { portadaDelFeed } from '@/lib/piezas';
 import { EmptyState, MediaThumb, SectionTitle } from '@/components/ui';
 import AddContentButton, { NewContentModal } from '@/components/AddContentButton';
 import PostDetail from '@/components/PostDetail';
-import ConfirmarPublicado from '@/components/ConfirmarPublicado';
 import SolapasDePublicacion from '@/components/SolapasDePublicacion';
 import { FiltroDeTipo, filtrarPorTipo, type FiltroTipo } from '@/components/Solapas';
 
@@ -27,13 +26,14 @@ import { FiltroDeTipo, filtrarPorTipo, type FiltroTipo } from '@/components/Sola
 export default function Cola() {
   const posts = useStore((s) => s.posts);
   const currentClientId = useStore((s) => s.currentClientId);
+  const marcarPublicado = useStore((s) => s.marcarPublicado);
   const client = useCurrentClient();
 
   const hoy = useHoy();
   const [selected, setSelected] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<FiltroTipo>('todo');
   const [creandoEn, setCreandoEn] = useState<string | null>(null);
-  const [publicando, setPublicando] = useState<Post | null>(null);
+
 
   const suyos = useMemo(
     () => posts.filter((p) => p.clientId === currentClientId),
@@ -82,7 +82,7 @@ export default function Cola() {
                     key={p.id}
                     post={p}
                     onAbrir={() => setSelected(p.id)}
-                    onPublicado={() => setPublicando(p)}
+                    onPublicado={() => marcarPublicado(p.id)}
                     atrasado
                   />
                 ))}
@@ -96,7 +96,7 @@ export default function Cola() {
               dia={d}
               hoy={hoy}
               onAbrir={setSelected}
-              onPublicado={setPublicando}
+              onPublicado={marcarPublicado}
               onAgregar={() => {
                 const cuando = new Date(d.dia);
                 cuando.setHours(12, 0, 0, 0);
@@ -113,7 +113,6 @@ export default function Cola() {
         onCreated={setSelected}
         defaultDate={creandoEn ?? undefined}
       />
-      <ConfirmarPublicado post={publicando} onClose={() => setPublicando(null)} />
       <PostDetail postId={selected} onClose={() => setSelected(null)} />
     </div>
   );
@@ -129,7 +128,7 @@ function Dia({
   dia: DiaDeLaCola;
   hoy: Date;
   onAbrir: (id: string) => void;
-  onPublicado: (post: Post) => void;
+  onPublicado: (id: string) => void;
   onAgregar: () => void;
 }) {
   const como = nombreDelDia(dia.dia, hoy);
@@ -156,7 +155,7 @@ function Dia({
             key={p.id}
             post={p}
             onAbrir={() => onAbrir(p.id)}
-            onPublicado={() => onPublicado(p)}
+            onPublicado={() => onPublicado(p.id)}
           />
         ))}
       </div>
