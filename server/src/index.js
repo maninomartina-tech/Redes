@@ -41,6 +41,7 @@ import {
 import { campanasDeAds, metricasDeCuenta, metricasDePublicaciones } from './insights.js';
 import { cambiarEstadoDeCampana, cambiarPresupuestoDiario } from './ads.js';
 import { faltaDominioPublico, hayNube, subirALaNube } from './nube.js';
+import { barrerSinDueno, borrarArchivos, queHayGuardado } from './limpieza.js';
 import { iniciarProgramador, procesarCola } from './programador.js';
 import { hayIA, redactar } from './ia.js';
 import {
@@ -325,6 +326,35 @@ function limpiarSubidasAbandonadas() {
 
 if (process.env.NODE_ENV !== 'test') {
   setInterval(limpiarSubidasAbandonadas, 15 * 60 * 1000).unref();
+}
+
+/**
+ * La barrida de archivos sin dueño, una vez por día.
+ *
+ * Son los que quedaron de reemplazar una pieza o borrar un contenido: nadie
+ * los nombra y nadie los va a extrañar. Corre sola porque es justamente lo que
+ * nadie se acuerda de hacer, y tarde: un archivo recién subido todavía no está
+ * nombrado en ningún lado, así que se le dan horas antes de mirarlo.
+ */
+function iniciarBarrido() {
+  const barrer = async () => {
+    try {
+      const r = await barrerSinDueno();
+      if (r.borrados > 0) {
+        console.log(
+          `[limpieza] ${r.borrados} archivo(s) sin dueño, ${Math.round(r.bytes / 1e6)} MB liberados`
+        );
+      }
+      if (r.fallados.length) {
+        console.warn(`[limpieza] ${r.fallados.length} no se pudieron borrar`);
+      }
+    } catch (e) {
+      console.error('[limpieza] error inesperado:', e);
+    }
+  };
+
+  // No al arrancar: un despliegue no es el momento de borrar nada.
+  return setInterval(barrer, 24 * 60 * 60 * 1000).unref();
 }
 
 // Meta descarga las piezas desde acá, por eso es público y sin autenticación.
@@ -996,6 +1026,38 @@ app.post('/api/ai/redactar', soloCreadora, async (req, res) => {
   }
 });
 
+/* ----------------------------- almacenamiento ---------------------------- */
+
+/**
+ * Qué hay guardado y cuánto se podría liberar.
+ *
+ * Sin esto, que el disco se esté llenando se descubre el día que una subida
+ * falla. Con esto se ve antes, y se ve qué parte es basura.
+ */
+app.get('/api/almacenamiento', soloCreadora, (_req, res) => {
+  res.json({ ...queHayGuardado(), donde: hayNube() ? 'nube' : 'disco' });
+});
+
+/**
+ * Borrar archivos concretos.
+ *
+ * Los elige la app, que es la única que sabe qué pieza pertenece a qué
+ * contenido y desde cuándo. Acá se comprueba que ninguno esté en uso antes de
+ * tocarlo: del otro lado hay un navegador y puede equivocarse.
+ */
+app.post('/api/almacenamiento/borrar', soloCreadora, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.filter((x) => typeof x === 'string') : [];
+  if (ids.length === 0) return res.status(400).json({ error: 'No vino ningún archivo.' });
+  if (ids.length > 2000) return res.status(400).json({ error: 'Demasiados archivos de una vez.' });
+
+  res.json(await borrarArchivos(ids));
+});
+
+/** La barrida de lo que no nombra nadie, a pedido. */
+app.post('/api/almacenamiento/barrer', soloCreadora, async (_req, res) => {
+  res.json(await barrerSinDueno());
+});
+
 /* ---------------------------------- salud -------------------------------- */
 
 app.get('/api/salud', (_req, res) => {
@@ -1087,6 +1149,7 @@ if (process.env.NODE_ENV !== 'test') {
       );
     } else {
       iniciarProgramador();
+      iniciarBarrido();
     }
   });
 }

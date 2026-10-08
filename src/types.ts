@@ -313,6 +313,15 @@ export interface Post {
   comments: Comment[];
   metrics?: PostMetrics; // presente si status === 'publicado'
   campaignId?: string;
+
+  /**
+   * Cuándo se liberaron los archivos de esta pieza (ISO).
+   *
+   * Pasa sola con lo publicado hace rato: el video vive en Instagram desde que
+   * salió y acá solo ocupaba lugar. Queda anotado para poder decir "ya no está
+   * guardado" en vez de pedirle que suba una pieza que ya se publicó.
+   */
+  archivosLiberados?: string;
 }
 
 export interface Campaign {

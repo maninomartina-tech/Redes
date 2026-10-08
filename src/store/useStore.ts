@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { filasListas, tituloDeFila } from '@/lib/plan';
+import { DIAS_POR_DEFECTO, loQueSePuedeLiberar, sinArchivos } from '@/lib/limpieza';
+import { borrarEnElServidor } from '@/lib/almacenamiento';
 import type {
   Ad,
   Campaign,
@@ -215,6 +217,16 @@ interface State {
   updatePost: (id: string, patch: Partial<Post>) => void;
   removePost: (id: string) => void;
   setPostStatus: (id: string, status: PostStatus) => void;
+
+  // espacio en disco
+  /** Cada cuánto se libera lo publicado. `dias: 0` apaga la limpieza automática. */
+  limpieza: { activa: boolean; dias: number };
+  configurarLimpieza: (patch: Partial<{ activa: boolean; dias: number }>) => void;
+  /**
+   * Libera los archivos de lo publicado hace rato: del navegador y del
+   * servidor, y le saca las piezas a esos contenidos.
+   */
+  liberarArchivosViejos: () => Promise<{ contenidos: number; bytes: number }>;
   /** Trae al feed lo publicado en Instagram. Devuelve cuántas entraron y cuántas se actualizaron. */
   importarDeInstagram: (
     clientId: string,
@@ -315,6 +327,7 @@ function datosDelEspacio(s: State): DatosEspacio {
     leads: s.leads,
     hashtagSets: s.hashtagSets,
     planes: s.planes,
+    limpieza: s.limpieza,
     branding: s.branding,
     brandLogo: s.brandLogo,
   };
@@ -447,6 +460,7 @@ export const useStore = create<State>()(
               leads: datos.leads ?? [],
               hashtagSets: datos.hashtagSets ?? [],
               planes: datos.planes ?? [],
+              ...(datos.limpieza ? { limpieza: datos.limpieza } : {}),
               branding,
               brandLogo: datos.brandLogo,
               currentClientId:
@@ -487,6 +501,7 @@ export const useStore = create<State>()(
             leads: r.datos.leads ?? [],
             hashtagSets: r.datos.hashtagSets ?? [],
             planes: r.datos.planes ?? [],
+            ...(r.datos.limpieza ? { limpieza: r.datos.limpieza } : {}),
             branding,
             brandLogo: r.datos.brandLogo,
             currentClientId: r.datos.clients[0]?.id ?? get().currentClientId,
@@ -665,6 +680,58 @@ export const useStore = create<State>()(
 
       removePost: (id) =>
         set((s) => ({ posts: s.posts.filter((p) => p.id !== id) })),
+
+      limpieza: { activa: true, dias: DIAS_POR_DEFECTO },
+
+      configurarLimpieza: (patch) =>
+        set((s) => ({ limpieza: { ...s.limpieza, ...patch } })),
+
+      liberarArchivosViejos: async () => {
+        const { posts, portal, limpieza } = get();
+        // Con un link de cliente abierto, lo que hay en memoria es lo de ese
+        // cliente solo: borrar desde acá sería borrarle las piezas a alguien
+        // que ni siquiera está viendo todo.
+        if (portal) return { contenidos: 0, bytes: 0 };
+
+        const { posts: elegidos, locales, remotos, bytes } = loQueSePuedeLiberar(posts, {
+          dias: limpieza.dias,
+        });
+        if (elegidos.length === 0) return { contenidos: 0, bytes: 0 };
+
+        /*
+         * El orden importa, y no es el intuitivo.
+         *
+         * Primero se le sacan las piezas al contenido y se guarda eso en el
+         * servidor; recién después se le pide que borre los archivos. Al
+         * revés no funciona: el servidor se niega a borrar un archivo que
+         * todavía ve nombrado —y hace bien, es su única defensa contra un
+         * navegador equivocado—, así que el contenido quedaba sin pieza y el
+         * archivo ocupando lugar para siempre.
+         *
+         * Si el borrado falla igual, los archivos quedan sin dueño y la
+         * barrida diaria del servidor se los lleva. Se pierde un día de
+         * espacio, no un archivo.
+         */
+        const cuando = new Date().toISOString();
+        const sinPieza = new Set(elegidos.map((p) => p.id));
+        set((s) => ({
+          posts: s.posts.map((p) => (sinPieza.has(p.id) ? { ...p, ...sinArchivos(p, cuando) } : p)),
+        }));
+
+        const sesion = get().sesion;
+        if (sesion && remotos.length > 0) {
+          await guardarAhora();
+          await borrarEnElServidor(remotos, sesion);
+        }
+
+        // `media` importa el store para la sesión, así que se trae acá adentro
+        // y no arriba: dos módulos que se importan entre sí al cargar es un
+        // problema que aparece tarde y en otro lado.
+        const { deleteMedia } = await import('@/lib/media');
+        await Promise.all(locales.map((id) => deleteMedia(id)));
+
+        return { contenidos: elegidos.length, bytes };
+      },
 
       /**
        * Trae al feed lo que ya está publicado en Instagram.
@@ -1245,6 +1312,7 @@ export const useStore = create<State>()(
         const s = persisted as Partial<State>;
         s.hashtagSets ??= [];
         s.planes ??= [];
+        s.limpieza ??= { activa: true, dias: DIAS_POR_DEFECTO };
 
         // El flujo pasó a tener tres etapas: "idea" y "producción" ya no
         // existen. Se traduce lo que haya cargado en vez de perderlo.
@@ -1293,6 +1361,7 @@ const CLAVES_DE_DATOS = [
   'leads',
   'hashtagSets',
   'planes',
+  'limpieza',
   'branding',
   'brandLogo',
 ] as const;

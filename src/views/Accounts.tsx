@@ -28,6 +28,7 @@ import { Avatar, Modal, SectionTitle, Toggle } from '@/components/ui';
 import BotonCopiar from '@/components/BotonCopiar';
 import ClientForm from '@/components/ClientForm';
 import Backup from '@/components/Backup';
+import Espacio from '@/components/Espacio';
 
 const platformIcon: Record<Platform, React.ReactNode> = {
   instagram: <Camera size={20} />,
@@ -192,6 +193,7 @@ export default function Accounts() {
       </div>
 
       <div className="mt-6">
+        <Espacio />
         <Backup />
       </div>
 

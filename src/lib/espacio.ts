@@ -39,6 +39,8 @@ export interface DatosEspacio {
   hashtagSets: HashtagSet[];
   /** La planificación previa de cada mes. No viaja al portal del cliente. */
   planes: PlanMensual[];
+  /** Cada cuánto se liberan los archivos de lo ya publicado. */
+  limpieza?: { activa: boolean; dias: number };
   branding?: Branding;
   brandLogo?: MediaRef;
 }

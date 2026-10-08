@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
@@ -63,11 +63,34 @@ const rutasCliente = (
   </>
 );
 
+/**
+ * Libera sola el espacio de lo publicado hace rato.
+ *
+ * Corre una vez por sesión, cuando el espacio ya terminó de cargar: antes
+ * sería decidir con media planificación en la mano. Es lo único que hace que
+ * el disco no se llene sin que nadie se acuerde.
+ */
+function useLimpiezaAutomatica() {
+  const estado = useStore((s) => s.sincro.estado);
+  const activa = useStore((s) => s.limpieza.activa);
+  const liberar = useStore((s) => s.liberarArchivosViejos);
+  const yaCorrio = useRef(false);
+
+  useEffect(() => {
+    if (yaCorrio.current || !activa) return;
+    if (estado !== 'listo' && estado !== 'local') return;
+    yaCorrio.current = true;
+    void liberar();
+  }, [estado, activa, liberar]);
+}
+
 /** Lo que ve la creadora, más su vista previa del lado del cliente. */
 function Panel() {
   const role = useStore((s) => s.role);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useLimpiezaAutomatica();
 
   // Mantiene la ruta coherente con el rol activo.
   useEffect(() => {

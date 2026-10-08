@@ -270,14 +270,18 @@ export function Modal({
 export function Toggle({
   checked,
   onChange,
+  label,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  /** Qué prende y apaga: un interruptor sin nombre no se puede nombrar. */
+  label?: string;
 }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-label={label}
       onClick={() => onChange(!checked)}
       className={`relative h-6 w-11 rounded-full transition-colors ${
         checked ? 'bg-brand-800' : 'bg-ink-200'
