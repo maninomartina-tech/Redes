@@ -17,7 +17,6 @@ export default function Portal({ children }: { children: React.ReactNode }) {
   const { token = '' } = useParams();
   const abrirPortal = useStore((s) => s.abrirPortal);
   const listo = useStore((s) => s.portal === token && s.sincro.estado === 'listo');
-  const nombre = useStore((s) => s.clients[0]?.name);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -36,14 +35,15 @@ export default function Portal({ children }: { children: React.ReactNode }) {
    *
    * Sin esto, el manifiesto de siempre manda al cliente a la raíz —la pantalla
    * de ingreso de la creadora— y termina mirando un formulario con una clave
-   * que no tiene. Se pone recién cuando sabemos de quién es la cuenta, para
-   * que la app instalada lleve su nombre.
+   * que no tiene. Se pone con solo saber el token, sin esperar que llegue la
+   * cuenta: el navegador lee el manifiesto apenas abre la página, y si para
+   * entonces todavía era el de la creadora, el ícono se guarda mal.
    */
   useEffect(() => {
-    if (!listo || !nombre) return;
-    aplicarManifiestoDelPortal(token, nombre);
+    if (!token) return;
+    aplicarManifiestoDelPortal(token);
     return restaurarManifiesto;
-  }, [listo, nombre, token]);
+  }, [token]);
 
   if (error) {
     return (

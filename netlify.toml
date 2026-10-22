@@ -39,8 +39,23 @@
   to = "/eliminar-datos/index.html"
   status = 200
 
+# El manifiesto de cada cliente.
+#
+# Es el mismo archivo para todos: lo que cambia es desde dónde se lo pide. Su
+# `start_url` es relativo —"./"— así que pedido desde /c/<token>/ resuelve a
+# /c/<token>/, que es el contenido de ese cliente y no la puerta de la
+# creadora. Es la única forma de tener un manifiesto por cliente sin generar
+# un archivo por cliente.
+#
+# Va antes del comodín de abajo: si no, se serviría la app en vez del JSON.
+[[redirects]]
+  from = "/c/:token/manifest.webmanifest"
+  to = "/cliente.webmanifest"
+  status = 200
+
 # La app usa rutas con # así que no hace falta reescribir nada, pero esto deja
-# cubierto cualquier acceso directo a una ruta.
+# cubierto cualquier acceso directo a una ruta —incluida /c/<token>/, que es
+# la que abre el ícono instalado del cliente—.
 [[redirects]]
   from = "/*"
   to = "/index.html"

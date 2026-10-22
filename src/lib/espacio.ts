@@ -200,10 +200,15 @@ export async function borrarLink(token: string, clienteId: string): Promise<void
   });
 }
 
-/** La dirección que se le pasa al cliente. */
+/**
+ * La dirección que se le pasa al cliente.
+ *
+ * Sin `#` a propósito: es la misma que usa el manifiesto de su app, así que
+ * agregarla a la pantalla de inicio le abre su contenido y no la puerta de la
+ * creadora. Los links viejos, con `#`, siguen andando.
+ */
 export function urlDelLink(token: string): string {
-  const { origin, pathname } = window.location;
-  return `${origin}${pathname}#/c/${token}`;
+  return `${window.location.origin}/c/${token}/`;
 }
 
 /* ---------------------------- lado del cliente --------------------------- */

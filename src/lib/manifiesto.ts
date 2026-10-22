@@ -1,22 +1,31 @@
 // ---------------------------------------------------------------------------
 // El manifiesto de la app, para que el cliente instale *lo suyo*.
 //
-// Cuando el cliente agrega el link a su pantalla de inicio, quien decide qué
-// se abre al tocar el ícono no es la dirección que él tenía abierta: es el
-// `start_url` del manifiesto. El nuestro apuntaba a la raíz, así que el ícono
-// le abría la pantalla de ingreso de la creadora — le pedía una clave que no
-// tiene, en vez de mostrarle su contenido.
+// Cuando alguien agrega el link a su pantalla de inicio, lo que se abre al
+// tocar el ícono no es la dirección que tenía abierta: es el `start_url` del
+// manifiesto. El de siempre apunta a la raíz, así que al cliente el ícono le
+// abría la pantalla de ingreso de la creadora —una clave que no tiene— en vez
+// de su contenido.
 //
-// Acá se arma un manifiesto propio para cada portal, con su link adentro y con
-// el nombre de su cuenta. No hay forma de hacerlo con un archivo estático: el
-// token es distinto para cada cliente y no existe hasta que se crea el link.
+// El primer intento fue armar un manifiesto a medida y servirlo desde un
+// `blob:`. El navegador lo lee, pero **descarta el `start_url`**: la regla es
+// que tiene que ser del mismo origen que el manifiesto, y un `blob:` no tiene
+// un origen que sirva para compararse. Se quedaba con la raíz, igual que
+// antes, y sin dar ningún error.
+//
+// Lo que sí funciona es un manifiesto de verdad, servido desde una dirección
+// de verdad, con el token adentro de *la dirección* y un `start_url` relativo:
+//
+//     /c/<token>/manifest.webmanifest   →   el archivo de siempre
+//     start_url: "./"                   →   /c/<token>/
+//
+// Así alcanza un solo archivo estático para todos los clientes: lo que cambia
+// es desde dónde se lo pide. La regla que hace el reemplazo está en
+// `netlify.toml`.
 // ---------------------------------------------------------------------------
 
 const SELECTOR = "link[rel='manifest']";
 const ORIGINAL = '/manifest.webmanifest';
-
-/** El `blob:` anterior, para soltarlo cuando se reemplaza. */
-let vigente: string | null = null;
 
 function ponerManifiesto(href: string) {
   let el = document.head.querySelector<HTMLLinkElement>(SELECTOR);
@@ -25,67 +34,38 @@ function ponerManifiesto(href: string) {
     el.rel = 'manifest';
     document.head.appendChild(el);
   }
-  el.href = href;
+  // Reponerlo igual no hace nada, y el navegador vuelve a pedirlo cada vez.
+  if (el.getAttribute('href') !== href) el.setAttribute('href', href);
 }
 
-function soltarVigente() {
-  if (vigente) {
-    URL.revokeObjectURL(vigente);
-    vigente = null;
-  }
+/** La dirección del portal de un cliente, la que abre el ícono instalado. */
+export function rutaDelPortal(token: string): string {
+  return `/c/${token}/`;
 }
 
 /**
  * Deja instalable el portal de este cliente.
  *
- * `start_url` lleva el token, que es lo único que hace que el ícono abra su
- * contenido y no la puerta de la creadora. El nombre es el de su cuenta: en la
- * pantalla de inicio de su teléfono va a estar al lado de WhatsApp, y "Demm ·
- * Gestión de contenido" no le dice nada.
- *
- * En iPhone esto no hace falta —iOS ignora el manifiesto y guarda la dirección
- * que estaba abierta, que ya es la correcta— pero tampoco molesta.
+ * Vale tanto si entró por la dirección nueva como por un link viejo con `#`:
+ * el token lo sabemos igual, y el ícono va a abrir la dirección nueva.
  */
-export function aplicarManifiestoDelPortal(token: string, nombre: string, icono?: string) {
-  const { origin, pathname } = window.location;
-  const base = `${origin}${pathname}`;
-
-  const manifiesto = {
-    name: nombre,
-    short_name: nombre.slice(0, 12),
-    description: 'Tu contenido del mes, para revisar y aprobar.',
-    // Lo importante: el ícono abre su contenido, no la puerta de la creadora.
-    start_url: `${base}#/c/${token}`,
-    scope: base,
-    display: 'standalone',
-    background_color: '#FCF5E8',
-    theme_color: '#4A1E1A',
-    lang: 'es',
-    icons: [
-      {
-        src: icono ?? `${origin}/icono-192.png`,
-        sizes: '192x192',
-        type: 'image/png',
-        purpose: 'any',
-      },
-      {
-        src: icono ?? `${origin}/icono-512.png`,
-        sizes: '512x512',
-        type: 'image/png',
-        purpose: 'any',
-      },
-    ],
-  };
-
-  soltarVigente();
-  vigente = URL.createObjectURL(
-    new Blob([JSON.stringify(manifiesto)], { type: 'application/manifest+json' })
-  );
-  ponerManifiesto(vigente);
+export function aplicarManifiestoDelPortal(token: string) {
+  if (!token) return;
+  ponerManifiesto(`${rutaDelPortal(token)}manifest.webmanifest`);
 }
 
 /** Vuelve al manifiesto de siempre, el de la creadora. */
 export function restaurarManifiesto() {
-  soltarVigente();
   ponerManifiesto(ORIGINAL);
+}
+
+/**
+ * El token cuando se entró por la dirección nueva, sin `#`.
+ *
+ * Es la que abre el ícono de la pantalla de inicio, así que tiene que llevar
+ * al mismo lado que el link con `#` que ya se repartió.
+ */
+export function tokenEnLaDireccion(pathname: string): string | null {
+  const m = /^\/c\/([A-Za-z0-9_-]+)\/?$/.exec(pathname);
+  return m ? m[1] : null;
 }
