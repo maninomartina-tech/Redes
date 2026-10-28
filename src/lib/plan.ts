@@ -118,12 +118,17 @@ export function cuentaPorTipo(filas: FilaDePlan[]): Record<PostType, number> {
 }
 
 /**
- * Una fila nueva, el día que sigue a la última.
+ * Desde qué día se planifica ese mes.
  *
- * La primera del mes cae hoy, no el día 1: si estamos a 21 no tiene sentido
- * empezar a planificar el 1, que ya pasó. En un mes que todavía no empezó, en
- * cambio, el 1 es el principio de verdad.
+ * Hoy, no el día 1: si estamos a 21 no tiene sentido empezar a planificar el
+ * 1, que ya pasó. En un mes que todavía no empezó, en cambio, el 1 es el
+ * principio de verdad.
  */
+export function arranqueDelMes(mes: string, hoy = new Date()): Date {
+  return claveDeMes(hoy) === mes ? new Date(hoy) : fechaDeMes(mes);
+}
+
+/** Una fila nueva, el día que sigue a la última. */
 export function filaNueva(
   plan: PlanMensual | undefined,
   mes: string,
@@ -132,8 +137,7 @@ export function filaNueva(
   const ultimas = filasOrdenadas(plan?.filas ?? []);
   const ultima = ultimas[ultimas.length - 1];
 
-  const arranque = claveDeMes(hoy) === mes ? new Date(hoy) : fechaDeMes(mes);
-  const fecha = ultima ? new Date(ultima.fecha) : arranque;
+  const fecha = ultima ? new Date(ultima.fecha) : arranqueDelMes(mes, hoy);
   if (ultima) fecha.setDate(fecha.getDate() + 2);
   fecha.setHours(12, 0, 0, 0);
 

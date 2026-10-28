@@ -21,11 +21,8 @@ import { etapasDePlan, statusChip, statusLabel, typeEmoji, typeLabel } from '@/l
 import { piezasFinales, repartirPiezas } from '@/lib/piezas';
 import { Avatar, Modal } from '@/components/ui';
 import MediaUploader from '@/components/MediaUploader';
-import MetricsForm from '@/components/MetricsForm';
-import HashtagPicker, { parsearTags } from '@/components/HashtagPicker';
 import GenerarConIA from '@/components/GenerarConIA';
 import BotonCopiar from '@/components/BotonCopiar';
-import { copyParaPegar } from '@/lib/texto';
 
 const types: PostType[] = ['reel', 'post', 'carrusel', 'historia'];
 
@@ -356,11 +353,7 @@ export default function PostDetail({
               label="Copy / Caption"
               color="text-brand-700 bg-brand-50"
               accion={
-                <BotonCopiar
-                  texto={copyParaPegar(draft)}
-                  etiqueta="Copiar"
-                  onError={setAvisoDeCopia}
-                />
+                <BotonCopiar texto={draft.copy.trim()} etiqueta="Copiar" onError={setAvisoDeCopia} />
               }
             >
               <Campo
@@ -372,31 +365,14 @@ export default function PostDetail({
                 placeholder="El texto que acompaña la publicación."
               />
               {!readOnly && (
-                <>
-                  <GenerarConIA
-                    parte="copy"
-                    post={{ ...post, ...draft }}
-                    cliente={client}
-                    valor={draft.copy}
-                    onUsar={(copy) => set({ copy })}
-                  />
-                  <GenerarConIA
-                    parte="hashtags"
-                    post={{ ...post, ...draft }}
-                    cliente={client}
-                    valor=""
-                    onUsar={(texto) =>
-                      set({ hashtags: [...new Set([...draft.hashtags, ...parsearTags(texto)])] })
-                    }
-                  />
-                </>
+                <GenerarConIA
+                  parte="copy"
+                  post={{ ...post, ...draft }}
+                  cliente={client}
+                  valor={draft.copy}
+                  onUsar={(copy) => set({ copy })}
+                />
               )}
-              <HashtagPicker
-                clientId={post.clientId}
-                value={draft.hashtags}
-                onChange={(hashtags) => set({ hashtags })}
-                readOnly={readOnly}
-              />
               {avisoDeCopia && (
                 <p className="mt-2 rounded-lg bg-butter-50 p-2 text-xs text-ink-600">
                   {avisoDeCopia}
@@ -486,9 +462,6 @@ export default function PostDetail({
                 </p>
               )}
             </div>
-
-            {/* Los números, que sin el permiso de Meta se cargan a mano */}
-            {post.status === 'publicado' && !readOnly && <MetricsForm post={post} />}
           </div>
 
           {/* ---- Columna derecha ---- */}

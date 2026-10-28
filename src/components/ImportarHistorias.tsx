@@ -44,12 +44,12 @@ const REPARTOS = [
 export default function ImportarHistorias({
   open,
   onClose,
-  semana,
+  desde: arranque,
 }: {
   open: boolean;
   onClose: () => void;
-  /** El lunes de la semana que se está mirando: a eso corresponde el "día 1". */
-  semana: Date;
+  /** A qué día corresponde el "día 1": el de hoy, o el primero del mes. */
+  desde: Date;
 }) {
   const addPost = useStore((s) => s.addPost);
   const currentClientId = useStore((s) => s.currentClientId);
@@ -58,17 +58,17 @@ export default function ImportarHistorias({
   const [texto, setTexto] = useState('');
   const [imagenes, setImagenes] = useState<MediaRef[]>([]);
   const [cuantasPorDia, setCuantasPorDia] = useState(0);
-  const [desde, setDesde] = useState(() => arranqueDe(semana));
+  const [desde, setDesde] = useState(() => arranqueDe(arranque));
   const [error, setError] = useState<string | null>(null);
   const [nombreArchivo, setNombreArchivo] = useState<string | null>(null);
   const entrada = useRef<HTMLInputElement>(null);
 
-  // Al abrirla, el "día 1" es el lunes de la semana que se está mirando.
+  // Al abrirla, el "día 1" es el día desde el que se está planificando.
   useEffect(() => {
     if (!open) return;
-    setDesde(arranqueDe(semana));
+    setDesde(arranqueDe(arranque));
     setError(null);
-  }, [open, semana]);
+  }, [open, arranque]);
 
   const lectura = useMemo(
     () => interpretarHistorias(texto, new Date(desde)),
@@ -356,8 +356,8 @@ export default function ImportarHistorias({
 }
 
 /** El día de arranque, a las 0:00, que es contra lo que se cuentan los días. */
-function arranqueDe(semana: Date): string {
-  const d = new Date(semana);
+function arranqueDe(inicio: Date): string {
+  const d = new Date(inicio);
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
 }

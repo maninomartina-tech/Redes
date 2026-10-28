@@ -1,13 +1,4 @@
-import {
-  Check,
-  Copy,
-  Link2,
-  Loader2,
-  RefreshCw,
-  ServerOff,
-  ShieldCheck,
-  Trash2,
-} from 'lucide-react';
+import { Check, Copy, Link2, Loader2, RefreshCw, ServerOff, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import {
@@ -18,7 +9,7 @@ import {
   urlDelLink,
   type LinkCliente,
 } from '@/lib/espacio';
-import { Avatar, EmptyState, SectionTitle } from '@/components/ui';
+import { Avatar, EmptyState } from '@/components/ui';
 import VincularCuentas from '@/components/VincularCuentas';
 import { vinculadasDe } from '@/lib/vinculos';
 import { fmt } from '@/lib/date';
@@ -26,12 +17,12 @@ import { fmt } from '@/lib/date';
 /**
  * Los links con los que entra cada cliente.
  *
- * Sin usuario ni contraseña: el link es la llave. Es lo más simple para
- * alguien que solo quiere mirar su semana desde el teléfono, y por eso mismo
- * se manda a cada cliente por separado y se rehace apenas se sospeche que se
- * filtró: el anterior deja de funcionar en el momento.
+ * Sin usuario ni contraseña: el link es la llave. Es lo más simple para alguien
+ * que solo quiere mirar su mes desde el teléfono, y por eso mismo se manda a
+ * cada cliente por separado y se rehace apenas se sospeche que se filtró: el
+ * anterior deja de funcionar en el momento.
  */
-export default function ClientAccess() {
+export default function LinksDeClientes() {
   const clients = useStore((s) => s.clients);
   const sesion = useStore((s) => s.sesion);
 
@@ -90,24 +81,14 @@ export default function ClientAccess() {
 
   if (!hayServidor() || !sesion) {
     return (
-      <div>
-        <SectionTitle
-          title="Accesos de clientes"
-          subtitle="El link con el que cada cliente ve su parte."
-        />
-        <div className="flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
-          <ServerOff className="mt-0.5 shrink-0 text-butter-600" size={20} />
-          <div className="text-ink-700">
-            <p className="font-semibold text-ink-800">
-              Para esto hace falta el servidor
-            </p>
-            <p className="mt-1">
-              Los links tienen que apuntar a algún lado: lo que está guardado en
-              este navegador no lo puede abrir nadie más. Levantá el servidor
-              (carpeta <code className="rounded bg-ink-100 px-1 py-0.5 text-xs">server/</code>),
-              entrá con tu clave y volvé acá.
-            </p>
-          </div>
+      <div className="flex items-start gap-3 rounded-xl border border-butter-200 bg-butter-50 p-4 text-sm">
+        <ServerOff className="mt-0.5 shrink-0 text-butter-600" size={20} />
+        <div className="text-ink-700">
+          <p className="font-semibold text-ink-800">Para esto hace falta el servidor</p>
+          <p className="mt-1">
+            Los links tienen que apuntar a algún lado: lo que está guardado en este navegador
+            no lo puede abrir nadie más. Entrá con tu clave y volvé acá.
+          </p>
         </div>
       </div>
     );
@@ -117,14 +98,7 @@ export default function ClientAccess() {
 
   return (
     <div>
-      <SectionTitle
-        title="Accesos de clientes"
-        subtitle="El link con el que cada cliente ve su parte, y nada más que la suya."
-      />
-
-      {error && (
-        <p className="mb-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>
-      )}
+      {error && <p className="mb-3 rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
 
       {links === null ? (
         <div className="flex items-center gap-2 text-sm text-ink-400">
@@ -139,7 +113,7 @@ export default function ClientAccess() {
             const ocupado = trabajando === c.id;
 
             return (
-              <div key={c.id} className="card p-4">
+              <div key={c.id} className="rounded-xl border border-ink-200/70 bg-surface p-3.5">
                 <div className="flex flex-wrap items-center gap-3">
                   <Avatar name={c.name} color={c.color} logoId={c.logo?.id} size={38} />
                   <div className="mr-auto min-w-0">
@@ -216,10 +190,12 @@ export default function ClientAccess() {
                         {copiado === c.id ? 'Copiado' : 'Copiar'}
                       </button>
                     </div>
-                    <p className="mt-1.5 text-[11px] text-ink-400">
+                    <p className="mt-1.5 text-[11px] leading-snug text-ink-400">
                       {link.ultimo_acceso
                         ? `Última visita: ${fmt(link.ultimo_acceso, "d 'de' MMMM, HH:mm")}`
                         : 'Todavía no lo abrió.'}
+                      {' · '}Cada cliente ve solo lo suyo, y el recorte lo hace el servidor.
+                      Mandale el link en privado: quien lo tenga, entra.
                     </p>
                   </div>
                 )}
@@ -228,16 +204,6 @@ export default function ClientAccess() {
           })}
         </div>
       )}
-
-      <div className="mt-4 flex items-start gap-3 rounded-xl border border-ink-200/70 bg-surface p-4 text-sm">
-        <ShieldCheck className="mt-0.5 shrink-0 text-brand-800" size={20} />
-        <p className="text-ink-600">
-          Cada cliente ve <b>solo su contenido</b>, y el recorte lo hace el
-          servidor: no hay forma de mirar lo de otro cambiando el link. Desde ahí
-          puede comentar y aprobar, nada más. Lo que sí conviene es{' '}
-          <b>mandar cada link en privado</b>: quien lo tenga, entra.
-        </p>
-      </div>
     </div>
   );
 }

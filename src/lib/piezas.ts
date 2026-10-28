@@ -45,16 +45,6 @@ export function repartirPiezas(piezas: MediaRef[]): {
   return { resultado: piezas[0], carrusel: piezas.slice(1) };
 }
 
-/**
- * La imagen que representa la publicación en una miniatura.
- *
- * Para un reel es la portada si la cargó: es exactamente para eso que existe.
- * Si no hay portada, el propio video, que igual se puede mostrar.
- */
-export function portadaDelFeed(p: Post): MediaRef | undefined {
-  return p.portada ?? p.resultado;
-}
-
 /** Mueve una pieza un lugar para adelante o para atrás, sin salirse de la lista. */
 export function mover<T>(lista: T[], desde: number, hacia: number): T[] {
   if (hacia < 0 || hacia >= lista.length || desde === hacia) return lista;

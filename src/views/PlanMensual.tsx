@@ -8,6 +8,7 @@ import {
   Plus,
   Trash2,
   TriangleAlert,
+  Zap,
 } from 'lucide-react';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +17,7 @@ import type { FilaDePlan, PlanMensual, PostType } from '@/types';
 import { paraInput, desdeInput } from '@/lib/date';
 import { useHoy } from '@/lib/hoy';
 import {
+  arranqueDelMes,
   claveDeMes,
   cuentaPorTipo,
   filaNueva,
@@ -27,6 +29,7 @@ import {
   yaEstaEnElCalendario,
 } from '@/lib/plan';
 import { imprimirPlan } from '@/lib/planImpreso';
+import ImportarHistorias from '@/components/ImportarHistorias';
 import { SectionTitle } from '@/components/ui';
 
 // ---------------------------------------------------------------------------
@@ -64,6 +67,12 @@ export default function PlanMensual() {
   const hoy = useHoy();
   const [mes, setMes] = useState(() => claveDeMes(hoy));
   const [aviso, setAviso] = useState<string | null>(null);
+  const [historias, setHistorias] = useState(false);
+
+  // Memorizado porque viaja como dependencia: una fecha nueva en cada dibujo
+  // le reiniciaría el día de arranque al cuadro de historias mientras lo está
+  // usando.
+  const desdeHistorias = useMemo(() => arranqueDelMes(mes, hoy), [mes, hoy]);
 
   const plan = planDeCliente(planes, client.id, mes);
   const filas = useMemo(() => filasOrdenadas(plan?.filas ?? []), [plan]);
@@ -110,12 +119,17 @@ export default function PlanMensual() {
         title="Planificación"
         subtitle="Pensá el mes entero acá. Cuando esté listo, lo pasás al calendario."
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            <button className="btn-outline" onClick={descargar}>
-              <FileDown size={16} /> Descargar PDF
+          // En el teléfono, dos chicos arriba y el importante abajo, entero.
+          // Los tres en una fila entran en 390px solo partiendo las palabras.
+          <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
+            <button className="btn-outline !w-full sm:!w-auto" onClick={() => setHistorias(true)}>
+              <Zap size={16} /> Varias historias
+            </button>
+            <button className="btn-outline !w-full sm:!w-auto" onClick={descargar}>
+              <FileDown size={16} /> PDF
             </button>
             <button
-              className="btn-primary"
+              className="btn-primary col-span-2 !w-full sm:!w-auto"
               onClick={pasar}
               disabled={listas.length === 0}
               title={
@@ -265,6 +279,21 @@ export default function PlanMensual() {
         convierte en un contenido del calendario, en revisión, esperando al cliente. Lo que
         ya pasó no se duplica.
       </p>
+
+      {/* Las historias no entran en este cuadro: son muchas y se resuelven de
+          otra manera. Escribir veinte líneas con guion y copy para veinte
+          placas es el camino largo. */}
+      <p className="mt-2 text-sm leading-snug text-ink-500">
+        Para una tanda de historias, <b className="text-ink-700">Varias historias</b>: se
+        cargan todas juntas —pegando el texto o subiendo las placas ya diseñadas— y van
+        derecho al calendario, repartidas en los días.
+      </p>
+
+      <ImportarHistorias
+        open={historias}
+        onClose={() => setHistorias(false)}
+        desde={desdeHistorias}
+      />
     </div>
   );
 }

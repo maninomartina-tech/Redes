@@ -1,12 +1,14 @@
-# Gestor de Redes · Planificación & Métricas
+# Gestor de Redes · Planificación del mes
 
 App para gestionar las redes sociales de tus clientes: **planificás, el cliente
-aprueba, y se publica**. Incluye calendario dinámico, vista del feed, historias,
-métricas con IA, seguimiento de ADS y recomendaciones de contenido.
+aprueba, y se publica**.
 
 Hecha con **React + Vite + TypeScript + Tailwind**. Sin servidor funciona
 igual, guardando en el navegador; con servidor la planificación se comparte y
 cada cliente entra a ver lo suyo con su propio link.
+
+Está pensada para el teléfono: cuatro secciones abajo y nada escondido detrás
+de un menú.
 
 ---
 
@@ -24,80 +26,40 @@ el servidor, en Render o similar).
 
 ---
 
-## Qué incluye
+## Qué tiene
 
-### Dos vistas según el rol (botón arriba a la derecha)
+### Las cuatro secciones
 
-- **Creadora** → tu panel de trabajo: planificación completa, producción,
-  métricas, ADS y conexiones.
-- **Cliente** → entra a un panel propio con la bienvenida a su cuenta, el
-  resumen del feed, lo que viene esta semana y lo que espera su aprobación.
-  Desde ahí llega a su semana, su feed, sus resultados y las recomendaciones.
-
-Del lado del cliente todo se lee como un documento, no como un formulario: ve
-el texto, no campos deshabilitados, y lo único que puede tocar es comentar y
-aprobar. Si la semana que abre no tiene nada cargado, la app le ofrece saltar
-a la que sí. Está pensado para el teléfono, que es desde donde va a abrir el
-link que le mandaste.
-
-### Módulos
-
-| Módulo | Qué hace |
+| Sección | Qué hace |
 | --- | --- |
-| **Panel general** | Resumen del cliente: qué falta revisar, próximas publicaciones y correcciones abiertas. |
-| **Calendario** | Todo el contenido del mes por día, con estado y formato. |
-| **Planificación** | Tablero por etapas (idea → producción → revisión → aprobado → programado → publicado). |
-| **Generar con IA** | Debajo de cada parte del contenido: propone opciones para la idea, el guion, el copy y los hashtags, tomando como contexto lo que ya cargaste. Devuelve varias, no pisa nada sola y se edita antes de guardar. Necesita `ANTHROPIC_API_KEY`. |
-| **Detalle del contenido** | **Inspiración** (de dónde nace: tendencia, link y imágenes de referencia), las **3 partes** —1) idea general, 2) guion/diálogo o contenido, 3) copy—, el **resultado final** que se sube desde el dispositivo o arrastrando, y los comentarios. Se guarda con *Guardar cambios*; si intentás cerrar con cambios pendientes, avisa. |
-| **Vista del feed** | Mockup de la grilla de Instagram para ver cómo queda el feed del mes. |
-| **Historias** | Planificador semanal de historias, día por día. |
-| **Para publicar** | La cola de lo que hay que subir a mano, en orden: el copy listo para pegar, la pieza para bajar al teléfono y el botón *Ya lo publiqué*. Avisa lo que se pasó de hora. |
-| **Hashtags** | Grupos guardados por cliente, para meterlos en el copy con un clic en vez de reescribirlos. |
-| **Métricas + IA** | Análisis de cada campaña por mes, con insights automáticos. |
-| **Crecimiento** | Carga manual mes a mes: seguidores, interacción y alcance. Más las consultas por WhatsApp/DM y las ventas que se concretaron. No depende de Meta. |
-| **ADS** | Seguimiento de campañas pagas: gasto, CTR, costo por resultado. |
-| **Recomendaciones** | Qué repetir y qué ajustar, según el contenido ya publicado, más los **mejores horarios** por día y franja. |
-| **Informe mensual** | El resumen que se le manda al cliente: crecimiento, qué se publicó, lo que mejor funcionó y las ventas del mes. Se guarda como PDF desde el navegador. |
-| **Marca** | El logo y los colores de la app, editables desde adentro. Con el tono fuerte, el suave y el fondo se genera toda la paleta; avisa si algún color queda ilegible. También el logo de cada cliente. |
-| **Accesos** | El link secreto con el que entra cada cliente a ver lo suyo. |
-| **Cuentas** | Alta y edición de cada cuenta de cliente, sus redes, la conexión con Meta y la **copia de seguridad** de todo tu espacio. |
+| **Planificación** | El mes entero de un saque: los objetivos, qué se va a desarrollar, y una línea por contenido con su fecha, su formato, la referencia, el guion y el copy. Se baja en **PDF** para grabar, y cuando está listo se **pasa al calendario** —ella decide cuándo—. Desde acá también se carga una **tanda de historias** de una vez, pegando el texto o subiendo las placas ya diseñadas. |
+| **Calendario** | Qué sale cada día, en **mes** o en **semana**, filtrando por posteos o historias. Al tocar una pieza se abre con su inspiración, su idea, su guion, su copy, sus archivos y sus comentarios. En la computadora se arrastra de un día a otro; en el teléfono la fecha se edita desde adentro. Cada pieza tiene el botón **Publicado**, que la marca de un toque con la fecha que figura. |
+| **Crecimiento** | Los seguidores mes a mes, cargados a mano con los números del resumen de Instagram. Cuánto ganó desde el punto de partida, el promedio por mes y la curva. No depende de Meta, así que sirve para cualquier cuenta. |
+| **Ajustes** | Las cuentas de cada cliente y sus redes, la conexión con Instagram, los **links** con los que entra cada cliente, la marca (logo y colores) y la copia de seguridad. |
 
-Se pueden gestionar **varios clientes** (selector arriba a la izquierda, con
-*Agregar cuenta*). El botón de restaurar (↺) vuelve a los datos de ejemplo.
+Se pueden gestionar **varios clientes**: el selector está arriba a la izquierda.
 
-### Mientras Meta no apruebe el permiso
+### Lo que ve el cliente
 
-Se puede trabajar entero a mano, y la app está pensada para eso:
+Entra por un link secreto —sin usuario ni contraseña— y ve dos cosas:
 
-1. **Para publicar** te da la cola del día con el copy y la pieza; subís desde
-   Instagram y marcás *Ya lo publiqué*.
-2. Cuando tengas los números, los cargás en el contenido (*Métricas de esta
-   publicación*). Es lo que alimenta el informe, las recomendaciones y los
-   mejores horarios.
-3. **Crecimiento** ya funcionaba así: seguidores, interacción y ventas a mano.
+- **Tu contenido**: los objetivos del mes y el calendario, en mes o en semana,
+  de solo lectura. Toca una pieza, la lee entera y **aprueba o pide cambios**.
+- **Tu crecimiento**: cuántos seguidores ganó la cuenta desde que la llevás vos.
 
-Con el permiso aprobado, lo único que cambia es que los pasos 1 y 2 se hacen
-solos; todo lo demás queda igual.
+El recorte lo hace el servidor: no hay forma de ver lo de otro cliente
+cambiando el link. Si agrega el link a la pantalla de inicio, el ícono le abre
+su contenido y no la pantalla de ingreso de ella.
 
-### Crecimiento de la cuenta
+### Generar con IA
 
-Pensado para mostrarle al cliente el valor del trabajo, sin depender de la API
-de Meta:
-
-- **Punto de partida**: seguidores que tenía la cuenta el día que se tomó. Todo
-  el crecimiento se mide contra ese número.
-- **Registro mensual**: seguidores al cierre, interacción y alcance. Si no se
-  carga la interacción de un mes, se calcula sola con los posts publicados de
-  ese mes (aparece marcada como `est.`).
-- **Consultas y ventas**: se cargan a mano porque suelen llegar por WhatsApp.
-  Cada consulta guarda de dónde vino, en qué estado está y el monto si se
-  concretó.
-- El interruptor **"Este cliente mide ventas"** decide si el cliente ve o no ese
-  bloque en sus resultados — algunos clientes no lo miden.
+Debajo de la idea, el guion y el copy: propone opciones tomando como contexto
+lo que ya está cargado. Devuelve varias, no pisa nada sola y se edita antes de
+guardar. Necesita `ANTHROPIC_API_KEY` en el servidor.
 
 ---
 
-## Publicación automática de verdad
+## Publicación automática
 
 El servidor que la hace posible está en **[`server/`](server/README.md)**. La app
 funciona sin él (la programación queda registrada), pero para que las piezas se
@@ -110,7 +72,8 @@ npm start
 
 y apuntar la app con `VITE_API_URL=http://localhost:4000`.
 
-En **Cuentas** la app te dice en todo momento qué está conectado y qué falta.
+En **Ajustes** la app te dice en todo momento qué está conectado y qué falta,
+con las direcciones para pegar en Facebook Developers ya armadas.
 
 Dos cosas que pide Meta, no la app:
 
@@ -121,21 +84,21 @@ Dos cosas que pide Meta, no la app:
   tiene que ser accesible desde internet (`PUBLIC_URL`). Para probar en tu
   máquina alcanza con un túnel (`npx localtunnel --port 4000`).
 
-### Métricas y ADS
-Con el servidor andando y la cuenta vinculada, **Crecimiento** y **ADS** tienen
-un botón para traer los datos desde Meta: seguidores, alcance e interacción mes
-a mes, y las campañas con su gasto y resultados.
-
-Lo que Meta no conoce —las consultas por WhatsApp, las ventas y el punto de
-partida de la cuenta— nunca se pisa.
-
-### Análisis con IA
-Ya está: el servidor expone `POST /api/ai/analyze` contra la API de Claude.
-Se activa cargando `ANTHROPIC_API_KEY` en `server/.env`. Sin esa clave, el
-análisis se genera igual de forma local.
+Con el servidor andando y la cuenta vinculada, **Crecimiento** tiene un botón
+para traer los números desde Meta. El punto de partida de la cuenta, que Meta
+no conoce, nunca se pisa.
 
 > Las claves de Meta y de Anthropic viven solo en `server/.env`, que está
 > ignorado por git. El navegador nunca las ve.
+
+---
+
+## El espacio no se llena solo
+
+Los archivos de los posteos del mes anterior se liberan solos: la app les saca
+las piezas a lo que ya se publicó hace rato y después le pide al servidor que
+borre esos archivos. Lo que quedó sin dueño lo levanta una barrida diaria. Se
+configura en **Ajustes → Tu espacio**.
 
 ---
 
@@ -143,15 +106,15 @@ análisis se genera igual de forma local.
 
 ```
 src/
-  components/      UI reutilizable, layout, detalle de post, tarjetas
-  views/           cada módulo (calendario, planificación, feed, métricas, ads…)
+  components/      UI reutilizable, layout, calendario, detalle de contenido
+  views/           las cuatro secciones, más el lado del cliente
   store/           estado global con persistencia (zustand)
-  lib/             fechas, formato, colores, archivos, motor de IA, publicación
+  lib/             fechas, formato, colores, archivos, IA, publicación
   data/            datos de ejemplo
   types.ts         modelo de datos
 
 server/            backend: cola de publicaciones, Meta e IA (ver su README)
   src/meta.js      llamadas a la Graph API
   src/programador.js  publica lo que vence, con reintentos
-  pruebas/         pruebas de la cola
+  pruebas/         pruebas del servidor
 ```

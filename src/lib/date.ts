@@ -1,5 +1,6 @@
 import {
   addDays,
+  addMonths,
   endOfMonth,
   endOfWeek,
   format,
@@ -74,4 +75,4 @@ export function weekDays(anchor: Date): Date[] {
 
 export const weekdayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-export { addDays, isSameDay, isSameMonth, startOfMonth };
+export { addDays, addMonths, isSameDay, isSameMonth, startOfMonth, startOfWeek };

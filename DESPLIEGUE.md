@@ -81,7 +81,7 @@ Eso es todo. El disco en `/datos` y el plan ya vienen definidos en el archivo.
 
 > **La dirección pública se configura sola.** El servidor la toma de la variable
 > que Render define al desplegar, así que no hay que copiarla ni volver a
-> desplegar. Lo verificás en **Cuentas** dentro de la app: ahí figura cuál está
+> desplegar. Lo verificás en **Ajustes** dentro de la app: ahí figura cuál está
 > usando.
 
 ### Por qué el plan pago
@@ -97,7 +97,7 @@ A eso se suma que, en el plan gratis, el servicio **se duerme**: dormido no
 publica a horario, así que tampoco sirve cuando actives la publicación
 automática. Railway y Fly.io tienen el mismo detalle.
 
-> Igual, bajá una copia cada tanto desde **Cuentas → Copia de seguridad**. Es un
+> Igual, bajá una copia cada tanto desde **Ajustes → Tu espacio y el respaldo**. Es un
 > archivo que te guardás vos y que se puede volver a subir en la misma pantalla.
 > Es la red que no depende de ningún proveedor.
 
@@ -117,10 +117,10 @@ Entrás con **usuario y contraseña**: `USUARIO_CREADORA` (si no lo cargás, es
 resto de internet, así que poné algo largo y que no uses en otro lado.
 
 Tus clientes **no las usan**. Cada uno entra con su propio link secreto, que
-copiás con el botón del panel —o desde **Accesos**— y le mandás por privado. Con ese link ve su
-semana, su feed y sus resultados —y nada más—, puede dejar comentarios y
-aprobar. Si alguna vez sospechás que un link se filtró, tocás *Rehacer* y el
-anterior deja de funcionar en el momento.
+copiás desde **Ajustes → Links de tus clientes** y le mandás por privado. Con ese
+link ve su contenido del mes y su crecimiento —y nada más—, puede dejar
+comentarios y aprobar. Si alguna vez sospechás que un link se filtró, tocás
+*Rehacer* y el anterior deja de funcionar en el momento.
 
 > Sin `CLAVE_CREADORA` la app sigue andando, pero solo contra tu navegador:
 > vas a poder planificar y ver todo, y tus clientes no van a poder entrar.
@@ -136,7 +136,7 @@ quedan colgando de tu propio usuario. Con un solo login se conectan todas.
 En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
 
 1. **Inicio de sesión con Facebook → Configuración → URI de redireccionamiento de
-   OAuth válidos**: pegá la dirección que figura en la app, en **Cuentas → «Lo
+   OAuth válidos**: pegá la dirección que figura en la app, en **Ajustes → «Lo
    que hay que cargar en Facebook Developers»**, con el botón de copiar. Es
    `https://tu-servidor.onrender.com/api/auth/meta/callback`, pero no la
    escribas a mano: Meta la compara carácter por carácter y, si no coincide,
@@ -162,7 +162,7 @@ En [developers.facebook.com](https://developers.facebook.com), dentro de tu app:
    vinculada a una página de Facebook. Las personales no sirven, hay que
    convertirlas primero.
 
-Después, en la app: **Cuentas → Vincular Instagram**. Se abre Meta, autorizás, y
+Después, en la app: **Ajustes → Vincular Instagram**. Se abre Meta, autorizás, y
 vuelven todas las cuentas que administrás. Ahí mismo elegís, para cada cliente,
 cuál es su cuenta de Instagram y cuál su cuenta publicitaria.
 
@@ -228,28 +228,14 @@ valida y se quema. Los dos tipos no son intercambiables: el de vuelta viaja por
 la barra de direcciones y el historial, así que no puede servir para saltearse
 la sesión.
 
-### Administrar campañas de ADS
+### Un apunte sobre ADS
 
-Traer las campañas de Meta Ads solo necesita `ads_read`, que ya se pide siempre.
-Para además **pausarlas, reactivarlas o cambiarles el presupuesto diario** desde
-la app hace falta:
+La pantalla de ADS se sacó de la app. El servidor todavía sabe traer las
+campañas de Meta y le pide a Meta el permiso `ads_read`, que ya no usa nadie.
+Si la revisión de Meta se complica, ese permiso se puede sacar de
+`server/src/config.js` y la app no se entera.
 
-```
-META_ADS_ESCRITURA = true
-```
-
-Con eso el servidor le suma `ads_management` a los permisos que pide, y habilita
-los dos endpoints que escriben. Ojo con lo que implica: esos cambios tocan la
-cuenta publicitaria del cliente y **gastan plata de verdad**. Por eso está
-apagado por defecto, y por eso `ads_management` no se pide "por las dudas": es
-uno de los permisos que Meta mira con más detalle en la revisión, y pedirlo sin
-usarlo complica la aprobación.
-
-Crear una campaña de cero sigue siendo cosa del Administrador de anuncios: en la
-API son cuatro objetos encadenados (campaña, conjunto, creativo, anuncio) con
-segmentación y pujas. Una vez armada allá, desde acá se maneja.
-
-Después entrás a **Cuentas** en la app, tocás *Vincular Instagram* y elegís qué
+Después entrás a **Ajustes** en la app, tocás *Vincular Instagram* y elegís qué
 cuenta corresponde a cada cliente.
 
 ---
@@ -273,6 +259,6 @@ cd server && npm run tunel
 
 ## Cómo saber si está todo bien
 
-Entrá a **Cuentas** en la app. Ahí te dice el estado real: si el servidor
+Entrá a **Ajustes** en la app. Ahí te dice el estado real: si el servidor
 responde, si faltan credenciales, si falta la dirección pública y cuántas
 cuentas de Instagram hay vinculadas.
